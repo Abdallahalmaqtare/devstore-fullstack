@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DevStore | بوابتك التقنية الشاملة</title>
+  <meta name="description" content="بوابة تقنية شاملة: متجر خدمات رقمية (شحن ألعاب، أرقام وهمية، أدوات صيانة) ومنصة تعليمية للبرمجة والعمل الحر." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <script>
+    // تطبيق الثيم المحفوظ قبل الرسم لتجنب الوميض
+    (function () {
+      const saved = localStorage.getItem('tg-theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.dataset.theme = saved || (prefersDark ? 'dark' : 'light');
+    })();
+  </script>
+</head>
+<body>
+
+  <!-- ===================== شريط التنقل ===================== -->
+  <header class="navbar" id="navbar">
+    <div class="container nav-inner">
+      <a href="#home" class="brand">
+        <span class="brand-icon">⚡</span>
+        <span class="brand-name"><b>Dev</b>Store</span>
+      </a>
+
+      <nav class="nav-links" id="navLinks">
+        <a href="#home" class="nav-link active">الرئيسية</a>
+        <a href="#store" class="nav-link">المتجر الرقمي</a>
+        <a href="#courses" class="nav-link">الدورات</a>
+        <a href="#footer" class="nav-link">اتصل بنا</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="icon-btn" id="themeToggle" title="تبديل الوضع الليلي" aria-label="تبديل الوضع الليلي">
+          <span class="theme-icon-sun">☀️</span>
+          <span class="theme-icon-moon">🌙</span>
+        </button>
+        <button class="icon-btn" id="loginBtn" title="تسجيل الدخول" aria-label="تسجيل الدخول">👤</button>
+        <button class="icon-btn cart-btn" id="cartBtn" title="سلة المشتريات" aria-label="سلة المشتريات">
+          🛒
+          <span class="cart-badge" id="cartBadge">0</span>
+        </button>
+        <button class="icon-btn menu-btn" id="menuBtn" aria-label="القائمة">☰</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ===================== Hero Section ===================== -->
+    <section class="hero" id="home">
+      <div class="hero-bg">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="grid-overlay"></div>
+      </div>
+      <div class="container hero-content">
+        <span class="hero-badge">🚀 بوابتك التقنية الشاملة في اليمن والعالم العربي</span>
+        <h1 class="hero-title">
+          كل ما تحتاجه في عالم <span class="grad-text">التقنية</span>
+          <br />في مكانٍ واحد
+        </h1>
+        <p class="hero-subtitle">
+          متجر رقمي متكامل لشحن الألعاب والأرقام الوهمية وأدوات صيانة الهواتف،
+          ومنصة تعليمية تصقل مهاراتك في البرمجة والعمل الحر — من الحديدة إلى العالم.
+        </p>
+        <div class="hero-cta">
+          <a href="#store" class="btn btn-primary btn-lg">🛍️ تصفح المتجر الرقمي</a>
+          <a href="#courses" class="btn btn-outline btn-lg">🎓 ابدأ التعلم الآن</a>
+        </div>
+        <div class="hero-stats">
+          <div class="stat"><b data-count="1200">0</b><span>خدمة منجزة</span></div>
+          <div class="stat"><b data-count="350">0</b><span>طالب ومتدرب</span></div>
+          <div class="stat"><b data-count="24">0</b><span>دعم على مدار الساعة</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== المتجر الرقمي ===================== -->
+    <section class="section" id="store">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-tag">🛍️ المتجر الرقمي</span>
+          <h2>خدمات رقمية بأسعار منافسة</h2>
+          <p>اختر فئتك، أضف للسلة، وادفع بالطريقة التي تناسبك.</p>
+        </div>
+
+        <!-- فلاتر الفئات -->
+        <div class="store-filters" id="storeFilters">
+          <button class="filter-chip active" data-filter="all">الكل</button>
+          <button class="filter-chip" data-filter="games">🎮 شحن الألعاب والتطبيقات</button>
+          <button class="filter-chip" data-filter="numbers">📱 الأرقام الوهمية</button>
+          <button class="filter-chip" data-filter="tools">🛠️ أدوات المبرمجين والصيانة</button>
+        </div>
+
+        <div class="cards-grid" id="productsGrid"><!-- تُملأ بالجافاسكربت --></div>
+      </div>
+    </section>
+
+    <!-- ===================== المنصة التعليمية ===================== -->
+    <section class="section section-alt" id="courses">
+      <div class="container">
+        <div class="section-head">
+          <span class="section-tag">🎓 المنصة التعليمية</span>
+          <h2>مسارات تعليمية تصنع مستقبلك</h2>
+          <p>تعلّم عن بُعد أو حضورياً في مدينة الحديدة — بشهادات إتمام ومتابعة مباشرة.</p>
+        </div>
+
+        <div class="courses-grid" id="coursesGrid"><!-- تُملأ بالجافاسكربت --></div>
+      </div>
+    </section>
+
+    <!-- ===================== لماذا نحن ===================== -->
+    <section class="section">
+      <div class="container">
+        <div class="features-grid">
+          <div class="feature-card"><span>⚡</span><h3>تنفيذ فوري</h3><p>معظم الطلبات تُنفذ خلال دقائق من تأكيد الدفع.</p></div>
+          <div class="feature-card"><span>🔒</span><h3>دفع آمن ومتنوع</h3><p>محافظ يمنية (موبايلي، كريمي، جيب) وتحويل بنكي وUSDT.</p></div>
+          <div class="feature-card"><span>💬</span><h3>دعم فني مباشر</h3><p>تواصل معنا واتساب أو تليجرام على مدار الساعة.</p></div>
+          <div class="feature-card"><span>🎓</span><h3>خبرة عملية</h3><p>مدربون يعملون فعلياً في السوق ويشاركونك أسرار المهنة.</p></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== تذييل الموقع ===================== -->
+  <footer class="footer" id="footer">
+    <div class="container footer-grid">
+      <div class="footer-col">
+        <a href="#home" class="brand"><span class="brand-icon">⚡</span><span class="brand-name"><b>Dev</b>Store</span></a>
+        <p>بوابة تقنية شاملة تجمع بين متجر الخدمات الرقمية ومنصة تعليمية عربية، نخدمك من اليمن إلى كل العالم العربي.</p>
+        <div class="social-row">
+          <a href="https://wa.me/967700000000" target="_blank" rel="noopener" class="social-btn whatsapp" title="واتساب">🟢 واتساب</a>
+          <a href="https://t.me/techgate_support" target="_blank" rel="noopener" class="social-btn telegram" title="تليجرام">✈️ تليجرام</a>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>روابط سريعة</h4>
+        <a href="#home">الرئيسية</a>
+        <a href="#store">المتجر الرقمي</a>
+        <a href="#courses">الدورات التدريبية</a>
+        <a href="admin.html">لوحة الإدارة</a>
+      </div>
+      <div class="footer-col">
+        <h4>سياسات الموقع</h4>
+        <a href="#">سياسة الخصوصية</a>
+        <a href="#">شروط الاستخدام</a>
+        <a href="#">سياسة الاستبدال والاسترجاع</a>
+      </div>
+      <div class="footer-col">
+        <h4>تواصل معنا</h4>
+        <p>📍 الحديدة، اليمن</p>
+        <p>📧 support@techgate.example</p>
+        <p>🕐 متاحون 24/7</p>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>© <span id="year"></span> DevStore — جميع الحقوق محفوظة. صُنع بشغف في اليمن 🇾🇪</p>
+    </div>
+  </footer>
+
+  <!-- ===================== نافذة تسجيل الدخول (Modal) ===================== -->
+  <div class="modal-overlay" id="authModal">
+    <div class="modal">
+      <button class="modal-close" data-close="authModal">✕</button>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">تسجيل الدخول</button>
+        <button class="auth-tab" data-tab="register">حساب جديد</button>
+      </div>
+
+      <form class="auth-form active" id="loginForm">
+        <h3>أهلاً بعودتك 👋</h3>
+        <label>رقم الهاتف
+          <input type="tel" id="loginPhone" required placeholder="77xxxxxxx" />
+        </label>
+        <label>كلمة المرور
+          <input type="password" id="loginPass" required placeholder="••••••••" />
+        </label>
+        <button type="submit" class="btn btn-primary btn-block">دخول</button>
+        <p class="auth-note">نسيت كلمة المرور؟ <a href="#">استعادة</a></p>
+      </form>
+
+      <form class="auth-form" id="registerForm">
+        <h3>انضم إلينا 🚀</h3>
+        <label>الاسم الكامل
+          <input type="text" id="regName" required placeholder="محمد أحمد" />
+        </label>
+        <label>رقم الهاتف (واتساب)
+          <input type="tel" id="regPhone" required placeholder="77xxxxxxx" />
+        </label>
+        <label>كلمة المرور
+          <input type="password" id="regPass" required minlength="6" placeholder="6 أحرف على الأقل" />
+        </label>
+        <button type="submit" class="btn btn-primary btn-block">إنشاء الحساب</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================== سلة المشتريات (Offcanvas) ===================== -->
+  <div class="offcanvas-overlay" id="cartOverlay"></div>
+  <aside class="offcanvas" id="cartPanel">
+    <div class="offcanvas-head">
+      <h3>🛒 سلة المشتريات</h3>
+      <button class="modal-close" id="cartClose">✕</button>
+    </div>
+
+    <div class="cart-items" id="cartItems">
+      <p class="cart-empty" id="cartEmpty">سلتك فارغة حالياً.. تصفح المتجر وأضف ما يعجبك 🛍️</p>
+    </div>
+
+    <div class="cart-footer">
+      <div class="cart-total">
+        <span>الإجمالي:</span>
+        <b id="cartTotal">$0.00</b>
+      </div>
+
+      <div class="pay-methods">
+        <p>اختر طريقة الدفع:</p>
+        <div class="pay-grid" id="payGrid"></div>
+        <p class="pay-account" id="payAccount"></p>
+        <label class="receipt-label">📎 صورة سند الحوالة (إجباري)
+          <input type="file" id="receiptInput" accept="image/*" />
+        </label>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="checkoutBtn">تأكيد الطلب ✅</button>
+    </div>
+  </aside>
+
+  <!-- تنبيه منبثق -->
+  <div class="toast" id="toast"></div>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>لوحة الإدارة | DevStore</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="assets/css/admin.css" />
+  <script>
+    (function () {
+      const saved = localStorage.getItem('tg-theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.dataset.theme = saved || (prefersDark ? 'dark' : 'light');
+    })();
+  </script>
+</head>
+<body class="admin-body">
+
+  <!-- ===================== الشريط الجانبي ===================== -->
+  <aside class="sidebar" id="sidebar">
+    <a href="index.html" class="brand sidebar-brand">
+      <span class="brand-icon">⚡</span>
+      <span class="brand-name"><b>Dev</b>Store</span>
+    </a>
+
+    <nav class="side-nav">
+      <button class="side-link active" data-page="dashboard">📊 الرئيسية</button>
+      <button class="side-link" data-page="products">🛍️ إدارة المنتجات</button>
+      <button class="side-link" data-page="orders">📦 إدارة الطلبات</button>
+      <button class="side-link" data-page="users">👥 إدارة المستخدمين</button>
+      <button class="side-link" data-page="settings">⚙️ الإعدادات</button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="icon-btn" id="adminThemeToggle" title="تبديل الوضع الليلي">
+        <span class="theme-icon-sun">☀️</span>
+        <span class="theme-icon-moon">🌙</span>
+      </button>
+      <button class="btn btn-outline btn-block" id="adminLogout">🚪 تسجيل الخروج</button>
+      <a href="index.html" class="btn btn-outline btn-block">↩️ العودة للموقع</a>
+    </div>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- ===================== المحتوى الرئيسي ===================== -->
+  <main class="admin-main">
+    <header class="admin-topbar">
+      <button class="icon-btn" id="sideMenuBtn">☰</button>
+      <h2 id="pageTitle">📊 الرئيسية</h2>
+      <span class="admin-user">👤 المدير العام</span>
+    </header>
+
+    <!-- ============ صفحة: الرئيسية / الإحصائيات ============ -->
+    <section class="admin-page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card"><span class="stat-icon">💰</span><div><b id="statRevenue">$0</b><p>إجمالي المبيعات</p></div></div>
+        <div class="stat-card"><span class="stat-icon">📦</span><div><b id="statOrders">0</b><p>الطلبات النشطة</p></div></div>
+        <div class="stat-card"><span class="stat-icon">👥</span><div><b id="statUsers">0</b><p>المستخدمون المسجلون</p></div></div>
+        <div class="stat-card"><span class="stat-icon">🛍️</span><div><b id="statProducts">0</b><p>المنتجات والخدمات</p></div></div>
+      </div>
+
+      <div class="panel">
+        <h3>🕐 أحدث الطلبات</h3>
+        <div class="table-wrap">
+          <table class="admin-table" id="recentOrdersTable">
+            <thead><tr><th>رقم الطلب</th><th>التاريخ</th><th>الإجمالي</th><th>الحالة</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ صفحة: إدارة المنتجات ============ -->
+    <section class="admin-page" id="page-products">
+      <div class="panel">
+        <h3>➕ إضافة / تعديل منتج أو خدمة</h3>
+        <form class="admin-form" id="productForm">
+          <input type="hidden" id="pId" />
+          <div class="form-row">
+            <label>اسم الخدمة<input type="text" id="pName" required placeholder="مثال: شدات ببجي موبايل" /></label>
+            <label>السعر ($)<input type="number" id="pPrice" step="0.01" min="0" required placeholder="5.00" /></label>
+          </div>
+          <div class="form-row">
+            <label>القسم
+              <select id="pCat">
+                <option value="games">🎮 شحن الألعاب والتطبيقات</option>
+                <option value="numbers">📱 الأرقام الوهمية</option>
+                <option value="tools">🛠️ أدوات المبرمجين والصيانة</option>
+                <option value="courses">🎓 دورة تدريبية</option>
+              </select>
+            </label>
+            <label>الأيقونة / الصورة (إيموجي أو رابط صورة)
+              <input type="text" id="pIcon" placeholder="🎮 أو https://..." />
+            </label>
+          </div>
+          <label>الوصف<textarea id="pDesc" rows="2" placeholder="وصف مختصر للخدمة..."></textarea></label>
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">💾 حفظ المنتج</button>
+            <button type="button" class="btn btn-outline" id="pReset">إلغاء التعديل</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h3>📋 المنتجات الحالية</h3>
+        <div class="table-wrap">
+          <table class="admin-table" id="productsTable">
+            <thead><tr><th>المنتج</th><th>القسم</th><th>السعر</th><th>إجراءات</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ صفحة: إدارة الطلبات ============ -->
+    <section class="admin-page" id="page-orders">
+      <div class="panel">
+        <h3>📦 الطلبات الواردة</h3>
+        <div class="table-wrap">
+          <table class="admin-table" id="ordersTable">
+            <thead>
+              <tr><th>الطلب / العميل</th><th>المنتجات</th><th>الإجمالي</th><th>الدفع</th><th>التاريخ</th><th>السند</th><th>الحالة</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ صفحة: إدارة المستخدمين ============ -->
+    <section class="admin-page" id="page-users">
+      <div class="panel">
+        <h3>👥 العملاء المسجلون</h3>
+        <div class="table-wrap">
+          <table class="admin-table" id="usersTable">
+            <thead><tr><th>الاسم</th><th>الهاتف</th><th>تاريخ التسجيل</th><th>عدد الطلبات</th><th>الحالة</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ صفحة: الإعدادات ============ -->
+    <section class="admin-page" id="page-settings">
+      <div class="panel">
+        <h3>➕ إضافة طريقة دفع يدوية</h3>
+        <form class="admin-form" id="pmForm">
+          <div class="form-row">
+            <label>اسم الطريقة<input type="text" id="pmName" required placeholder="مثال: الكريمي جوال / النجم" /></label>
+            <label>رقم الحساب / المحفظة<input type="text" id="pmAccount" required placeholder="77XXXXXXX" /></label>
+          </div>
+          <label>تعليمات للعميل (اختياري)<input type="text" id="pmInstructions" placeholder="مثال: حوّل باسم DevStore ثم ارفع السند" /></label>
+          <div class="form-actions"><button type="submit" class="btn btn-primary">💾 إضافة طريقة الدفع</button></div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <h3>💳 طرق الدفع الحالية (تظهر للعملاء فوراً عند الدفع)</h3>
+        <div class="table-wrap">
+          <table class="admin-table" id="pmTable">
+            <thead><tr><th>الاسم</th><th>الحساب</th><th>التعليمات</th><th>الحالة</th><th>حذف</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>🔔 إشعارات تليجرام والتخزين السحابي</h3>
+        <p style="color: var(--muted); font-size: .92rem;">تُضبط مفاتيح Telegram Bot وCloudinary وقاعدة البيانات من متغيرات البيئة في الخادم (ملف .env محلياً / Environment Variables في Render) — لا تُخزَّن هنا حفاظاً على الأمان.</p>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/admin.js"></script>
+</body>
+</html>
