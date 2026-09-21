@@ -1,7 +1,6 @@
 /* ============ لوحة الإدارة ============ */
 .admin-body { display: flex; min-height: 100svh; }
 
-/* شاشة الدخول */
 .admin-login {
   position: fixed; inset: 0; z-index: 500;
   display: grid; place-items: center; padding: 20px;

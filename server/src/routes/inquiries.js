@@ -2,7 +2,7 @@ const router = require('express').Router();
 const { SiteSettings } = require('../models');
 const { sendTelegram } = require('../utils/notify');
 
-/* POST /api/inquiries — استفسار عن خدمة استشارية/تعليمية (عام) */
+/* POST /api/inquiries — استفسار عن خدمة استشارية + إرجاع روابط التواصل */
 router.post('/', async (req, res) => {
   const { serviceName, category, name, phone } = req.body || {};
   if (!serviceName) return res.status(400).json({ message: 'اسم الخدمة مطلوب' });
@@ -16,12 +16,10 @@ router.post('/', async (req, res) => {
   );
 
   const s = await SiteSettings.findOne({ key: 'site' }).lean();
-  const wa = (s?.whatsapp || '').replace(/\D/g, '');
-  const tg = (s?.telegram || '').replace(/^@/, '');
   res.json({
     ok: true,
-    whatsapp: wa,
-    telegram: tg,
+    whatsapp: (s?.whatsapp || '').replace(/\D/g, ''),
+    telegram: (s?.telegram || '').replace(/^@/, ''),
   });
 });
 

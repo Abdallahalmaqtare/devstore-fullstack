@@ -5,17 +5,16 @@ const { authRequired, adminOnly, signToken } = require('../middleware/auth');
 const { sendTelegram } = require('../utils/notify');
 
 const publicUser = u => ({ id: u._id, name: u.name, phone: u.phone, role: u.role });
-/* توحيد الرقم: حذف + والمسافات والشرطات والأقواس — أرقام فقط */
-const cleanPhone = p => String(p || '').replace(/[\s\-()+]/g, '').replace(/\D/g, '');
+/* توحيد الرقم: أرقام فقط — تُستخدم نفس الدالة في التسجيل والدخول لضمان التطابق */
+const cleanPhone = p => String(p || '').replace(/\D/g, '');
+/* كشف انتهاء الصلاحية من createdAt (نفس مرجعية TTL) — عمر الرمز 10 دقائق */
+const OTP_TTL_MS = 10 * 60 * 1000;
+const isExpired = otp => (Date.now() - otp.createdAt.getTime()) > OTP_TTL_MS;
 
 async function issueOtp(phone, purpose, payload) {
   const code = String(Math.floor(100000 + Math.random() * 900000));
   await Otp.deleteMany({ phone, purpose });
-  await Otp.create({
-    phone, purpose, payload,
-    codeHash: await bcrypt.hash(code, 8),
-    expiresAt: new Date(Date.now() + 10 * 60 * 1000),
-  });
+  await Otp.create({ phone, purpose, payload, codeHash: await bcrypt.hash(code, 8) });
 
   const purposeAr = purpose === 'register' ? 'تفعيل حساب جديد' : 'استعادة كلمة المرور';
   await sendTelegram(
@@ -37,16 +36,17 @@ async function issueOtp(phone, purpose, payload) {
   }
 }
 
+/* التحقق: لا يُحذف الرمز إلا بعد نجاح المطابقة فقط */
 async function checkOtp(phone, purpose, code) {
-  const otp = await Otp.findOne({ phone, purpose });
-  if (!otp || otp.expiresAt < new Date()) return { err: 'الرمز منتهي — اطلب رمزاً جديداً' };
+  const otp = await Otp.findOne({ phone, purpose }).sort('-createdAt');
+  if (!otp || isExpired(otp)) return { err: 'الرمز منتهي — اطلب رمزاً جديداً' };
   if (otp.attempts >= 5) return { err: 'محاولات كثيرة — اطلب رمزاً جديداً' };
   if (!(await bcrypt.compare(String(code || ''), otp.codeHash))) {
-    otp.attempts++; await otp.save();
+    otp.attempts += 1;
+    await otp.save();
     return { err: 'الرمز غير صحيح' };
   }
-  await Otp.deleteOne({ _id: otp._id });
-  return { otp };
+  return { otp }; // الحذف يتم في المستدعي بعد نجاح العملية كاملة
 }
 
 /* POST /api/auth/send-otp */
@@ -72,7 +72,6 @@ router.post('/send-otp', async (req, res) => {
   const wa = cleanPhone(s?.whatsapp);
   res.json({
     ok: true,
-    message: 'تم توليد الرمز — استلمه من الدعم الفني',
     whatsappUrl: wa ? `https://wa.me/${wa}?text=${encodeURIComponent('مرحباً، أطلب رمز التحقق لرقم ' + phone)}` : '',
   });
 });
@@ -87,8 +86,10 @@ router.post('/verify-otp', async (req, res) => {
   if (purpose === 'register') {
     if (await User.findOne({ phone })) return res.status(409).json({ message: 'الحساب موجود مسبقاً' });
     const user = await User.create({ name: otp.payload.name, phone, password: otp.payload.password });
+    await Otp.deleteOne({ _id: otp._id }); // حذف بعد النجاح فقط
     return res.status(201).json({ token: signToken(user), user: publicUser(user) });
   }
+  /* reset: لا نحذف الرمز هنا — يُحذف في reset-password بعد تغيير كلمة المرور بنجاح */
   res.json({ ok: true });
 });
 
@@ -98,34 +99,44 @@ router.post('/reset-password', async (req, res) => {
   const { code, password } = req.body || {};
   if (!password || password.length < 6)
     return res.status(400).json({ message: 'كلمة المرور الجديدة 6 أحرف على الأقل' });
-  const { err } = await checkOtp(phone, 'reset', code);
+  const { err, otp } = await checkOtp(phone, 'reset', code);
   if (err) return res.status(400).json({ message: err });
 
   const user = await User.findOne({ phone });
   if (!user) return res.status(404).json({ message: 'الحساب غير موجود' });
   user.password = await bcrypt.hash(password, 10);
   await user.save();
+  await Otp.deleteOne({ _id: otp._id }); // حذف بعد اكتمال العملية
   res.json({ token: signToken(user), user: publicUser(user) });
 });
 
-/* POST /api/auth/login */
+/* POST /api/auth/login — يدعم remember (تذكرني) */
 router.post('/login', async (req, res) => {
-  const phone = cleanPhone(req.body?.phone);
-  const user = await User.findOne({ phone });
-  if (!user || !(await bcrypt.compare(req.body?.password || '', user.password)))
-    return res.status(401).json({ message: 'بيانات الدخول غير صحيحة' });
-  if (!user.active) return res.status(403).json({ message: 'الحساب موقوف — تواصل مع الدعم' });
-  res.json({ token: signToken(user), user: publicUser(user) });
+  try {
+    const phone = cleanPhone(req.body?.phone);
+    const remember = req.body?.remember !== false; // الافتراضي تذكّر
+    const user = await User.findOne({ phone });
+    if (!user || !(await bcrypt.compare(String(req.body?.password || ''), user.password)))
+      return res.status(401).json({ message: 'بيانات الدخول غير صحيحة' });
+    if (!user.active) return res.status(403).json({ message: 'الحساب موقوف — تواصل مع الدعم' });
+    res.json({ token: signToken(user, remember), user: publicUser(user) });
+  } catch (e) {
+    res.status(500).json({ message: 'خطأ في الخادم: ' + e.message });
+  }
 });
 
-/* POST /api/auth/admin-login — يرفض أي حساب ليس admin */
+/* POST /api/auth/admin-login */
 router.post('/admin-login', async (req, res) => {
-  const phone = cleanPhone(req.body?.phone);
-  const user = await User.findOne({ phone, role: 'admin' });
-  if (!user || !(await bcrypt.compare(req.body?.password || '', user.password)))
-    return res.status(401).json({ message: 'بيانات دخول المدير غير صحيحة' });
-  if (!user.active) return res.status(403).json({ message: 'الحساب موقوف' });
-  res.json({ token: signToken(user), user: publicUser(user) });
+  try {
+    const phone = cleanPhone(req.body?.phone);
+    const user = await User.findOne({ phone, role: 'admin' });
+    if (!user || !(await bcrypt.compare(String(req.body?.password || ''), user.password)))
+      return res.status(401).json({ message: 'بيانات دخول المدير غير صحيحة' });
+    if (!user.active) return res.status(403).json({ message: 'الحساب موقوف' });
+    res.json({ token: signToken(user, true), user: publicUser(user) });
+  } catch (e) {
+    res.status(500).json({ message: 'خطأ في الخادم: ' + e.message });
+  }
 });
 
 router.get('/me', authRequired, (req, res) => res.json({ user: publicUser(req.user) }));

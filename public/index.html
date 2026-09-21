@@ -73,10 +73,18 @@
           <h2>خدمات رقمية بأسعار منافسة</h2>
           <p>اختر فئتك، أضف للسلة، وادفع بالطريقة التي تناسبك.</p>
         </div>
+
+        <!-- بحث فوري -->
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="search" id="storeSearch" placeholder="ابحث عن منتج أو خدمة بالاسم... (مثال: شدات، واتساب، Chimera)" />
+        </div>
+
         <div class="store-filters" id="storeFilters">
           <button class="filter-chip active" data-filter="all">الكل</button>
-          <button class="filter-chip" data-filter="games">🎮 شحن الألعاب والتطبيقات</button>
-          <button class="filter-chip" data-filter="numbers">📱 الأرقام الوهمية</button>
+          <button class="filter-chip" data-filter="apps">📱 تطبيقات</button>
+          <button class="filter-chip" data-filter="numbers">💬 أرقام وهمية</button>
+          <button class="filter-chip" data-filter="games">🎮 ألعاب</button>
           <button class="filter-chip" data-filter="tools">🛠️ أدوات المبرمجين والصيانة</button>
         </div>
         <div class="cards-grid" id="productsGrid"></div>
@@ -86,7 +94,7 @@
     <section class="section section-alt" id="courses">
       <div class="container">
         <div class="section-head">
-          <span class="section-tag">🎓 الدورات والخدمات الاستشارية</span>
+          <span class="section-tag">🎓 خدمات وتدريب</span>
           <h2>خدمات تعليمية ومشاريع للاتفاق المباشر</h2>
           <p>تواصل معنا لتفصيل الخدمة والاتفاق على السعر والمدة — عن بُعد أو حضورياً في الحديدة.</p>
         </div>
@@ -151,6 +159,10 @@
           <small class="field-hint">أدخل الرقم بالصيغة الدولية مسبوقاً برمز الدولة وبدون علامة + — مثال: <b dir="ltr">967771234567</b></small>
         </label>
         <label>كلمة المرور<input type="password" id="loginPass" required placeholder="••••••••" /></label>
+        <label class="remember-row">
+          <input type="checkbox" id="rememberMe" checked />
+          تذكرني على هذا الجهاز
+        </label>
         <button type="submit" class="btn btn-primary btn-block">دخول</button>
         <p class="auth-note">نسيت كلمة المرور؟ <a href="#" id="forgotLink">استعادة</a></p>
       </form>
@@ -252,15 +264,15 @@
     </div>
   </div>
 
-  <!-- ==================== نافذة التواصل لخدمة استشارية ==================== -->
+  <!-- ==================== نافذة "تواصل للاتفاق" ==================== -->
   <div class="modal-overlay" id="inquireModal">
     <div class="modal">
       <button class="modal-close" data-close="inquireModal">✕</button>
       <h3>💬 تواصل للاتفاق</h3>
-      <p class="auth-note">الخدمة: <b id="inqServiceName">—</b><br><span id="inqCategory" class="inq-cat"></span></p>
+      <p class="auth-note">الخدمة: <b id="inqServiceName">—</b><br /><span id="inqCategory" class="inq-cat"></span></p>
       <form class="auth-form active" id="inquireForm">
-        <label>الاسم<input type="text" id="inqName" placeholder="اختياري — يُعبأ تلقائياً إن كنت مسجلاً" /></label>
-        <label>رقم الهاتف<input type="tel" id="inqPhone" inputmode="numeric" dir="ltr" placeholder="اختياري — 9677xxxxxxxx" /></label>
+        <label>الاسم<input type="text" id="inqName" placeholder="يُعبأ تلقائياً إن كنت مسجلاً" /></label>
+        <label>رقم الهاتف<input type="tel" id="inqPhone" inputmode="numeric" dir="ltr" placeholder="9677xxxxxxxx" /></label>
         <div class="inq-actions">
           <a id="inqWa" href="#" target="_blank" rel="noopener" class="btn btn-success">🟢 تواصل عبر واتساب</a>
           <a id="inqTg" href="#" target="_blank" rel="noopener" class="btn btn-outline">✈️ تواصل عبر تليجرام</a>

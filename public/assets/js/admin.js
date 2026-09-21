@@ -1,8 +1,11 @@
 /* ============================================================
-   DevStore Admin — تسجيل دخول داخلي + لوحة تحكم كاملة
+   DevStore Admin — تسجيل دخول داخلي + لوحة تحكم كاملة (v5)
    ============================================================ */
 
-const CAT_LABELS = { games: '🎮 ألعاب', numbers: '📱 أرقام', tools: '🛠️ صيانة', courses: '🎓 دورات/خدمات' };
+const CAT_LABELS = {
+  apps: '📱 تطبيقات', numbers: '💬 أرقام وهمية',
+  games: '🎮 ألعاب', tools: '🛠️ صيانة', courses: '🎓 خدمات وتدريب',
+};
 const STATUS_FLOW = ['قيد المراجعة', 'مكتمل', 'ملغي'];
 const STATUS_CLASS = { 'قيد المراجعة': 'status-review', 'مكتمل': 'status-done', 'ملغي': 'status-cancel' };
 
@@ -32,7 +35,7 @@ async function verifyAdmin() {
   try {
     const { user } = await API.req('/auth/me');
     if (user.role !== 'admin') { API.clearSession(); return showLogin(); }
-    API.setSession(API.token(), user);
+    API.setSession(API.token(), user, true);
     showApp();
   } catch { showLogin(); }
 }
@@ -48,13 +51,13 @@ document.getElementById('adminLoginForm').addEventListener('submit', async e => 
         password: document.getElementById('adLoginPass').value,
       },
     });
-    API.setSession(token, user);
+    API.setSession(token, user, true);
     showToast(`👑 أهلاً ${user.name}`);
     showApp();
   } catch (err) { showToast('❌ ' + err.message); }
 });
 
-/* ---------------- تشغيل اللوحة بعد الدخول ---------------- */
+/* ---------------- تشغيل اللوحة ---------------- */
 function bootAdmin() {
   document.getElementById('adminLogout').addEventListener('click', () => {
     API.clearSession(); showLogin();
@@ -112,7 +115,7 @@ async function renderProducts() {
     document.querySelector('#productsTable tbody').innerHTML = products.length ? products.map(p => `
       <tr>
         <td>${p.icon || '📦'} <b>${p.name}</b></td>
-        <td>${p.type === 'service' ? '💬 خدمة' : '🛒 منتج'}</td>
+        <td>${p.type === 'service' ? '💬 خدمة' : '🛒 سلعة'}</td>
         <td>${CAT_LABELS[p.cat] || p.cat}</td>
         <td>${p.type === 'service' ? '—' : '$' + (+p.price).toFixed(2)}</td>
         <td>${p.requiresAccountId ? '✅' : '—'}</td>
@@ -183,7 +186,7 @@ document.getElementById('productsTable').addEventListener('click', async e => {
   }
 });
 
-/* ---------------- الطلبات (تعرض معرّف الحساب لكل عنصر) ---------------- */
+/* ---------------- الطلبات ---------------- */
 async function renderOrders() {
   try {
     const orders = await API.req('/orders');

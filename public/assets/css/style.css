@@ -1,5 +1,5 @@
 /* ============================================================
-   DevStore — التنسيقات الرئيسية (RTL + وضع ليلي)
+   DevStore — التنسيقات الرئيسية (RTL + وضع ليلي) v5
    ============================================================ */
 
 :root {
@@ -40,7 +40,6 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 input, select, textarea { font-family: inherit; }
 .hidden { display: none !important; }
 
-/* نص إرشادي أسفل الحقول */
 .field-hint { font-size: .78rem; color: var(--muted); font-weight: 500; margin-top: 2px; }
 
 /* ============ Navbar ============ */
@@ -121,6 +120,7 @@ input, select, textarea { font-family: inherit; }
 .btn-outline:hover { background: var(--primary); color: #fff; transform: translateY(-3px); }
 .btn-success { background: var(--success); color: #fff; }
 .btn-success:hover { filter: brightness(1.1); transform: translateY(-2px); }
+.btn-disabled { opacity: .45; pointer-events: none; }
 
 /* ============ Sections ============ */
 .section { padding: 90px 0; }
@@ -129,6 +129,22 @@ input, select, textarea { font-family: inherit; }
 .section-tag { display: inline-block; padding: 6px 18px; margin-bottom: 14px; background: color-mix(in srgb, var(--primary) 12%, transparent); color: var(--primary); border-radius: 99px; font-weight: 700; font-size: .9rem; }
 .section-head h2 { font-size: clamp(1.6rem, 3.5vw, 2.3rem); font-weight: 900; }
 .section-head p { color: var(--muted); margin-top: 10px; }
+
+/* ============ شريط البحث الفوري ============ */
+.search-box {
+  display: flex; align-items: center; gap: 10px;
+  max-width: 560px; margin: 0 auto 26px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 99px; padding: 4px 20px; box-shadow: var(--shadow);
+  transition: border-color .2s, box-shadow .2s;
+}
+.search-box:focus-within { border-color: var(--primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 14%, transparent); }
+.search-icon { font-size: 1.1rem; }
+.search-box input {
+  flex: 1; border: none; background: transparent; color: var(--text);
+  font-size: 1rem; padding: 12px 0; outline: none;
+}
+.search-box input::placeholder { color: var(--muted); }
 
 /* ============ Store filters + cards ============ */
 .store-filters { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 36px; }
@@ -147,15 +163,12 @@ input, select, textarea { font-family: inherit; }
 .product-cat { font-size: .8rem; color: var(--muted); font-weight: 500; }
 .product-name { font-size: 1.12rem; font-weight: 800; }
 .product-desc { font-size: .9rem; color: var(--muted); flex: 1; }
-.product-extra { display: flex; flex-direction: column; gap: 8px; }
-.product-extra select, .acct-input {
+.product-extra select {
   width: 100%; padding: 10px 12px; border-radius: 10px;
   background: var(--surface-2); border: 1.5px solid var(--border); color: var(--text);
   font-size: .9rem; transition: .2s;
 }
-.product-extra select:focus, .acct-input:focus { outline: none; border-color: var(--primary); }
-.acct-input { text-align: left; }
-.acct-input::placeholder { text-align: right; }
+.product-extra select:focus { outline: none; border-color: var(--primary); }
 .product-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; }
 .product-price { font-size: 1.25rem; font-weight: 900; color: var(--primary); }
 .product-price small { font-size: .78rem; color: var(--muted); font-weight: 500; }
@@ -228,34 +241,25 @@ input, select, textarea { font-family: inherit; }
 .auth-note { text-align: center; font-size: .88rem; color: var(--muted); }
 .auth-note a { color: var(--primary); font-weight: 700; }
 
-/* ============ OTP inputs — متناسقة ومتوسطة ============ */
-.otp-container {
-  display: flex;
-  justify-content: center;
-  width: 100%;
-  direction: ltr;
+/* "تذكرني" */
+.remember-row {
+  flex-direction: row !important; align-items: center; gap: 10px !important;
+  font-weight: 500 !important; font-size: .9rem !important; cursor: pointer;
 }
-.otp-inputs {
-  display: flex;
-  gap: 8px;
-  direction: ltr;
-}
+.remember-row input { width: 18px; height: 18px; accent-color: var(--primary); }
+
+/* ============ OTP ============ */
+.otp-container { display: flex; justify-content: center; width: 100%; direction: ltr; }
+.otp-inputs { display: flex; gap: 8px; direction: ltr; }
 .otp-inputs input {
-  width: 44px;
-  height: 50px;
-  padding: 0 !important;
-  text-align: center;
-  font-size: 1.25rem !important;
-  font-weight: bold !important;
-  border: 1.5px solid var(--border) !important;
-  border-radius: 8px !important;
-  background: var(--surface-2);
-  color: var(--text);
+  width: 44px; height: 50px; padding: 0 !important; text-align: center;
+  font-size: 1.25rem !important; font-weight: bold !important;
+  border: 1.5px solid var(--border) !important; border-radius: 8px !important;
+  background: var(--surface-2); color: var(--text);
   transition: border-color .2s, box-shadow .2s;
 }
 .otp-inputs input:focus {
-  outline: none;
-  border-color: var(--primary) !important;
+  outline: none; border-color: var(--primary) !important;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent);
 }
 .otp-channel { display: inline-block; padding: 8px 14px; border: 1px dashed var(--success); border-radius: 10px; margin-top: 6px; }
@@ -265,7 +269,7 @@ input, select, textarea { font-family: inherit; }
 .inq-actions .btn { flex: 1; }
 .inq-cat { font-size: .82rem; color: var(--warning); font-weight: 700; }
 
-/* ============ Cart offcanvas ============ */
+/* ============ Cart ============ */
 .offcanvas-overlay { position: fixed; inset: 0; z-index: 190; background: rgba(5, 8, 18, .5); backdrop-filter: blur(4px); opacity: 0; pointer-events: none; transition: .3s; }
 .offcanvas-overlay.open { opacity: 1; pointer-events: auto; }
 .offcanvas {
@@ -280,11 +284,19 @@ input, select, textarea { font-family: inherit; }
 .offcanvas-head .modal-close { position: static; }
 .cart-items { flex: 1; overflow-y: auto; padding: 18px 22px; display: flex; flex-direction: column; gap: 12px; }
 .cart-empty { text-align: center; color: var(--muted); padding: 40px 10px; }
-.cart-item { display: flex; align-items: center; gap: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+.cart-item { display: flex; align-items: flex-start; gap: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
 .cart-item-icon { font-size: 1.4rem; }
-.cart-item-info { flex: 1; }
+.cart-item-info { flex: 1; display: flex; flex-direction: column; gap: 4px; }
 .cart-item-info b { display: block; font-size: .95rem; }
 .cart-item-info span { font-size: .83rem; color: var(--muted); }
+/* حقل Player ID داخل عنصر السلة */
+.cart-acct {
+  margin-top: 6px; width: 100%; padding: 9px 12px; border-radius: 9px;
+  background: var(--surface); border: 1.5px dashed var(--warning);
+  color: var(--text); font-size: .85rem; text-align: left; transition: .2s;
+}
+.cart-acct:focus { outline: none; border-color: var(--primary); border-style: solid; }
+.cart-acct::placeholder { text-align: right; color: var(--muted); }
 .cart-item-actions { display: flex; align-items: center; gap: 8px; }
 .qty-btn { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--border); font-weight: 700; }
 .remove-btn { color: var(--danger); font-size: 1rem; padding: 4px; }
@@ -340,4 +352,5 @@ input, select, textarea { font-family: inherit; }
   .hero-stats { gap: 24px; }
   .pay-grid { grid-template-columns: 1fr; }
   .otp-inputs input { width: 40px; height: 46px; }
+  .search-box { margin-inline: 0; }
 }

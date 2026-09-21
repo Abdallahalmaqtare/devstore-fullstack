@@ -2,7 +2,6 @@ const router = require('express').Router();
 const { PaymentMethod, SiteSettings } = require('../models');
 const { authRequired, adminOnly } = require('../middleware/auth');
 
-/* ===== طرق الدفع ===== */
 router.get('/payment-methods', async (req, res) => {
   res.json(await PaymentMethod.find({ active: true }).sort('createdAt').lean());
 });
@@ -24,7 +23,7 @@ router.delete('/payment-methods/:id', authRequired, adminOnly, async (req, res) 
   res.json({ ok: true });
 });
 
-/* ===== إعدادات الموقع ===== */
+/* إعدادات الموقع: روابط التواصل الظاهرة للعملاء */
 router.get('/site', async (req, res) => {
   const s = await SiteSettings.findOne({ key: 'site' }).lean();
   res.json(s || { whatsapp: '', telegram: '', email: '' });
@@ -34,8 +33,8 @@ router.put('/site', authRequired, adminOnly, async (req, res) => {
   const s = await SiteSettings.findOneAndUpdate(
     { key: 'site' },
     {
-      whatsapp: String(whatsapp || '').replace(/[\s\-()+]/g, ''),
-      telegram: String(telegram || '').replace(/^@/, ''),
+      whatsapp: String(whatsapp || '').replace(/\D/g, ''),
+      telegram: String(telegram || '').replace(/^@/, '').trim(),
       email: email || '',
     },
     { upsert: true, new: true }

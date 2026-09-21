@@ -11,7 +11,7 @@ const upload = multer({
     /^image\//.test(file.mimetype) ? cb(null, true) : cb(new Error('يُسمح بالصور فقط')),
 });
 
-/* POST /api/orders — إنشاء طلب (منتجات مسعّرة فقط + سند إجباري + accountId) */
+/* POST /api/orders — السلة تحمل عناصر، ومعرّف الحساب يصل لكل عنصر من خطوة الدفع */
 router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
   try {
     const items = JSON.parse(req.body.items || '[]');
@@ -30,7 +30,6 @@ router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
     const orderItems = items.map(i => {
       const p = pmap[i.id];
       if (!p) throw Object.assign(new Error('عنصر غير قابل للشراء المباشر'), { status: 400 });
-      // تحقق خادمي: المنتج الذي يتطلب معرّف حساب يجب أن يصل معه
       if (p.requiresAccountId && !String(i.accountId || '').trim())
         throw Object.assign(new Error(`معرّف الحساب (Player ID) مطلوب لـ «${p.name}»`), { status: 400 });
       total += p.price * (i.qty || 1);
@@ -62,7 +61,6 @@ router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
   } catch (e) { res.status(e.status || 500).json({ message: e.message }); }
 });
 
-/* طلبات المستخدم */
 router.get('/my-orders', authRequired, async (req, res) => {
   res.json(await Order.find({ user: req.user._id }).sort('-createdAt').lean());
 });
@@ -70,7 +68,6 @@ router.get('/mine', authRequired, async (req, res) => {
   res.json(await Order.find({ user: req.user._id }).sort('-createdAt').lean());
 });
 
-/* أدمن: الكل + تحديث الحالة */
 router.get('/', authRequired, adminOnly, async (req, res) => {
   res.json(await Order.find().sort('-createdAt').lean());
 });

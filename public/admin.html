@@ -94,21 +94,22 @@
               <label>الاسم<input type="text" id="pName" required /></label>
               <label>النوع
                 <select id="pType">
-                  <option value="product">🛒 منتج بسعر (يُضاف للسلة)</option>
-                  <option value="service">💬 خدمة استشارية/تعليمية (تواصل للاتفاق)</option>
+                  <option value="product">🛒 سلعة مباشرة بسعر (تُضاف للسلة)</option>
+                  <option value="service">💬 خدمة للتواصل (بدون سعر)</option>
                 </select>
               </label>
             </div>
             <div class="form-row">
               <label>القسم
                 <select id="pCat">
-                  <option value="games">🎮 شحن الألعاب</option>
-                  <option value="numbers">📱 الأرقام الوهمية</option>
+                  <option value="apps">📱 تطبيقات</option>
+                  <option value="numbers">💬 أرقام وهمية</option>
+                  <option value="games">🎮 ألعاب</option>
                   <option value="tools">🛠️ أدوات المبرمجين والصيانة</option>
-                  <option value="courses">🎓 دورات وخدمات استشارية</option>
+                  <option value="courses">🎓 خدمات وتدريب</option>
                 </select>
               </label>
-              <label>السعر ($) — للمنتج فقط<input type="number" id="pPrice" step="0.01" min="0" placeholder="0" /></label>
+              <label>السعر ($) — للسلعة فقط<input type="number" id="pPrice" step="0.01" min="0" placeholder="0" /></label>
             </div>
             <div class="form-row">
               <label>الأيقونة<input type="text" id="pIcon" placeholder="🎮" /></label>
@@ -117,7 +118,7 @@
             <label>الوصف<textarea id="pDesc" rows="2"></textarea></label>
             <label class="check-row">
               <input type="checkbox" id="pReqId" />
-              🆔 هل يتطلب إدخال معرّف الحساب / Player ID من العميل؟ (لمنتجات الشحن)
+              🆔 هل يتطلب إدخال معرّف الحساب / Player ID من العميل؟ (يُطلب في السلة عند الدفع)
             </label>
             <div class="form-actions">
               <button type="submit" class="btn btn-primary">💾 حفظ</button>

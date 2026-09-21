@@ -1,16 +1,25 @@
-/* DevStore — طبقة الاتصال بالـ API */
+/* DevStore — طبقة الاتصال بالـ API + إدارة الجلسة (تذكرني) */
 const API = {
   base: '/api',
-  token: () => localStorage.getItem('ds-token'),
-  user: () => JSON.parse(localStorage.getItem('ds-user') || 'null'),
-  setSession(token, user) {
-    localStorage.setItem('ds-token', token);
-    localStorage.setItem('ds-user', JSON.stringify(user));
+
+  /* القراءة: localStorage أولاً (تذكرني)، ثم sessionStorage (جلسة مؤقتة) */
+  token: () => localStorage.getItem('ds-token') || sessionStorage.getItem('ds-token'),
+  user: () => JSON.parse(localStorage.getItem('ds-user') || sessionStorage.getItem('ds-user') || 'null'),
+
+  /* remember=true → localStorage (دائم) | false → sessionStorage (تُنهى بإغلاق المتصفح) */
+  setSession(token, user, remember = true) {
+    this.clearSession();
+    const store = remember ? localStorage : sessionStorage;
+    store.setItem('ds-token', token);
+    store.setItem('ds-user', JSON.stringify(user));
   },
   clearSession() {
     localStorage.removeItem('ds-token');
     localStorage.removeItem('ds-user');
+    sessionStorage.removeItem('ds-token');
+    sessionStorage.removeItem('ds-user');
   },
+
   async req(path, { method = 'GET', body, form } = {}) {
     const headers = {};
     if (this.token()) headers.Authorization = 'Bearer ' + this.token();
@@ -28,7 +37,7 @@ const API = {
   },
 };
 
-/* توحيد أرقام الهاتف: حذف + والمسافات والشرطات والأقواس — أرقام فقط */
+/* توحيد أرقام الهاتف: حذف كل ما ليس رقماً (+، مسافات، شرطات، أقواس) */
 function normalizePhone(p) {
-  return String(p || '').replace(/[\s\-()+.]/g, '').replace(/\D/g, '');
+  return String(p || '').replace(/\D/g, '');
 }

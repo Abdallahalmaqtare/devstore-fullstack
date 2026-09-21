@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const { Schema, model } = mongoose;
 
-/* ===== المستخدمون (admin / user) ===== */
+/* ===== المستخدمون ===== */
 const userSchema = new Schema({
   name: { type: String, required: true, trim: true },
   phone: { type: String, required: true, unique: true, trim: true },
@@ -10,16 +10,15 @@ const userSchema = new Schema({
   active: { type: Boolean, default: true },
 }, { timestamps: true });
 
-/* ===== رموز التحقق OTP (صالحة 10 دقائق ثم تُحذف تلقائياً) ===== */
+/* ===== OTP — يُحذف تلقائياً بعد 10 دقائق من إنشائه (TTL على createdAt، لا حذف يدوي مسبق) ===== */
 const otpSchema = new Schema({
   phone: { type: String, required: true },
   codeHash: { type: String, required: true },
   purpose: { type: String, enum: ['register', 'reset'], required: true },
   payload: { name: String, password: String },
   attempts: { type: Number, default: 0 },
-  expiresAt: { type: Date, required: true },
-});
-otpSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+}, { timestamps: true }); // createdAt = وقت التوليد
+otpSchema.index({ createdAt: 1 }, { expireAfterSeconds: 600 }); // 10 دقائق بالضبط
 
 /* ===== المنتجات / الخدمات ===== */
 const productSchema = new Schema({
@@ -27,18 +26,17 @@ const productSchema = new Schema({
   desc: { type: String, default: '' },
   price: { type: Number, default: 0, min: 0 },
   type: { type: String, enum: ['product', 'service'], default: 'product' },
-  cat: { type: String, enum: ['games', 'numbers', 'tools', 'courses'], required: true },
+  cat: { type: String, enum: ['apps', 'numbers', 'games', 'tools', 'courses'], required: true },
   icon: { type: String, default: '📦' },
   unit: { type: String, default: '' },
   countrySelect: { type: Boolean, default: false },
-  /* يطلب من العميل إدخال معرّف الحساب (Player ID) قبل الإضافة للسلة */
   requiresAccountId: { type: Boolean, default: false },
   modes: [{ type: String, enum: ['online', 'onsite'] }],
   meta: { type: String, default: '' },
   active: { type: Boolean, default: true },
 }, { timestamps: true });
 
-/* ===== طرق الدفع اليدوية ===== */
+/* ===== طرق الدفع ===== */
 const paymentMethodSchema = new Schema({
   name: { type: String, required: true },
   account: { type: String, required: true },
@@ -55,8 +53,8 @@ const orderSchema = new Schema({
   items: [{
     product: { type: Schema.Types.ObjectId, ref: 'Product' },
     name: String, price: Number, qty: Number,
-    extra: String,        // الدولة المختارة مثلاً
-    accountId: String,    // معرّف الحساب / Player ID
+    extra: String,
+    accountId: String,
   }],
   total: { type: Number, required: true },
   paymentMethod: { name: String, account: String },
