@@ -4,30 +4,110 @@ const mongoose = require('mongoose');
 const { Product, PaymentMethod, SiteSettings } = require('./models');
 
 const products = [
-  // 🎮 ألعاب (شحن يتطلب Player ID)
-  { type: 'product', cat: 'games', icon: '🟥', name: 'شدات ببجي موبايل (UC)', desc: 'شحن فوري عبر ID — باقات 60 إلى 8100 شدة.', price: 1.20, unit: 'يبدأ من', requiresAccountId: true },
-  { type: 'product', cat: 'games', icon: '💎', name: 'جواهر فري فاير', desc: 'شحن جواهر فوري وآمن عبر ID اللاعب.', price: 1.00, unit: 'يبدأ من', requiresAccountId: true },
-  { type: 'product', cat: 'games', icon: '🎁', name: 'بطاقات جوجل بلاي', desc: 'بطاقات هدايا أمريكية وسعودية بفئات متعددة.', price: 5.00, unit: 'يبدأ من' },
+  /* ================= 🎮 ألعاب (مجموعات بباقات) ================= */
+  {
+    type: 'product', cat: 'games', icon: '🟥', name: 'PUBG Mobile',
+    desc: 'شحن شدات UC فوري عبر ID اللاعب — كل الباقات الرسمية.',
+    requiresAccountId: true,
+    variants: [
+      { name: '60 شدة UC', price: 1.20, icon: '🟥' },
+      { name: '325 شدة UC', price: 5.50, icon: '🟥' },
+      { name: '660 شدة UC', price: 10.50, icon: '🟥' },
+      { name: '1800 شدة UC', price: 27.00, icon: '🟥' },
+      { name: '8100 شدة UC', price: 115.00, icon: '🟥' },
+    ],
+  },
+  {
+    type: 'product', cat: 'games', icon: '💎', name: 'Free Fire',
+    desc: 'شحن جواهر فري فاير فوري وآمن عبر ID اللاعب.',
+    requiresAccountId: true,
+    variants: [
+      { name: '100 جوهرة', price: 1.00, icon: '💎' },
+      { name: '210 جوهرة', price: 2.00, icon: '💎' },
+      { name: '530 جوهرة', price: 5.00, icon: '💎' },
+      { name: '1080 جوهرة', price: 9.50, icon: '💎' },
+    ],
+  },
+  {
+    type: 'product', cat: 'games', icon: '🧱', name: 'Roblox',
+    desc: 'شحن Robux وبطاقات روبلوكس الرسمية.',
+    requiresAccountId: true,
+    variants: [
+      { name: '80 Robux', price: 1.00, icon: '🧱' },
+      { name: '400 Robux', price: 4.50, icon: '🧱' },
+      { name: '800 Robux', price: 9.00, icon: '🧱' },
+    ],
+  },
 
-  // 📱 تطبيقات (اشتراكات وبرامج)
-  { type: 'product', cat: 'apps', icon: '👑', name: 'اشتراك شاهد VIP', desc: 'اشتراك شهري رسمي على حسابك أو حساب جديد.', price: 4.00, unit: 'شهرياً' },
-  { type: 'product', cat: 'apps', icon: '📺', name: 'اشتراكات IPTV وتطبيقات المشاهدة', desc: 'ياسين TV وغيرها — تفعيل فوري.', price: 3.50, unit: 'يبدأ من' },
-  { type: 'product', cat: 'apps', icon: '🤖', name: 'اشتراك ChatGPT Plus', desc: 'تفعيل رسمي لحسابك لمدة شهر.', price: 20.00, unit: 'شهرياً' },
+  /* ================= 📱 تطبيقات (مجموعات بباقات) ================= */
+  {
+    type: 'product', cat: 'apps', icon: '🎵', name: 'TikTok',
+    desc: 'شحن كوينز تيك توك فوري على حسابك.',
+    requiresAccountId: true,
+    variants: [
+      { name: '70 كوينز', price: 1.10, icon: '🎵' },
+      { name: '350 كوينز', price: 5.50, icon: '🎵' },
+      { name: '700 كوينز', price: 11.00, icon: '🎵' },
+    ],
+  },
+  {
+    type: 'product', cat: 'apps', icon: '💜', name: 'Soul',
+    desc: 'شحن كوينز تطبيق Soul بأفضل الأسعار.',
+    requiresAccountId: true,
+    variants: [
+      { name: '100 كوينز', price: 1.50, icon: '💜' },
+      { name: '500 كوينز', price: 7.00, icon: '💜' },
+    ],
+  },
+  {
+    type: 'product', cat: 'apps', icon: '🎤', name: 'Tango',
+    desc: 'شحن عملات تانجو لايف الرسمية.',
+    requiresAccountId: true,
+    variants: [
+      { name: '120 عملة', price: 1.20, icon: '🎤' },
+      { name: '600 عملة', price: 6.00, icon: '🎤' },
+    ],
+  },
+  {
+    type: 'product', cat: 'apps', icon: '🤖', name: 'ChatGPT Plus',
+    desc: 'تفعيل اشتراك شهري رسمي لحسابك.',
+    variants: [{ name: 'اشتراك شهري', price: 20.00, icon: '🤖' }],
+  },
 
-  // 💬 أرقام وهمية
+  /* ================= 💬 أرقام وهمية (منتجات مفردة) ================= */
   { type: 'product', cat: 'numbers', icon: '📱', name: 'رقم وهمي — واتساب', desc: 'رقم جاهز لتفعيل واتساب مع كود التفعيل فوراً.', price: 1.50, countrySelect: true },
   { type: 'product', cat: 'numbers', icon: '✈️', name: 'رقم وهمي — تليجرام', desc: 'رقم موثوق لتفعيل تليجرام، ضمان استلام الكود.', price: 1.50, countrySelect: true },
   { type: 'product', cat: 'numbers', icon: '🌐', name: 'رقم وهمي — خدمات دولية', desc: 'تفعيل فيسبوك، تيك توك، Signal وأكثر من 50 خدمة.', price: 2.00, countrySelect: true },
 
-  // 🛠️ أدوات المبرمجين والصيانة
-  { type: 'product', cat: 'tools', icon: '🔧', name: 'SamFw Tool — أرصدة', desc: 'شحن كريدت SamFw لتخطي FRP وفتح الشبكات.', price: 2.50, unit: 'للرصيد الواحد' },
-  { type: 'product', cat: 'tools', icon: '🧰', name: 'Chimera Tool — كريدت', desc: 'أرصدة وتفعيلات Chimera الأصلية بأفضل سعر.', price: 9.00, unit: 'يبدأ من' },
-  { type: 'product', cat: 'tools', icon: '📡', name: 'DFS CDMA Tool — تفعيل', desc: 'تفعيل رسمي لبرمجة هواتف CDMA وضبط الشبكات.', price: 15.00, unit: 'سنوي' },
+  /* ================= 🛠️ أدوات المبرمجين (مجموعات بباقات) ================= */
+  {
+    type: 'product', cat: 'tools', icon: '🔧', name: 'SamFw Tool',
+    desc: 'أرصدة SamFw الأصلية لتخطي FRP وفتح الشبكات.',
+    variants: [
+      { name: 'رصيد واحد (1 Credit)', price: 2.50, icon: '🔧' },
+      { name: '5 أرصدة', price: 11.00, icon: '🔧' },
+      { name: '10 أرصدة', price: 20.00, icon: '🔧' },
+    ],
+  },
+  {
+    type: 'product', cat: 'tools', icon: '🧰', name: 'Chimera Tool',
+    desc: 'أرصدة وتفعيلات Chimera الأصلية.',
+    variants: [
+      { name: '100 كريدت', price: 9.00, icon: '🧰' },
+      { name: 'رخصة شهرية', price: 25.00, icon: '🧰' },
+    ],
+  },
+  {
+    type: 'product', cat: 'tools', icon: '📡', name: 'DFS CDMA Tool',
+    desc: 'تفعيل رسمي لبرمجة هواتف CDMA وضبط الشبكات.',
+    variants: [{ name: 'تفعيل سنوي', price: 15.00, icon: '📡' }],
+  },
 
-  // 🎓 خدمات وتدريب (تواصل مباشر — بدون سعر)
-  { type: 'service', cat: 'courses', icon: '📲', name: 'تطوير تطبيقات الجوال — Flutter & Dart', desc: 'من الصفر حتى نشر تطبيقك على المتاجر: واجهات، إدارة حالة، ربط API.', modes: ['online', 'onsite'], meta: 'دورة تدريبية • 3 أشهر' },
+  /* ================= 🎓 خدمات وتدريب (تواصل مباشر مع المنسق) ================= */
+  { type: 'service', cat: 'courses', icon: '📲', name: 'تطوير تطبيقات الجوال — Flutter & Dart', desc: 'من الصفر حتى نشر تطبيقك على المتاجر.', modes: ['online', 'onsite'], meta: 'دورة تدريبية • 3 أشهر' },
+  { type: 'service', cat: 'courses', icon: '💻', name: 'دورة برمجة لغة C++', desc: 'أساسيات البرمجة وهياكل البيانات بلغة C++ بأسلوب عملي.', modes: ['online', 'onsite'], meta: 'دورة تدريبية • 8 أسابيع' },
   { type: 'service', cat: 'courses', icon: '📡', name: 'برمجة الهواتف وضبط الشبكات (CDMA / VoLTE)', desc: 'تفعيل أنظمة CDMA وخدمة VoLTE لشبكة يمن موبايل.', modes: ['onsite'], meta: 'دورة تدريبية • 6 أسابيع' },
-  { type: 'service', cat: 'courses', icon: '💼', name: 'دليلك للعمل الحر — ملف IT Specialist على Upwork', desc: 'بناء بروفايل احترافي والفوز بأول عميل دولي.', modes: ['online', 'onsite'], meta: 'دورة تدريبية • 4 أسابيع' },
+  { type: 'service', cat: 'courses', icon: '💼', name: 'دليلك للعمل الحر — Upwork', desc: 'بناء بروفايل احترافي والفوز بأول عميل دولي.', modes: ['online', 'onsite'], meta: 'دورة تدريبية • 4 أسابيع' },
   { type: 'service', cat: 'courses', icon: '🎓', name: 'مشاريع التخرج البرمجية', desc: 'تنفيذ ومناقشة مشاريع التخرج باحترافية.', modes: ['online', 'onsite'], meta: 'مشروع تخرج • حسب المشروع' },
   { type: 'service', cat: 'courses', icon: '📚', name: 'التكاليف والواجبات الجامعية', desc: 'مساعدة احترافية في التكاليف البرمجية والتقارير.', modes: ['online'], meta: 'تكليف جامعي • حسب الحجم' },
   { type: 'service', cat: 'courses', icon: '🗄️', name: 'إصلاح المشاكل وقواعد البيانات', desc: 'حل مشاكل السيرفرات وقواعد البيانات واسترجاع البيانات.', modes: ['online'], meta: 'خدمة برمجية • حسب الطلب' },
@@ -40,7 +120,7 @@ const methods = [
 ];
 
 mongoose.connect(process.env.MONGODB_URI).then(async () => {
-  if (!(await Product.countDocuments())) { await Product.insertMany(products); console.log('✅ تم إدراج المنتجات والخدمات'); }
+  if (!(await Product.countDocuments())) { await Product.insertMany(products); console.log('✅ تم إدراج المجموعات والخدمات'); }
   else console.log('ℹ️ المنتجات موجودة مسبقاً — احذف المجموعة لإعادة البذر');
   if (!(await PaymentMethod.countDocuments())) { await PaymentMethod.insertMany(methods); console.log('✅ تم إدراج طرق الدفع'); }
   await SiteSettings.findOneAndUpdate({ key: 'site' }, {}, { upsert: true });

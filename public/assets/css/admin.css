@@ -1,4 +1,4 @@
-/* ============ لوحة الإدارة ============ */
+/* ============ لوحة الإدارة v6 ============ */
 .admin-body { display: flex; min-height: 100svh; }
 
 .admin-login {
@@ -68,6 +68,23 @@
 .check-row input { width: 18px; height: 18px; accent-color: var(--primary); }
 .form-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
+/* محرر الباقات */
+.variants-editor, .service-fields {
+  display: flex; flex-direction: column; gap: 12px;
+  border: 1.5px dashed var(--border); border-radius: 12px; padding: 16px;
+  background: color-mix(in srgb, var(--primary) 4%, transparent);
+}
+.variants-editor-head { display: flex; flex-direction: column; gap: 2px; }
+.variants-editor-head small { color: var(--muted); font-weight: 400; }
+.variant-edit-row { display: flex; gap: 8px; align-items: center; }
+.variant-edit-row input {
+  padding: 10px 12px !important; border-radius: 9px !important;
+  border: 1.5px solid var(--border) !important; background: var(--surface) !important;
+  color: var(--text); font-size: .9rem;
+}
+.variant-edit-row .v-name { flex: 2; }
+.variant-edit-row .v-price { flex: 1; }
+
 .row-actions { display: flex; gap: 6px; }
 .row-btn { padding: 7px 14px; border-radius: 9px; font-size: .82rem; font-weight: 700; transition: .2s; }
 .row-edit { background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--primary); }
@@ -82,4 +99,5 @@
   #sideMenuBtn { display: inline-flex; }
   .admin-main { padding: 0 16px 60px; }
   .form-row { grid-template-columns: 1fr; }
+  .variant-edit-row { flex-wrap: wrap; }
 }

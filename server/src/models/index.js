@@ -10,27 +10,39 @@ const userSchema = new Schema({
   active: { type: Boolean, default: true },
 }, { timestamps: true });
 
-/* ===== OTP — يُحذف تلقائياً بعد 10 دقائق من إنشائه (TTL على createdAt، لا حذف يدوي مسبق) ===== */
+/* ===== OTP — TTL 10 دقائق على createdAt ===== */
 const otpSchema = new Schema({
   phone: { type: String, required: true },
   codeHash: { type: String, required: true },
   purpose: { type: String, enum: ['register', 'reset'], required: true },
   payload: { name: String, password: String },
   attempts: { type: Number, default: 0 },
-}, { timestamps: true }); // createdAt = وقت التوليد
-otpSchema.index({ createdAt: 1 }, { expireAfterSeconds: 600 }); // 10 دقائق بالضبط
+}, { timestamps: true });
+otpSchema.index({ createdAt: 1 }, { expireAfterSeconds: 600 });
 
-/* ===== المنتجات / الخدمات ===== */
+/* ===== باقة داخل مجموعة (باقات لعبة/تطبيق/أداة) ===== */
+const variantSchema = new Schema({
+  name: { type: String, required: true },   // مثال: 60 شدة UC
+  price: { type: Number, required: true, min: 0 },
+  icon: { type: String, default: '' },
+}, { _id: false });
+
+/* ===== المنتجات / المجموعات / الخدمات ===== */
 const productSchema = new Schema({
-  name: { type: String, required: true },
+  name: { type: String, required: true },        // للمجموعة: اسم اللعبة/التطبيق/الأداة
   desc: { type: String, default: '' },
-  price: { type: Number, default: 0, min: 0 },
+  price: { type: Number, default: 0, min: 0 },   // يُستخدم فقط لو لا توجد باقات
   type: { type: String, enum: ['product', 'service'], default: 'product' },
   cat: { type: String, enum: ['apps', 'numbers', 'games', 'tools', 'courses'], required: true },
   icon: { type: String, default: '📦' },
   unit: { type: String, default: '' },
+  /* باقات المجموعة — لو فيها عناصر يصبح المنتج "مجموعة" تُفتح باقاتها في نافذة */
+  variants: { type: [variantSchema], default: [] },
   countrySelect: { type: Boolean, default: false },
   requiresAccountId: { type: Boolean, default: false },
+  /* قنوات تواصل مسؤول الخدمة (للخدمات الاستشارية) — فارغة = قنوات الموقع العامة */
+  contactWhatsapp: { type: String, default: '' },
+  contactTelegram: { type: String, default: '' },
   modes: [{ type: String, enum: ['online', 'onsite'] }],
   meta: { type: String, default: '' },
   active: { type: Boolean, default: true },
@@ -52,7 +64,9 @@ const orderSchema = new Schema({
   customerPhone: String,
   items: [{
     product: { type: Schema.Types.ObjectId, ref: 'Product' },
-    name: String, price: Number, qty: Number,
+    name: String,        // يشمل اسم الباقة: "PUBG — 60 شدة UC"
+    variant: String,
+    price: Number, qty: Number,
     extra: String,
     accountId: String,
   }],

@@ -12,8 +12,8 @@
   <link rel="stylesheet" href="assets/css/admin.css" />
   <script>
     (function () {
-      const saved = localStorage.getItem('tg-theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var saved = localStorage.getItem('tg-theme');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       document.documentElement.dataset.theme = saved || (prefersDark ? 'dark' : 'light');
     })();
   </script>
@@ -45,7 +45,7 @@
       </a>
       <nav class="side-nav">
         <button class="side-link active" data-page="dashboard">📊 الرئيسية</button>
-        <button class="side-link" data-page="products">🛍️ إدارة المنتجات والخدمات</button>
+        <button class="side-link" data-page="products">🛍️ المنتجات والخدمات</button>
         <button class="side-link" data-page="orders">📦 إدارة الطلبات</button>
         <button class="side-link" data-page="users">👥 إدارة المستخدمين</button>
         <button class="side-link" data-page="settings">⚙️ الإعدادات</button>
@@ -87,39 +87,59 @@
 
       <section class="admin-page" id="page-products">
         <div class="panel">
-          <h3>➕ إضافة / تعديل عنصر (منتج بسعر أو خدمة استشارية)</h3>
+          <h3>➕ إضافة / تعديل عنصر</h3>
           <form class="admin-form" id="productForm">
             <input type="hidden" id="pId" />
             <div class="form-row">
-              <label>الاسم<input type="text" id="pName" required /></label>
+              <label>الاسم<input type="text" id="pName" required placeholder="مثال: PUBG Mobile / دورة C++" /></label>
               <label>النوع
                 <select id="pType">
-                  <option value="product">🛒 سلعة مباشرة بسعر (تُضاف للسلة)</option>
-                  <option value="service">💬 خدمة للتواصل (بدون سعر)</option>
+                  <option value="product">🛒 سلعة / مجموعة باقات (تُباع بسعر)</option>
+                  <option value="service">💬 خدمة للتواصل المباشر (بدون سعر)</option>
                 </select>
               </label>
             </div>
             <div class="form-row">
               <label>القسم
                 <select id="pCat">
+                  <option value="games">🎮 ألعاب</option>
                   <option value="apps">📱 تطبيقات</option>
                   <option value="numbers">💬 أرقام وهمية</option>
-                  <option value="games">🎮 ألعاب</option>
                   <option value="tools">🛠️ أدوات المبرمجين والصيانة</option>
                   <option value="courses">🎓 خدمات وتدريب</option>
                 </select>
               </label>
-              <label>السعر ($) — للسلعة فقط<input type="number" id="pPrice" step="0.01" min="0" placeholder="0" /></label>
-            </div>
-            <div class="form-row">
-              <label>الأيقونة<input type="text" id="pIcon" placeholder="🎮" /></label>
-              <label>الوحدة / المدة<input type="text" id="pUnit" placeholder="مثال: يبدأ من / 3 أشهر" /></label>
+              <label>الأيقونة (إيموجي)<input type="text" id="pIcon" placeholder="🎮" /></label>
             </div>
             <label>الوصف<textarea id="pDesc" rows="2"></textarea></label>
-            <label class="check-row">
-              <input type="checkbox" id="pReqId" />
-              🆔 هل يتطلب إدخال معرّف الحساب / Player ID من العميل؟ (يُطلب في السلة عند الدفع)
-            </label>
+
+            <div id="productFields">
+              <div class="form-row">
+                <label>السعر ($) — للسلعة المفردة فقط<input type="number" id="pPrice" step="0.01" min="0" placeholder="اتركه 0 إن كانت مجموعة باقات" /></label>
+                <label>الوحدة<input type="text" id="pUnit" placeholder="مثال: يبدأ من / شهرياً" /></label>
+              </div>
+              <label class="check-row">
+                <input type="checkbox" id="pReqId" />
+                🆔 يتطلب إدخال معرّف الحساب / Player ID من العميل (يُطلب في السلة)
+              </label>
+              <div class="variants-editor">
+                <div class="variants-editor-head">
+                  <b>📦 باقات المجموعة</b>
+                  <small>أضف باقة لكل صف (الاسم + السعر). إن أضفت باقة واحدة على الأقل يصبح العنصر "مجموعة" تُفتح باقاتها للعميل في نافذة.</small>
+                </div>
+                <div id="variantRows"></div>
+                <button type="button" class="btn btn-outline" id="addVariantBtn">➕ إضافة باقة</button>
+              </div>
+            </div>
+
+            <div id="serviceFields" class="service-fields hidden">
+              <label>نوع الخدمة / التصنيف<input type="text" id="pMeta" placeholder="مثال: دورة تدريبية • 8 أسابيع" /></label>
+              <div class="form-row">
+                <label>📱 واتساب المنسق (دولي بدون +)<input type="tel" id="pContactWa" dir="ltr" placeholder="967771234567 — فارغ = الدعم العام" /></label>
+                <label>✈️ تليجرام المنسق (بدون @)<input type="text" id="pContactTg" dir="ltr" placeholder="username — فارغ = الدعم العام" /></label>
+              </div>
+            </div>
+
             <div class="form-actions">
               <button type="submit" class="btn btn-primary">💾 حفظ</button>
               <button type="button" class="btn btn-outline" id="pReset">إلغاء التعديل</button>
@@ -130,7 +150,7 @@
           <h3>📋 القائمة الحالية</h3>
           <div class="table-wrap">
             <table class="admin-table" id="productsTable">
-              <thead><tr><th>العنصر</th><th>النوع</th><th>القسم</th><th>السعر</th><th>🆔 ID؟</th><th>إجراءات</th></tr></thead>
+              <thead><tr><th>العنصر</th><th>النوع</th><th>القسم</th><th>السعر/الباقات</th><th>قناة التواصل</th><th>إجراءات</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
@@ -185,7 +205,7 @@
         </div>
 
         <div class="panel">
-          <h3>📞 روابط التواصل المعروضة للعملاء</h3>
+          <h3>📞 قنوات الدعم العامة (تُستخدم لأي خدمة بلا منسق خاص)</h3>
           <form class="admin-form" id="siteForm">
             <div class="form-row">
               <label>رقم واتساب الدعم (دولي بدون +)<input type="tel" id="setWhatsapp" placeholder="967771234567" inputmode="numeric" dir="ltr" /></label>

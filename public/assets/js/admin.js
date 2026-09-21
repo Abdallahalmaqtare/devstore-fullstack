@@ -1,10 +1,10 @@
 /* ============================================================
-   DevStore Admin — تسجيل دخول داخلي + لوحة تحكم كاملة (v5)
+   DevStore Admin — v6 (مجموعات وباقات + قنوات منسق الخدمة)
    ============================================================ */
 
 const CAT_LABELS = {
-  apps: '📱 تطبيقات', numbers: '💬 أرقام وهمية',
-  games: '🎮 ألعاب', tools: '🛠️ صيانة', courses: '🎓 خدمات وتدريب',
+  games: '🎮 ألعاب', apps: '📱 تطبيقات', numbers: '💬 أرقام وهمية',
+  tools: '🛠️ أدوات وصيانة', courses: '🎓 خدمات وتدريب',
 };
 const STATUS_FLOW = ['قيد المراجعة', 'مكتمل', 'ملغي'];
 const STATUS_CLASS = { 'قيد المراجعة': 'status-review', 'مكتمل': 'status-done', 'ملغي': 'status-cancel' };
@@ -72,7 +72,7 @@ function bootAdmin() {
   const sidebar = document.getElementById('sidebar');
   const sidebarOverlay = document.getElementById('sidebarOverlay');
   const pageTitles = {
-    dashboard: '📊 الرئيسية', products: '🛍️ إدارة المنتجات والخدمات',
+    dashboard: '📊 الرئيسية', products: '🛍️ المنتجات والخدمات',
     orders: '📦 إدارة الطلبات', users: '👥 إدارة المستخدمين', settings: '⚙️ الإعدادات',
   };
   document.querySelectorAll('.side-link').forEach(link => link.addEventListener('click', () => {
@@ -108,22 +108,62 @@ async function renderDashboard() {
   } catch (e) { showToast('❌ ' + e.message); }
 }
 
+/* ---------------- محرر الباقات ديناميكياً ---------------- */
+const variantRows = document.getElementById('variantRows');
+
+function addVariantRow(v = {}) {
+  const row = document.createElement('div');
+  row.className = 'variant-edit-row';
+  row.innerHTML = `
+    <input type="text" class="v-name" placeholder="اسم الباقة — مثال: 100 جوهرة" value="${v.name || ''}" />
+    <input type="number" class="v-price" step="0.01" min="0" placeholder="السعر $" value="${v.price ?? ''}" />
+    <input type="text" class="v-icon" placeholder="🎁" value="${v.icon || ''}" style="max-width:64px" />
+    <button type="button" class="row-btn row-del v-remove">✕</button>`;
+  row.querySelector('.v-remove').addEventListener('click', () => row.remove());
+  variantRows.appendChild(row);
+}
+document.getElementById('addVariantBtn').addEventListener('click', () => addVariantRow());
+
+function getVariants() {
+  return [...variantRows.querySelectorAll('.variant-edit-row')].map(r => ({
+    name: r.querySelector('.v-name').value.trim(),
+    price: parseFloat(r.querySelector('.v-price').value),
+    icon: r.querySelector('.v-icon').value.trim(),
+  })).filter(v => v.name && !isNaN(v.price));
+}
+
+/* إظهار/إخفاء الحقول حسب النوع */
+const pTypeSel = document.getElementById('pType');
+function syncTypeFields() {
+  const isService = pTypeSel.value === 'service';
+  document.getElementById('productFields').classList.toggle('hidden', isService);
+  document.getElementById('serviceFields').classList.toggle('hidden', !isService);
+}
+pTypeSel.addEventListener('change', syncTypeFields);
+syncTypeFields();
+
 /* ---------------- المنتجات/الخدمات ---------------- */
 async function renderProducts() {
   try {
     const products = await API.req('/products/all');
-    document.querySelector('#productsTable tbody').innerHTML = products.length ? products.map(p => `
+    document.querySelector('#productsTable tbody').innerHTML = products.length ? products.map(p => {
+      const isGroup = (p.variants || []).length > 0;
+      const contact = p.type === 'service'
+        ? (p.contactWhatsapp || p.contactTelegram ? '✅ منسق خاص' : '🌐 الدعم العام')
+        : '—';
+      return `
       <tr>
         <td>${p.icon || '📦'} <b>${p.name}</b></td>
-        <td>${p.type === 'service' ? '💬 خدمة' : '🛒 سلعة'}</td>
+        <td>${p.type === 'service' ? '💬 خدمة' : isGroup ? '📦 مجموعة' : '🛒 سلعة'}</td>
         <td>${CAT_LABELS[p.cat] || p.cat}</td>
-        <td>${p.type === 'service' ? '—' : '$' + (+p.price).toFixed(2)}</td>
-        <td>${p.requiresAccountId ? '✅' : '—'}</td>
+        <td>${p.type === 'service' ? '—' : isGroup ? `${p.variants.length} باقة (من $${Math.min(...p.variants.map(v => v.price)).toFixed(2)})` : '$' + (+p.price).toFixed(2)}</td>
+        <td>${contact}</td>
         <td class="row-actions">
           <button class="row-btn row-edit" data-edit='${JSON.stringify(p).replace(/'/g, "&#39;")}'>✏️ تعديل</button>
           <button class="row-btn row-del" data-del="${p._id}">🗑️ حذف</button>
         </td>
-      </tr>`).join('')
+      </tr>`;
+    }).join('')
       : '<tr><td colspan="6" class="empty-row">لا توجد عناصر — أضف من الأعلى</td></tr>';
   } catch (e) { showToast('❌ ' + e.message); }
 }
@@ -131,36 +171,43 @@ async function renderProducts() {
 document.getElementById('productForm').addEventListener('submit', async e => {
   e.preventDefault();
   const id = document.getElementById('pId').value;
-  const type = document.getElementById('pType').value;
+  const type = pTypeSel.value;
   const cat = document.getElementById('pCat').value;
+  const variants = getVariants();
   const body = {
     name: document.getElementById('pName').value.trim(),
     type, cat,
     price: type === 'service' ? 0 : parseFloat(document.getElementById('pPrice').value || 0),
+    variants: type === 'service' ? [] : variants,
     icon: document.getElementById('pIcon').value.trim() || '📦',
     unit: document.getElementById('pUnit').value.trim(),
-    meta: document.getElementById('pUnit').value.trim(),
     desc: document.getElementById('pDesc').value.trim(),
-    countrySelect: cat === 'numbers',
+    countrySelect: type === 'product' && cat === 'numbers',
     requiresAccountId: type === 'product' && document.getElementById('pReqId').checked,
-    modes: cat === 'courses' ? ['online', 'onsite'] : [],
+    modes: type === 'service' ? ['online', 'onsite'] : [],
+    meta: type === 'service' ? document.getElementById('pMeta').value.trim() : document.getElementById('pUnit').value.trim(),
+    contactWhatsapp: type === 'service' ? normalizePhone(document.getElementById('pContactWa').value) : '',
+    contactTelegram: type === 'service' ? document.getElementById('pContactTg').value.replace(/^@/, '').trim() : '',
   };
+  if (type === 'product' && !variants.length && !body.price)
+    return showToast('⚠️ أدخل سعراً للسلعة أو أضف باقات للمجموعة');
   try {
     if (id) await API.req('/products/' + id, { method: 'PUT', body });
     else await API.req('/products', { method: 'POST', body });
-    e.target.reset();
-    document.getElementById('pId').value = '';
-    document.getElementById('pReqId').checked = false;
+    resetProductForm();
     renderProducts(); renderDashboard();
     showToast(id ? '✅ تم التحديث' : '✅ تمت الإضافة');
   } catch (err) { showToast('❌ ' + err.message); }
 });
 
-document.getElementById('pReset').addEventListener('click', () => {
+function resetProductForm() {
   document.getElementById('productForm').reset();
   document.getElementById('pId').value = '';
   document.getElementById('pReqId').checked = false;
-});
+  variantRows.innerHTML = '';
+  syncTypeFields();
+}
+document.getElementById('pReset').addEventListener('click', resetProductForm);
 
 document.getElementById('productsTable').addEventListener('click', async e => {
   const editBtn = e.target.closest('[data-edit]');
@@ -173,10 +220,17 @@ document.getElementById('productsTable').addEventListener('click', async e => {
     document.getElementById('pCat').value = p.cat;
     document.getElementById('pPrice').value = p.price || '';
     document.getElementById('pIcon').value = p.icon || '';
-    document.getElementById('pUnit').value = p.unit || p.meta || '';
+    document.getElementById('pUnit').value = p.unit || '';
     document.getElementById('pDesc').value = p.desc || '';
     document.getElementById('pReqId').checked = !!p.requiresAccountId;
+    document.getElementById('pMeta').value = p.meta || '';
+    document.getElementById('pContactWa').value = p.contactWhatsapp || '';
+    document.getElementById('pContactTg').value = p.contactTelegram || '';
+    variantRows.innerHTML = '';
+    (p.variants || []).forEach(v => addVariantRow(v));
+    syncTypeFields();
     document.getElementById('pName').focus();
+    showToast('✏️ وضع التعديل — عدّل ثم اضغط حفظ');
   }
   if (delBtn && confirm('حذف هذا العنصر نهائياً؟')) {
     try {
@@ -289,7 +343,7 @@ async function loadSiteSettings() {
     document.getElementById('setWhatsapp').value = s.whatsapp || '';
     document.getElementById('setTelegram').value = s.telegram || '';
     document.getElementById('setEmail').value = s.email || '';
-  } catch { /* يعبّئها المستخدم من جديد */ }
+  } catch { }
 }
 document.getElementById('siteForm').addEventListener('submit', async e => {
   e.preventDefault();
@@ -302,7 +356,7 @@ document.getElementById('siteForm').addEventListener('submit', async e => {
         email: document.getElementById('setEmail').value,
       },
     });
-    showToast('✅ تم حفظ روابط التواصل');
+    showToast('✅ تم حفظ قنوات الدعم العامة');
   } catch (err) { showToast('❌ ' + err.message); }
 });
 

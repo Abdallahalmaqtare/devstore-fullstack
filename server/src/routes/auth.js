@@ -5,9 +5,7 @@ const { authRequired, adminOnly, signToken } = require('../middleware/auth');
 const { sendTelegram } = require('../utils/notify');
 
 const publicUser = u => ({ id: u._id, name: u.name, phone: u.phone, role: u.role });
-/* توحيد الرقم: أرقام فقط — تُستخدم نفس الدالة في التسجيل والدخول لضمان التطابق */
 const cleanPhone = p => String(p || '').replace(/\D/g, '');
-/* كشف انتهاء الصلاحية من createdAt (نفس مرجعية TTL) — عمر الرمز 10 دقائق */
 const OTP_TTL_MS = 10 * 60 * 1000;
 const isExpired = otp => (Date.now() - otp.createdAt.getTime()) > OTP_TTL_MS;
 
@@ -36,7 +34,7 @@ async function issueOtp(phone, purpose, payload) {
   }
 }
 
-/* التحقق: لا يُحذف الرمز إلا بعد نجاح المطابقة فقط */
+/* لا يُحذف الرمز إلا بعد نجاح العملية كاملة */
 async function checkOtp(phone, purpose, code) {
   const otp = await Otp.findOne({ phone, purpose }).sort('-createdAt');
   if (!otp || isExpired(otp)) return { err: 'الرمز منتهي — اطلب رمزاً جديداً' };
@@ -46,10 +44,9 @@ async function checkOtp(phone, purpose, code) {
     await otp.save();
     return { err: 'الرمز غير صحيح' };
   }
-  return { otp }; // الحذف يتم في المستدعي بعد نجاح العملية كاملة
+  return { otp };
 }
 
-/* POST /api/auth/send-otp */
 router.post('/send-otp', async (req, res) => {
   const phone = cleanPhone(req.body?.phone);
   const { purpose, name, password } = req.body || {};
@@ -76,7 +73,6 @@ router.post('/send-otp', async (req, res) => {
   });
 });
 
-/* POST /api/auth/verify-otp */
 router.post('/verify-otp', async (req, res) => {
   const phone = cleanPhone(req.body?.phone);
   const { code, purpose } = req.body || {};
@@ -86,14 +82,13 @@ router.post('/verify-otp', async (req, res) => {
   if (purpose === 'register') {
     if (await User.findOne({ phone })) return res.status(409).json({ message: 'الحساب موجود مسبقاً' });
     const user = await User.create({ name: otp.payload.name, phone, password: otp.payload.password });
-    await Otp.deleteOne({ _id: otp._id }); // حذف بعد النجاح فقط
+    await Otp.deleteOne({ _id: otp._id });
     return res.status(201).json({ token: signToken(user), user: publicUser(user) });
   }
-  /* reset: لا نحذف الرمز هنا — يُحذف في reset-password بعد تغيير كلمة المرور بنجاح */
+  /* reset: الرمز يُستهلك في reset-password بعد نجاح التغيير */
   res.json({ ok: true });
 });
 
-/* POST /api/auth/reset-password */
 router.post('/reset-password', async (req, res) => {
   const phone = cleanPhone(req.body?.phone);
   const { code, password } = req.body || {};
@@ -106,15 +101,14 @@ router.post('/reset-password', async (req, res) => {
   if (!user) return res.status(404).json({ message: 'الحساب غير موجود' });
   user.password = await bcrypt.hash(password, 10);
   await user.save();
-  await Otp.deleteOne({ _id: otp._id }); // حذف بعد اكتمال العملية
+  await Otp.deleteOne({ _id: otp._id });
   res.json({ token: signToken(user), user: publicUser(user) });
 });
 
-/* POST /api/auth/login — يدعم remember (تذكرني) */
 router.post('/login', async (req, res) => {
   try {
     const phone = cleanPhone(req.body?.phone);
-    const remember = req.body?.remember !== false; // الافتراضي تذكّر
+    const remember = req.body?.remember !== false;
     const user = await User.findOne({ phone });
     if (!user || !(await bcrypt.compare(String(req.body?.password || ''), user.password)))
       return res.status(401).json({ message: 'بيانات الدخول غير صحيحة' });
@@ -125,7 +119,6 @@ router.post('/login', async (req, res) => {
   }
 });
 
-/* POST /api/auth/admin-login */
 router.post('/admin-login', async (req, res) => {
   try {
     const phone = cleanPhone(req.body?.phone);

@@ -23,7 +23,6 @@ router.delete('/payment-methods/:id', authRequired, adminOnly, async (req, res) 
   res.json({ ok: true });
 });
 
-/* إعدادات الموقع: روابط التواصل الظاهرة للعملاء */
 router.get('/site', async (req, res) => {
   const s = await SiteSettings.findOne({ key: 'site' }).lean();
   res.json(s || { whatsapp: '', telegram: '', email: '' });

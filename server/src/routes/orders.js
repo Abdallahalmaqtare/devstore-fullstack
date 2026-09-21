@@ -11,7 +11,7 @@ const upload = multer({
     /^image\//.test(file.mimetype) ? cb(null, true) : cb(new Error('يُسمح بالصور فقط')),
 });
 
-/* POST /api/orders — السلة تحمل عناصر، ومعرّف الحساب يصل لكل عنصر من خطوة الدفع */
+/* POST /api/orders — يدعم باقات المجموعات: item = {id, variant, qty, extra, accountId} */
 router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
   try {
     const items = JSON.parse(req.body.items || '[]');
@@ -30,11 +30,23 @@ router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
     const orderItems = items.map(i => {
       const p = pmap[i.id];
       if (!p) throw Object.assign(new Error('عنصر غير قابل للشراء المباشر'), { status: 400 });
+
+      /* حسم السعر والاسم من قاعدة البيانات: من الباقة إن وُجدت، وإلا من المنتج نفسه */
+      let name = p.name, price = p.price, variant = '';
+      if (p.variants?.length) {
+        const v = p.variants.find(x => x.name === i.variant);
+        if (!v) throw Object.assign(new Error(`الباقة غير متوفرة في «${p.name}»`), { status: 400 });
+        name = `${p.name} — ${v.name}`;
+        price = v.price;
+        variant = v.name;
+      }
+
       if (p.requiresAccountId && !String(i.accountId || '').trim())
-        throw Object.assign(new Error(`معرّف الحساب (Player ID) مطلوب لـ «${p.name}»`), { status: 400 });
-      total += p.price * (i.qty || 1);
+        throw Object.assign(new Error(`معرّف الحساب (Player ID) مطلوب لـ «${name}»`), { status: 400 });
+
+      total += price * (i.qty || 1);
       return {
-        product: p._id, name: p.name, price: p.price, qty: i.qty || 1,
+        product: p._id, name, variant, price, qty: i.qty || 1,
         extra: i.extra || '', accountId: String(i.accountId || '').trim(),
       };
     });

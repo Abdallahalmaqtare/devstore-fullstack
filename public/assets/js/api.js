@@ -2,33 +2,36 @@
 const API = {
   base: '/api',
 
-  /* القراءة: localStorage أولاً (تذكرني)، ثم sessionStorage (جلسة مؤقتة) */
-  token: () => localStorage.getItem('ds-token') || sessionStorage.getItem('ds-token'),
-  user: () => JSON.parse(localStorage.getItem('ds-user') || sessionStorage.getItem('ds-user') || 'null'),
+  /* localStorage أولاً (تذكرني)، ثم sessionStorage (جلسة مؤقتة) */
+  token: function () { return localStorage.getItem('ds-token') || sessionStorage.getItem('ds-token'); },
+  user: function () { return JSON.parse(localStorage.getItem('ds-user') || sessionStorage.getItem('ds-user') || 'null'); },
 
   /* remember=true → localStorage (دائم) | false → sessionStorage (تُنهى بإغلاق المتصفح) */
-  setSession(token, user, remember = true) {
+  setSession: function (token, user, remember) {
     this.clearSession();
-    const store = remember ? localStorage : sessionStorage;
+    var store = (remember === false) ? sessionStorage : localStorage;
     store.setItem('ds-token', token);
     store.setItem('ds-user', JSON.stringify(user));
   },
-  clearSession() {
+  clearSession: function () {
     localStorage.removeItem('ds-token');
     localStorage.removeItem('ds-user');
     sessionStorage.removeItem('ds-token');
     sessionStorage.removeItem('ds-user');
   },
 
-  async req(path, { method = 'GET', body, form } = {}) {
-    const headers = {};
-    if (this.token()) headers.Authorization = 'Bearer ' + this.token();
-    if (body && !form) headers['Content-Type'] = 'application/json';
-    const res = await fetch(this.base + path, {
-      method, headers,
-      body: form ? form : (body ? JSON.stringify(body) : undefined),
+  req: async function (path, opts) {
+    opts = opts || {};
+    var headers = {};
+    var token = this.token();
+    if (token) headers.Authorization = 'Bearer ' + token;
+    if (opts.body && !opts.form) headers['Content-Type'] = 'application/json';
+    var res = await fetch(this.base + path, {
+      method: opts.method || 'GET',
+      headers: headers,
+      body: opts.form ? opts.form : (opts.body ? JSON.stringify(opts.body) : undefined),
     });
-    const data = await res.json().catch(() => ({}));
+    var data = await res.json().catch(function () { return {}; });
     if (!res.ok) {
       if (res.status === 401) this.clearSession();
       throw new Error(data.message || 'حدث خطأ في الاتصال');
@@ -37,7 +40,7 @@ const API = {
   },
 };
 
-/* توحيد أرقام الهاتف: حذف كل ما ليس رقماً (+، مسافات، شرطات، أقواس) */
+/* توحيد أرقام الهاتف: حذف كل ما ليس رقماً */
 function normalizePhone(p) {
   return String(p || '').replace(/\D/g, '');
 }

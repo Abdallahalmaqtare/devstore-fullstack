@@ -10,8 +10,8 @@
   <link rel="stylesheet" href="assets/css/style.css" />
   <script>
     (function () {
-      const saved = localStorage.getItem('tg-theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      var saved = localStorage.getItem('tg-theme');
+      var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       document.documentElement.dataset.theme = saved || (prefersDark ? 'dark' : 'light');
     })();
   </script>
@@ -70,21 +70,20 @@
       <div class="container">
         <div class="section-head">
           <span class="section-tag">🛍️ المتجر الرقمي</span>
-          <h2>خدمات رقمية بأسعار منافسة</h2>
-          <p>اختر فئتك، أضف للسلة، وادفع بالطريقة التي تناسبك.</p>
+          <h2>اختر لعبتك أو تطبيقك ثم اختر الباقة</h2>
+          <p>اضغط على أي مجموعة لعرض باقاتها وأسعارها.</p>
         </div>
 
-        <!-- بحث فوري -->
         <div class="search-box">
           <span class="search-icon">🔍</span>
-          <input type="search" id="storeSearch" placeholder="ابحث عن منتج أو خدمة بالاسم... (مثال: شدات، واتساب، Chimera)" />
+          <input type="search" id="storeSearch" placeholder="ابحث بالاسم... (مثال: PUBG، تيك توك، Chimera)" />
         </div>
 
         <div class="store-filters" id="storeFilters">
           <button class="filter-chip active" data-filter="all">الكل</button>
+          <button class="filter-chip" data-filter="games">🎮 ألعاب</button>
           <button class="filter-chip" data-filter="apps">📱 تطبيقات</button>
           <button class="filter-chip" data-filter="numbers">💬 أرقام وهمية</button>
-          <button class="filter-chip" data-filter="games">🎮 ألعاب</button>
           <button class="filter-chip" data-filter="tools">🛠️ أدوات المبرمجين والصيانة</button>
         </div>
         <div class="cards-grid" id="productsGrid"></div>
@@ -96,7 +95,7 @@
         <div class="section-head">
           <span class="section-tag">🎓 خدمات وتدريب</span>
           <h2>خدمات تعليمية ومشاريع للاتفاق المباشر</h2>
-          <p>تواصل معنا لتفصيل الخدمة والاتفاق على السعر والمدة — عن بُعد أو حضورياً في الحديدة.</p>
+          <p>تواصل مع منسق الخدمة مباشرة — عن بُعد أو حضورياً في الحديدة.</p>
         </div>
         <div class="courses-grid" id="coursesGrid"></div>
       </div>
@@ -142,7 +141,22 @@
     <div class="footer-bottom"><p>© <span id="year"></span> DevStore — جميع الحقوق محفوظة. صُنع بشغف في اليمن 🇾🇪</p></div>
   </footer>
 
-  <!-- ==================== نافذة المصادقة ==================== -->
+  <!-- نافذة باقات المجموعة -->
+  <div class="modal-overlay" id="groupModal">
+    <div class="modal">
+      <button class="modal-close" data-close="groupModal">✕</button>
+      <div class="group-head">
+        <span class="group-icon" id="groupIcon">🎮</span>
+        <div>
+          <h3 id="groupName">—</h3>
+          <p class="auth-note" id="groupDesc"></p>
+        </div>
+      </div>
+      <div class="variants-list" id="variantsList"></div>
+    </div>
+  </div>
+
+  <!-- نافذة المصادقة -->
   <div class="modal-overlay" id="authModal">
     <div class="modal">
       <button class="modal-close" data-close="authModal">✕</button>
@@ -151,7 +165,6 @@
         <button class="auth-tab" data-tab="register">حساب جديد</button>
       </div>
 
-      <!-- دخول -->
       <form class="auth-form active" id="loginForm">
         <h3>أهلاً بعودتك 👋</h3>
         <label>رقم الهاتف
@@ -159,15 +172,11 @@
           <small class="field-hint">أدخل الرقم بالصيغة الدولية مسبوقاً برمز الدولة وبدون علامة + — مثال: <b dir="ltr">967771234567</b></small>
         </label>
         <label>كلمة المرور<input type="password" id="loginPass" required placeholder="••••••••" /></label>
-        <label class="remember-row">
-          <input type="checkbox" id="rememberMe" checked />
-          تذكرني على هذا الجهاز
-        </label>
+        <label class="remember-row"><input type="checkbox" id="rememberMe" checked /> تذكرني على هذا الجهاز</label>
         <button type="submit" class="btn btn-primary btn-block">دخول</button>
         <p class="auth-note">نسيت كلمة المرور؟ <a href="#" id="forgotLink">استعادة</a></p>
       </form>
 
-      <!-- تسجيل -->
       <form class="auth-form" id="registerForm">
         <h3>انضم إلينا 🚀</h3>
         <label>الاسم الكامل<input type="text" id="regName" required placeholder="محمد أحمد" /></label>
@@ -179,7 +188,6 @@
         <button type="submit" class="btn btn-primary btn-block">إرسال رمز التحقق</button>
       </form>
 
-      <!-- نسيت كلمة المرور -->
       <form class="auth-form" id="forgotForm">
         <h3>استعادة كلمة المرور 🔑</h3>
         <label>رقم الهاتف المسجل
@@ -190,7 +198,6 @@
         <p class="auth-note"><a href="#" data-goto="login">← العودة لتسجيل الدخول</a></p>
       </form>
 
-      <!-- OTP -->
       <form class="auth-form" id="otpForm">
         <h3>رمز التحقق 🔢</h3>
         <p class="auth-note" id="otpHint">أدخل الرمز المكوّن من 6 أرقام المرسل إلى هاتفك</p>
@@ -215,7 +222,6 @@
         </p>
       </form>
 
-      <!-- كلمة مرور جديدة -->
       <form class="auth-form" id="resetForm">
         <h3>كلمة مرور جديدة 🔐</h3>
         <label>كلمة المرور الجديدة<input type="password" id="resetPass" required minlength="6" placeholder="6 أحرف على الأقل" /></label>
@@ -225,7 +231,7 @@
     </div>
   </div>
 
-  <!-- ==================== الملف الشخصي ==================== -->
+  <!-- الملف الشخصي -->
   <div class="modal-overlay" id="profileModal">
     <div class="modal modal-lg">
       <button class="modal-close" data-close="profileModal">✕</button>
@@ -264,25 +270,26 @@
     </div>
   </div>
 
-  <!-- ==================== نافذة "تواصل للاتفاق" ==================== -->
+  <!-- نافذة تواصل للاتفاق -->
   <div class="modal-overlay" id="inquireModal">
     <div class="modal">
       <button class="modal-close" data-close="inquireModal">✕</button>
       <h3>💬 تواصل للاتفاق</h3>
       <p class="auth-note">الخدمة: <b id="inqServiceName">—</b><br /><span id="inqCategory" class="inq-cat"></span></p>
       <form class="auth-form active" id="inquireForm">
+        <div class="mode-picker" id="inqModes"></div>
         <label>الاسم<input type="text" id="inqName" placeholder="يُعبأ تلقائياً إن كنت مسجلاً" /></label>
         <label>رقم الهاتف<input type="tel" id="inqPhone" inputmode="numeric" dir="ltr" placeholder="9677xxxxxxxx" /></label>
         <div class="inq-actions">
-          <a id="inqWa" href="#" target="_blank" rel="noopener" class="btn btn-success">🟢 تواصل عبر واتساب</a>
-          <a id="inqTg" href="#" target="_blank" rel="noopener" class="btn btn-outline">✈️ تواصل عبر تليجرام</a>
+          <a id="inqWa" href="#" target="_blank" rel="noopener" class="btn btn-success">🟢 واتساب المنسق</a>
+          <a id="inqTg" href="#" target="_blank" rel="noopener" class="btn btn-outline">✈️ تليجرام المنسق</a>
         </div>
-        <p class="auth-note">يُرسل اسم الخدمة وبياناتك برسالة جاهزة تلقائياً، وتصل إدارتنا إشعار فوري.</p>
+        <p class="auth-note">سيُفتح التطبيق مباشرة برسالة جاهزة تحمل اسم الخدمة ونوع الحضور وبياناتك.</p>
       </form>
     </div>
   </div>
 
-  <!-- ==================== السلة ==================== -->
+  <!-- السلة -->
   <div class="offcanvas-overlay" id="cartOverlay"></div>
   <aside class="offcanvas" id="cartPanel">
     <div class="offcanvas-head">
