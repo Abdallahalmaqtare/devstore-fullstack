@@ -10,20 +10,22 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '2mb' }));
 
-// ===== المسارات البرمجية API =====
+// ===== مسارات الـ API =====
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/users', require('./routes/users'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/inquiries', require('./routes/inquiries'));
 
 app.get('/api/health', (req, res) => res.json({ ok: true, time: new Date() }));
 
-// ===== تقديم الواجهات الأمامية (ملفات static) =====
+// ===== تقديم الواجهة الأمامية =====
 const publicDir = path.join(__dirname, '..', '..', 'public');
 app.use(express.static(publicDir));
 app.get(/^\/(?!api\/).*/, (req, res) => res.sendFile(path.join(publicDir, 'index.html')));
 
-// ===== معالج الأخطاء العام =====
+// ===== معالج الأخطاء =====
 app.use((err, req, res, next) => {
   console.error(err);
   res.status(err.status || 500).json({ message: err.message || 'خطأ في الخادم' });
@@ -34,11 +36,10 @@ async function seedAdmin() {
   const phone = process.env.ADMIN_PHONE;
   const password = process.env.ADMIN_PASSWORD;
   if (!phone || !password) return console.warn('⚠️ ADMIN_PHONE/ADMIN_PASSWORD غير مضبوطة');
-  const exists = await User.findOne({ role: 'admin' });
-  if (exists) return;
+  if (await User.findOne({ role: 'admin' })) return;
   await User.create({
     name: process.env.ADMIN_NAME || 'المدير العام',
-    phone,
+    phone: String(phone).replace(/\D/g, ''),
     password: await bcrypt.hash(password, 10),
     role: 'admin',
   });

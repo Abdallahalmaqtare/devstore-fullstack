@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>لوحة الإدارة | DevStore</title>
+  <meta name="robots" content="noindex, nofollow" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
@@ -19,161 +20,195 @@
 </head>
 <body class="admin-body">
 
-  <!-- ===================== الشريط الجانبي ===================== -->
-  <aside class="sidebar" id="sidebar">
-    <a href="index.html" class="brand sidebar-brand">
-      <span class="brand-icon">⚡</span>
-      <span class="brand-name"><b>Dev</b>Store</span>
-    </a>
+  <!-- ============ شاشة دخول الأدمن (تظهر أولاً قبل الوصول لأي محتوى) ============ -->
+  <section class="admin-login" id="adminLoginScreen">
+    <form class="modal" id="adminLoginForm">
+      <a href="index.html" class="brand" style="justify-content:center; margin-bottom:8px">
+        <span class="brand-icon">⚡</span><span class="brand-name"><b>Dev</b>Store</span>
+      </a>
+      <h3 style="text-align:center">🔐 دخول لوحة الإدارة</h3>
+      <p class="auth-note" style="text-align:center">هذه المنطقة مخصصة للمدير فقط</p>
+      <label>رقم الهاتف<input type="tel" id="adLoginPhone" required placeholder="9677xxxxxxxx" /></label>
+      <label>كلمة المرور<input type="password" id="adLoginPass" required placeholder="••••••••" /></label>
+      <button type="submit" class="btn btn-primary btn-block">دخول</button>
+      <p class="auth-note" style="text-align:center"><a href="index.html">← العودة إلى المتجر</a></p>
+    </form>
+  </section>
 
-    <nav class="side-nav">
-      <button class="side-link active" data-page="dashboard">📊 الرئيسية</button>
-      <button class="side-link" data-page="products">🛍️ إدارة المنتجات</button>
-      <button class="side-link" data-page="orders">📦 إدارة الطلبات</button>
-      <button class="side-link" data-page="users">👥 إدارة المستخدمين</button>
-      <button class="side-link" data-page="settings">⚙️ الإعدادات</button>
-    </nav>
-
-    <div class="sidebar-footer">
-      <button class="icon-btn" id="adminThemeToggle" title="تبديل الوضع الليلي">
-        <span class="theme-icon-sun">☀️</span>
-        <span class="theme-icon-moon">🌙</span>
-      </button>
-      <button class="btn btn-outline btn-block" id="adminLogout">🚪 تسجيل الخروج</button>
-      <a href="index.html" class="btn btn-outline btn-block">↩️ العودة للموقع</a>
-    </div>
-  </aside>
-
-  <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-  <!-- ===================== المحتوى الرئيسي ===================== -->
-  <main class="admin-main">
-    <header class="admin-topbar">
-      <button class="icon-btn" id="sideMenuBtn">☰</button>
-      <h2 id="pageTitle">📊 الرئيسية</h2>
-      <span class="admin-user">👤 المدير العام</span>
-    </header>
-
-    <!-- ============ صفحة: الرئيسية / الإحصائيات ============ -->
-    <section class="admin-page active" id="page-dashboard">
-      <div class="stats-grid">
-        <div class="stat-card"><span class="stat-icon">💰</span><div><b id="statRevenue">$0</b><p>إجمالي المبيعات</p></div></div>
-        <div class="stat-card"><span class="stat-icon">📦</span><div><b id="statOrders">0</b><p>الطلبات النشطة</p></div></div>
-        <div class="stat-card"><span class="stat-icon">👥</span><div><b id="statUsers">0</b><p>المستخدمون المسجلون</p></div></div>
-        <div class="stat-card"><span class="stat-icon">🛍️</span><div><b id="statProducts">0</b><p>المنتجات والخدمات</p></div></div>
+  <!-- ============ واجهة لوحة الإدارة (تظهر بعد الدخول فقط) ============ -->
+  <div id="adminApp" class="hidden">
+    <aside class="sidebar" id="sidebar">
+      <a href="index.html" class="brand sidebar-brand">
+        <span class="brand-icon">⚡</span>
+        <span class="brand-name"><b>Dev</b>Store</span>
+      </a>
+      <nav class="side-nav">
+        <button class="side-link active" data-page="dashboard">📊 الرئيسية</button>
+        <button class="side-link" data-page="products">🛍️ إدارة المنتجات والخدمات</button>
+        <button class="side-link" data-page="orders">📦 إدارة الطلبات</button>
+        <button class="side-link" data-page="users">👥 إدارة المستخدمين</button>
+        <button class="side-link" data-page="settings">⚙️ الإعدادات</button>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="icon-btn" id="adminThemeToggle" title="تبديل الوضع الليلي">
+          <span class="theme-icon-sun">☀️</span><span class="theme-icon-moon">🌙</span>
+        </button>
+        <button class="btn btn-outline btn-block" id="adminLogout">🚪 تسجيل الخروج</button>
+        <a href="index.html" class="btn btn-outline btn-block">↩️ العودة للموقع</a>
       </div>
+    </aside>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
-      <div class="panel">
-        <h3>🕐 أحدث الطلبات</h3>
-        <div class="table-wrap">
-          <table class="admin-table" id="recentOrdersTable">
-            <thead><tr><th>رقم الطلب</th><th>التاريخ</th><th>الإجمالي</th><th>الحالة</th></tr></thead>
-            <tbody></tbody>
-          </table>
+    <main class="admin-main">
+      <header class="admin-topbar">
+        <button class="icon-btn" id="sideMenuBtn">☰</button>
+        <h2 id="pageTitle">📊 الرئيسية</h2>
+        <span class="admin-user" id="adminNameChip">👑 المدير</span>
+      </header>
+
+      <!-- الرئيسية -->
+      <section class="admin-page active" id="page-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card"><span class="stat-icon">💰</span><div><b id="statRevenue">$0</b><p>إجمالي المبيعات</p></div></div>
+          <div class="stat-card"><span class="stat-icon">📦</span><div><b id="statOrders">0</b><p>الطلبات النشطة</p></div></div>
+          <div class="stat-card"><span class="stat-icon">👥</span><div><b id="statUsers">0</b><p>المستخدمون المسجلون</p></div></div>
+          <div class="stat-card"><span class="stat-icon">🛍️</span><div><b id="statProducts">0</b><p>المنتجات والخدمات</p></div></div>
         </div>
-      </div>
-    </section>
-
-    <!-- ============ صفحة: إدارة المنتجات ============ -->
-    <section class="admin-page" id="page-products">
-      <div class="panel">
-        <h3>➕ إضافة / تعديل منتج أو خدمة</h3>
-        <form class="admin-form" id="productForm">
-          <input type="hidden" id="pId" />
-          <div class="form-row">
-            <label>اسم الخدمة<input type="text" id="pName" required placeholder="مثال: شدات ببجي موبايل" /></label>
-            <label>السعر ($)<input type="number" id="pPrice" step="0.01" min="0" required placeholder="5.00" /></label>
+        <div class="panel">
+          <h3>🕐 أحدث الطلبات</h3>
+          <div class="table-wrap">
+            <table class="admin-table" id="recentOrdersTable">
+              <thead><tr><th>رقم الطلب</th><th>التاريخ</th><th>الإجمالي</th><th>الحالة</th></tr></thead>
+              <tbody></tbody>
+            </table>
           </div>
-          <div class="form-row">
-            <label>القسم
-              <select id="pCat">
-                <option value="games">🎮 شحن الألعاب والتطبيقات</option>
-                <option value="numbers">📱 الأرقام الوهمية</option>
-                <option value="tools">🛠️ أدوات المبرمجين والصيانة</option>
-                <option value="courses">🎓 دورة تدريبية</option>
-              </select>
-            </label>
-            <label>الأيقونة / الصورة (إيموجي أو رابط صورة)
-              <input type="text" id="pIcon" placeholder="🎮 أو https://..." />
-            </label>
+        </div>
+      </section>
+
+      <!-- المنتجات والخدمات -->
+      <section class="admin-page" id="page-products">
+        <div class="panel">
+          <h3>➕ إضافة / تعديل عنصر (منتج بسعر أو خدمة استشارية)</h3>
+          <form class="admin-form" id="productForm">
+            <input type="hidden" id="pId" />
+            <div class="form-row">
+              <label>الاسم<input type="text" id="pName" required /></label>
+              <label>النوع
+                <select id="pType">
+                  <option value="product">🛒 منتج بسعر (يُضاف للسلة)</option>
+                  <option value="service">💬 خدمة استشارية/تعليمية (تواصل للاتفاق)</option>
+                </select>
+              </label>
+            </div>
+            <div class="form-row">
+              <label>القسم
+                <select id="pCat">
+                  <option value="games">🎮 شحن الألعاب</option>
+                  <option value="numbers">📱 الأرقام الوهمية</option>
+                  <option value="tools">🛠️ أدوات المبرمجين والصيانة</option>
+                  <option value="courses">🎓 دورات وخدمات استشارية</option>
+                </select>
+              </label>
+              <label>السعر ($) — للمنتج فقط<input type="number" id="pPrice" step="0.01" min="0" placeholder="0" /></label>
+            </div>
+            <div class="form-row">
+              <label>الأيقونة<input type="text" id="pIcon" placeholder="🎮" /></label>
+              <label>الوحدة / المدة<input type="text" id="pUnit" placeholder="مثال: يبدأ من / 3 أشهر" /></label>
+            </div>
+            <label>الوصف<textarea id="pDesc" rows="2"></textarea></label>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">💾 حفظ</button>
+              <button type="button" class="btn btn-outline" id="pReset">إلغاء التعديل</button>
+            </div>
+          </form>
+        </div>
+        <div class="panel">
+          <h3>📋 القائمة الحالية</h3>
+          <div class="table-wrap">
+            <table class="admin-table" id="productsTable">
+              <thead><tr><th>العنصر</th><th>النوع</th><th>القسم</th><th>السعر</th><th>إجراءات</th></tr></thead>
+              <tbody></tbody>
+            </table>
           </div>
-          <label>الوصف<textarea id="pDesc" rows="2" placeholder="وصف مختصر للخدمة..."></textarea></label>
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary">💾 حفظ المنتج</button>
-            <button type="button" class="btn btn-outline" id="pReset">إلغاء التعديل</button>
+        </div>
+      </section>
+
+      <!-- الطلبات -->
+      <section class="admin-page" id="page-orders">
+        <div class="panel">
+          <h3>📦 الطلبات الواردة</h3>
+          <div class="table-wrap">
+            <table class="admin-table" id="ordersTable">
+              <thead><tr><th>الطلب/العميل</th><th>المنتجات</th><th>الإجمالي</th><th>الدفع</th><th>التاريخ</th><th>السند</th><th>الحالة</th></tr></thead>
+              <tbody></tbody>
+            </table>
           </div>
-        </form>
-      </div>
-
-      <div class="panel">
-        <h3>📋 المنتجات الحالية</h3>
-        <div class="table-wrap">
-          <table class="admin-table" id="productsTable">
-            <thead><tr><th>المنتج</th><th>القسم</th><th>السعر</th><th>إجراءات</th></tr></thead>
-            <tbody></tbody>
-          </table>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <!-- ============ صفحة: إدارة الطلبات ============ -->
-    <section class="admin-page" id="page-orders">
-      <div class="panel">
-        <h3>📦 الطلبات الواردة</h3>
-        <div class="table-wrap">
-          <table class="admin-table" id="ordersTable">
-            <thead>
-              <tr><th>الطلب / العميل</th><th>المنتجات</th><th>الإجمالي</th><th>الدفع</th><th>التاريخ</th><th>السند</th><th>الحالة</th></tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ صفحة: إدارة المستخدمين ============ -->
-    <section class="admin-page" id="page-users">
-      <div class="panel">
-        <h3>👥 العملاء المسجلون</h3>
-        <div class="table-wrap">
-          <table class="admin-table" id="usersTable">
-            <thead><tr><th>الاسم</th><th>الهاتف</th><th>تاريخ التسجيل</th><th>عدد الطلبات</th><th>الحالة</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- ============ صفحة: الإعدادات ============ -->
-    <section class="admin-page" id="page-settings">
-      <div class="panel">
-        <h3>➕ إضافة طريقة دفع يدوية</h3>
-        <form class="admin-form" id="pmForm">
-          <div class="form-row">
-            <label>اسم الطريقة<input type="text" id="pmName" required placeholder="مثال: الكريمي جوال / النجم" /></label>
-            <label>رقم الحساب / المحفظة<input type="text" id="pmAccount" required placeholder="77XXXXXXX" /></label>
+      <!-- المستخدمون -->
+      <section class="admin-page" id="page-users">
+        <div class="panel">
+          <h3>👥 العملاء المسجلون</h3>
+          <div class="table-wrap">
+            <table class="admin-table" id="usersTable">
+              <thead><tr><th>الاسم</th><th>الهاتف</th><th>تاريخ التسجيل</th><th>الطلبات</th><th>الحالة</th></tr></thead>
+              <tbody></tbody>
+            </table>
           </div>
-          <label>تعليمات للعميل (اختياري)<input type="text" id="pmInstructions" placeholder="مثال: حوّل باسم DevStore ثم ارفع السند" /></label>
-          <div class="form-actions"><button type="submit" class="btn btn-primary">💾 إضافة طريقة الدفع</button></div>
-        </form>
-      </div>
-
-      <div class="panel">
-        <h3>💳 طرق الدفع الحالية (تظهر للعملاء فوراً عند الدفع)</h3>
-        <div class="table-wrap">
-          <table class="admin-table" id="pmTable">
-            <thead><tr><th>الاسم</th><th>الحساب</th><th>التعليمات</th><th>الحالة</th><th>حذف</th></tr></thead>
-            <tbody></tbody>
-          </table>
         </div>
-      </div>
+      </section>
 
-      <div class="panel">
-        <h3>🔔 إشعارات تليجرام والتخزين السحابي</h3>
-        <p style="color: var(--muted); font-size: .92rem;">تُضبط مفاتيح Telegram Bot وCloudinary وقاعدة البيانات من متغيرات البيئة في الخادم (ملف .env محلياً / Environment Variables في Render) — لا تُخزَّن هنا حفاظاً على الأمان.</p>
-      </div>
-    </section>
-  </main>
+      <!-- الإعدادات -->
+      <section class="admin-page" id="page-settings">
+        <div class="panel">
+          <h3>➕ إضافة طريقة دفع يدوية</h3>
+          <form class="admin-form" id="pmForm">
+            <div class="form-row">
+              <label>الاسم<input type="text" id="pmName" required placeholder="الكريمي جوال / النجم" /></label>
+              <label>الحساب / المحفظة<input type="text" id="pmAccount" required /></label>
+            </div>
+            <label>تعليمات (اختياري)<input type="text" id="pmInstructions" placeholder="حوّل باسم DevStore ثم ارفع السند" /></label>
+            <div class="form-actions"><button type="submit" class="btn btn-primary">💾 إضافة</button></div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h3>💳 طرق الدفع الحالية (تظهر للعملاء فوراً)</h3>
+          <div class="table-wrap">
+            <table class="admin-table" id="pmTable">
+              <thead><tr><th>الاسم</th><th>الحساب</th><th>التعليمات</th><th>الحالة</th><th>حذف</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>📞 روابط التواصل المعروضة للعملاء</h3>
+          <form class="admin-form" id="siteForm">
+            <div class="form-row">
+              <label>رقم واتساب الدعم (دولي بدون +)<input type="tel" id="setWhatsapp" placeholder="967771234567" /></label>
+              <label>حساب تليجرام (بدون @)<input type="text" id="setTelegram" placeholder="devstore_support" /></label>
+            </div>
+            <label>البريد الإلكتروني<input type="email" id="setEmail" /></label>
+            <div class="form-actions"><button type="submit" class="btn btn-primary">💾 حفظ</button></div>
+          </form>
+        </div>
+
+        <div class="panel">
+          <h3>🔐 أمان حساب المدير</h3>
+          <form class="admin-form" id="adminPassForm">
+            <div class="form-row">
+              <label>كلمة المرور الحالية<input type="password" id="adCur" required /></label>
+              <label>كلمة المرور الجديدة<input type="password" id="adNew" required minlength="6" /></label>
+            </div>
+            <label>تأكيد كلمة المرور<input type="password" id="adNew2" required minlength="6" /></label>
+            <div class="form-actions"><button type="submit" class="btn btn-primary">🔒 تحديث كلمة مرور المدير</button></div>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
 
   <div class="toast" id="toast"></div>
 

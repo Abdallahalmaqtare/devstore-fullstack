@@ -4,13 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DevStore | بوابتك التقنية الشاملة</title>
-  <meta name="description" content="بوابة تقنية شاملة: متجر خدمات رقمية (شحن ألعاب، أرقام وهمية، أدوات صيانة) ومنصة تعليمية للبرمجة والعمل الحر." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="assets/css/style.css" />
   <script>
-    // تطبيق الثيم المحفوظ قبل الرسم لتجنب الوميض
     (function () {
       const saved = localStorage.getItem('tg-theme');
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -19,31 +17,28 @@
   </script>
 </head>
 <body>
-
-  <!-- ===================== شريط التنقل ===================== -->
   <header class="navbar" id="navbar">
     <div class="container nav-inner">
       <a href="#home" class="brand">
         <span class="brand-icon">⚡</span>
         <span class="brand-name"><b>Dev</b>Store</span>
       </a>
-
       <nav class="nav-links" id="navLinks">
         <a href="#home" class="nav-link active">الرئيسية</a>
         <a href="#store" class="nav-link">المتجر الرقمي</a>
-        <a href="#courses" class="nav-link">الدورات</a>
+        <a href="#courses" class="nav-link">الدورات والخدمات</a>
         <a href="#footer" class="nav-link">اتصل بنا</a>
       </nav>
-
       <div class="nav-actions">
         <button class="icon-btn" id="themeToggle" title="تبديل الوضع الليلي" aria-label="تبديل الوضع الليلي">
-          <span class="theme-icon-sun">☀️</span>
-          <span class="theme-icon-moon">🌙</span>
+          <span class="theme-icon-sun">☀️</span><span class="theme-icon-moon">🌙</span>
         </button>
-        <button class="icon-btn" id="loginBtn" title="تسجيل الدخول" aria-label="تسجيل الدخول">👤</button>
-        <button class="icon-btn cart-btn" id="cartBtn" title="سلة المشتريات" aria-label="سلة المشتريات">
-          🛒
-          <span class="cart-badge" id="cartBadge">0</span>
+        <button class="icon-btn user-chip" id="loginBtn" title="حسابي">
+          <span id="userChipIcon">👤</span>
+          <span id="userChipName" class="user-chip-name"></span>
+        </button>
+        <button class="icon-btn cart-btn" id="cartBtn" title="سلة المشتريات">
+          🛒<span class="cart-badge" id="cartBadge">0</span>
         </button>
         <button class="icon-btn menu-btn" id="menuBtn" aria-label="القائمة">☰</button>
       </div>
@@ -51,26 +46,17 @@
   </header>
 
   <main>
-    <!-- ===================== Hero Section ===================== -->
     <section class="hero" id="home">
       <div class="hero-bg">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-        <div class="grid-overlay"></div>
+        <div class="blob blob-1"></div><div class="blob blob-2"></div><div class="grid-overlay"></div>
       </div>
       <div class="container hero-content">
         <span class="hero-badge">🚀 بوابتك التقنية الشاملة في اليمن والعالم العربي</span>
-        <h1 class="hero-title">
-          كل ما تحتاجه في عالم <span class="grad-text">التقنية</span>
-          <br />في مكانٍ واحد
-        </h1>
-        <p class="hero-subtitle">
-          متجر رقمي متكامل لشحن الألعاب والأرقام الوهمية وأدوات صيانة الهواتف،
-          ومنصة تعليمية تصقل مهاراتك في البرمجة والعمل الحر — من الحديدة إلى العالم.
-        </p>
+        <h1 class="hero-title">كل ما تحتاجه في عالم <span class="grad-text">التقنية</span><br />في مكانٍ واحد</h1>
+        <p class="hero-subtitle">متجر رقمي لشحن الألعاب والأرقام الوهمية وأدوات الصيانة، ودورات وخدمات استشارية للبرمجة والعمل الحر.</p>
         <div class="hero-cta">
           <a href="#store" class="btn btn-primary btn-lg">🛍️ تصفح المتجر الرقمي</a>
-          <a href="#courses" class="btn btn-outline btn-lg">🎓 ابدأ التعلم الآن</a>
+          <a href="#courses" class="btn btn-outline btn-lg">🎓 الدورات والخدمات</a>
         </div>
         <div class="hero-stats">
           <div class="stat"><b data-count="1200">0</b><span>خدمة منجزة</span></div>
@@ -80,7 +66,6 @@
       </div>
     </section>
 
-    <!-- ===================== المتجر الرقمي ===================== -->
     <section class="section" id="store">
       <div class="container">
         <div class="section-head">
@@ -88,136 +73,201 @@
           <h2>خدمات رقمية بأسعار منافسة</h2>
           <p>اختر فئتك، أضف للسلة، وادفع بالطريقة التي تناسبك.</p>
         </div>
-
-        <!-- فلاتر الفئات -->
         <div class="store-filters" id="storeFilters">
           <button class="filter-chip active" data-filter="all">الكل</button>
           <button class="filter-chip" data-filter="games">🎮 شحن الألعاب والتطبيقات</button>
           <button class="filter-chip" data-filter="numbers">📱 الأرقام الوهمية</button>
           <button class="filter-chip" data-filter="tools">🛠️ أدوات المبرمجين والصيانة</button>
         </div>
-
-        <div class="cards-grid" id="productsGrid"><!-- تُملأ بالجافاسكربت --></div>
+        <div class="cards-grid" id="productsGrid"></div>
       </div>
     </section>
 
-    <!-- ===================== المنصة التعليمية ===================== -->
     <section class="section section-alt" id="courses">
       <div class="container">
         <div class="section-head">
-          <span class="section-tag">🎓 المنصة التعليمية</span>
-          <h2>مسارات تعليمية تصنع مستقبلك</h2>
-          <p>تعلّم عن بُعد أو حضورياً في مدينة الحديدة — بشهادات إتمام ومتابعة مباشرة.</p>
+          <span class="section-tag">🎓 الدورات والخدمات الاستشارية</span>
+          <h2>خدمات تعليمية ومشاريع للاتفاق المباشر</h2>
+          <p>تواصل معنا لتفصيل الخدمة والاتفاق على السعر والمدة — عن بُعد أو حضورياً في الحديدة.</p>
         </div>
-
-        <div class="courses-grid" id="coursesGrid"><!-- تُملأ بالجافاسكربت --></div>
+        <div class="courses-grid" id="coursesGrid"></div>
       </div>
     </section>
 
-    <!-- ===================== لماذا نحن ===================== -->
     <section class="section">
       <div class="container">
         <div class="features-grid">
-          <div class="feature-card"><span>⚡</span><h3>تنفيذ فوري</h3><p>معظم الطلبات تُنفذ خلال دقائق من تأكيد الدفع.</p></div>
-          <div class="feature-card"><span>🔒</span><h3>دفع آمن ومتنوع</h3><p>محافظ يمنية (موبايلي، كريمي، جيب) وتحويل بنكي وUSDT.</p></div>
-          <div class="feature-card"><span>💬</span><h3>دعم فني مباشر</h3><p>تواصل معنا واتساب أو تليجرام على مدار الساعة.</p></div>
-          <div class="feature-card"><span>🎓</span><h3>خبرة عملية</h3><p>مدربون يعملون فعلياً في السوق ويشاركونك أسرار المهنة.</p></div>
+          <div class="feature-card"><span>⚡</span><h3>تنفيذ فوري</h3><p>معظم الطلبات تُنفذ خلال دقائق.</p></div>
+          <div class="feature-card"><span>🔒</span><h3>دفع آمن</h3><p>محافظ يمنية وتحويل بنكي وUSDT.</p></div>
+          <div class="feature-card"><span>💬</span><h3>دعم مباشر</h3><p>واتساب وتليجرام 24/7.</p></div>
+          <div class="feature-card"><span>🎓</span><h3>خبرة عملية</h3><p>مدربون يعملون في السوق فعلياً.</p></div>
         </div>
       </div>
     </section>
   </main>
 
-  <!-- ===================== تذييل الموقع ===================== -->
   <footer class="footer" id="footer">
     <div class="container footer-grid">
       <div class="footer-col">
         <a href="#home" class="brand"><span class="brand-icon">⚡</span><span class="brand-name"><b>Dev</b>Store</span></a>
-        <p>بوابة تقنية شاملة تجمع بين متجر الخدمات الرقمية ومنصة تعليمية عربية، نخدمك من اليمن إلى كل العالم العربي.</p>
+        <p>بوابة تقنية شاملة تجمع بين متجر الخدمات الرقمية ومنصة تعليمية عربية.</p>
         <div class="social-row">
-          <a href="https://wa.me/967700000000" target="_blank" rel="noopener" class="social-btn whatsapp" title="واتساب">🟢 واتساب</a>
-          <a href="https://t.me/techgate_support" target="_blank" rel="noopener" class="social-btn telegram" title="تليجرام">✈️ تليجرام</a>
+          <a id="waLink" href="#" target="_blank" rel="noopener" class="social-btn whatsapp">🟢 واتساب</a>
+          <a id="tgLink" href="#" target="_blank" rel="noopener" class="social-btn telegram">✈️ تليجرام</a>
         </div>
       </div>
       <div class="footer-col">
         <h4>روابط سريعة</h4>
-        <a href="#home">الرئيسية</a>
-        <a href="#store">المتجر الرقمي</a>
-        <a href="#courses">الدورات التدريبية</a>
-        <a href="admin.html">لوحة الإدارة</a>
+        <a href="#home">الرئيسية</a><a href="#store">المتجر الرقمي</a><a href="#courses">الدورات والخدمات</a>
       </div>
       <div class="footer-col">
         <h4>سياسات الموقع</h4>
-        <a href="#">سياسة الخصوصية</a>
-        <a href="#">شروط الاستخدام</a>
-        <a href="#">سياسة الاستبدال والاسترجاع</a>
+        <a href="#">سياسة الخصوصية</a><a href="#">شروط الاستخدام</a><a href="#">الاستبدال والاسترجاع</a>
       </div>
       <div class="footer-col">
         <h4>تواصل معنا</h4>
         <p>📍 الحديدة، اليمن</p>
-        <p>📧 support@techgate.example</p>
+        <p id="footEmail">📧 support@devstore.example</p>
         <p>🕐 متاحون 24/7</p>
       </div>
     </div>
-    <div class="footer-bottom">
-      <p>© <span id="year"></span> DevStore — جميع الحقوق محفوظة. صُنع بشغف في اليمن 🇾🇪</p>
-    </div>
+    <div class="footer-bottom"><p>© <span id="year"></span> DevStore — جميع الحقوق محفوظة. صُنع بشغف في اليمن 🇾🇪</p></div>
   </footer>
 
-  <!-- ===================== نافذة تسجيل الدخول (Modal) ===================== -->
+  <!-- ==================== نافذة المصادقة (دخول / تسجيل / OTP / نسيت كلمة المرور) ==================== -->
   <div class="modal-overlay" id="authModal">
     <div class="modal">
       <button class="modal-close" data-close="authModal">✕</button>
-      <div class="auth-tabs">
+      <div class="auth-tabs" id="authTabs">
         <button class="auth-tab active" data-tab="login">تسجيل الدخول</button>
         <button class="auth-tab" data-tab="register">حساب جديد</button>
       </div>
 
+      <!-- دخول -->
       <form class="auth-form active" id="loginForm">
         <h3>أهلاً بعودتك 👋</h3>
-        <label>رقم الهاتف
-          <input type="tel" id="loginPhone" required placeholder="77xxxxxxx" />
-        </label>
-        <label>كلمة المرور
-          <input type="password" id="loginPass" required placeholder="••••••••" />
-        </label>
+        <label>رقم الهاتف<input type="tel" id="loginPhone" required placeholder="77xxxxxxx" /></label>
+        <label>كلمة المرور<input type="password" id="loginPass" required placeholder="••••••••" /></label>
         <button type="submit" class="btn btn-primary btn-block">دخول</button>
-        <p class="auth-note">نسيت كلمة المرور؟ <a href="#">استعادة</a></p>
+        <p class="auth-note">نسيت كلمة المرور؟ <a href="#" id="forgotLink">استعادة</a></p>
       </form>
 
+      <!-- تسجيل -->
       <form class="auth-form" id="registerForm">
         <h3>انضم إلينا 🚀</h3>
-        <label>الاسم الكامل
-          <input type="text" id="regName" required placeholder="محمد أحمد" />
-        </label>
-        <label>رقم الهاتف (واتساب)
-          <input type="tel" id="regPhone" required placeholder="77xxxxxxx" />
-        </label>
-        <label>كلمة المرور
-          <input type="password" id="regPass" required minlength="6" placeholder="6 أحرف على الأقل" />
-        </label>
-        <button type="submit" class="btn btn-primary btn-block">إنشاء الحساب</button>
+        <label>الاسم الكامل<input type="text" id="regName" required placeholder="محمد أحمد" /></label>
+        <label>رقم الهاتف (بصيغة دولية بدون +، مثال: 967771234567)<input type="tel" id="regPhone" required placeholder="9677xxxxxxxx" /></label>
+        <label>كلمة المرور<input type="password" id="regPass" required minlength="6" placeholder="6 أحرف على الأقل" /></label>
+        <button type="submit" class="btn btn-primary btn-block">إرسال رمز التحقق</button>
+      </form>
+
+      <!-- نسيت كلمة المرور: إدخال الهاتف -->
+      <form class="auth-form" id="forgotForm">
+        <h3>استعادة كلمة المرور 🔑</h3>
+        <label>رقم الهاتف المسجل<input type="tel" id="forgotPhone" required placeholder="9677xxxxxxxx" /></label>
+        <button type="submit" class="btn btn-primary btn-block">إرسال رمز التحقق</button>
+        <p class="auth-note"><a href="#" data-goto="login">← العودة لتسجيل الدخول</a></p>
+      </form>
+
+      <!-- التحقق من OTP -->
+      <form class="auth-form" id="otpForm">
+        <h3>رمز التحقق 🔢</h3>
+        <p class="auth-note" id="otpHint">أدخل الرمز المكوّن من 6 أرقام المرسل إلى هاتفك</p>
+        <div class="otp-inputs" id="otpInputs">
+          <input type="text" inputmode="numeric" maxlength="1" />
+          <input type="text" inputmode="numeric" maxlength="1" />
+          <input type="text" inputmode="numeric" maxlength="1" />
+          <input type="text" inputmode="numeric" maxlength="1" />
+          <input type="text" inputmode="numeric" maxlength="1" />
+          <input type="text" inputmode="numeric" maxlength="1" />
+        </div>
+        <input type="hidden" id="otpCode" />
+        <p class="auth-note">
+          <a id="otpWaLink" href="#" target="_blank" rel="noopener" class="otp-channel">💬 استلام الرمز عبر واتساب الدعم</a>
+        </p>
+        <button type="submit" class="btn btn-primary btn-block" id="otpSubmit">تحقق</button>
+        <p class="auth-note">
+          <span id="otpTimer">إعادة الإرسال متاحة بعد <b>60</b> ثانية</span>
+          <a href="#" id="otpResend" class="hidden">إعادة إرسال الرمز</a>
+        </p>
+      </form>
+
+      <!-- تعيين كلمة مرور جديدة (بعد استعادة) -->
+      <form class="auth-form" id="resetForm">
+        <h3>كلمة مرور جديدة 🔐</h3>
+        <label>كلمة المرور الجديدة<input type="password" id="resetPass" required minlength="6" placeholder="6 أحرف على الأقل" /></label>
+        <label>تأكيد كلمة المرور<input type="password" id="resetPass2" required minlength="6" /></label>
+        <button type="submit" class="btn btn-primary btn-block">حفظ وتسجيل الدخول</button>
       </form>
     </div>
   </div>
 
-  <!-- ===================== سلة المشتريات (Offcanvas) ===================== -->
+  <!-- ==================== الملف الشخصي ==================== -->
+  <div class="modal-overlay" id="profileModal">
+    <div class="modal modal-lg">
+      <button class="modal-close" data-close="profileModal">✕</button>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-ptab="info">📝 بياناتي</button>
+        <button class="auth-tab" data-ptab="pass">🔒 كلمة المرور</button>
+        <button class="auth-tab" data-ptab="orders">📦 طلباتي</button>
+      </div>
+
+      <form class="profile-form active" id="profileInfoForm" data-ppage="info">
+        <label>الاسم الكامل<input type="text" id="pfName" required /></label>
+        <label>رقم الهاتف<input type="tel" id="pfPhone" required /></label>
+        <button type="submit" class="btn btn-primary btn-block">💾 حفظ التعديلات</button>
+      </form>
+
+      <form class="profile-form" id="profilePassForm" data-ppage="pass">
+        <label>كلمة المرور الحالية<input type="password" id="pfCur" required /></label>
+        <label>كلمة المرور الجديدة<input type="password" id="pfNew" required minlength="6" /></label>
+        <label>تأكيد كلمة المرور<input type="password" id="pfNew2" required minlength="6" /></label>
+        <button type="submit" class="btn btn-primary btn-block">🔒 تحديث كلمة المرور</button>
+      </form>
+
+      <div class="profile-form" data-ppage="orders">
+        <div class="table-wrap">
+          <table class="admin-table" id="myOrdersTable">
+            <thead><tr><th>رقم الطلب</th><th>الخدمة</th><th>التاريخ</th><th>الحالة</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-outline btn-block" id="logoutBtn" style="margin-top:14px">🚪 تسجيل الخروج</button>
+    </div>
+  </div>
+
+  <!-- ==================== نافذة التواصل لخدمة استشارية ==================== -->
+  <div class="modal-overlay" id="inquireModal">
+    <div class="modal">
+      <button class="modal-close" data-close="inquireModal">✕</button>
+      <h3>💬 تواصل للاتفاق</h3>
+      <p class="auth-note">أنت على وشك الاستفسار عن: <b id="inqServiceName">—</b></p>
+      <form class="auth-form active" id="inquireForm">
+        <label>الاسم<input type="text" id="inqName" placeholder="اختياري" /></label>
+        <label>رقم الهاتف<input type="tel" id="inqPhone" placeholder="اختياري" /></label>
+        <div style="display:flex; gap:10px; flex-wrap:wrap">
+          <a id="inqWa" href="#" target="_blank" rel="noopener" class="btn btn-success" style="flex:1">🟢 واتساب مباشر</a>
+          <a id="inqTg" href="#" target="_blank" rel="noopener" class="btn btn-outline" style="flex:1">✈️ تليجرام</a>
+        </div>
+        <p class="auth-note">سيتم إعلام إدارتنا فور فتحك للمحادثة لتحضير عرض مناسب.</p>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== السلة ==================== -->
   <div class="offcanvas-overlay" id="cartOverlay"></div>
   <aside class="offcanvas" id="cartPanel">
     <div class="offcanvas-head">
       <h3>🛒 سلة المشتريات</h3>
       <button class="modal-close" id="cartClose">✕</button>
     </div>
-
     <div class="cart-items" id="cartItems">
-      <p class="cart-empty" id="cartEmpty">سلتك فارغة حالياً.. تصفح المتجر وأضف ما يعجبك 🛍️</p>
+      <p class="cart-empty">سلتك فارغة حالياً.. تصفح المتجر وأضف ما يعجبك 🛍️</p>
     </div>
-
     <div class="cart-footer">
-      <div class="cart-total">
-        <span>الإجمالي:</span>
-        <b id="cartTotal">$0.00</b>
-      </div>
-
+      <div class="cart-total"><span>الإجمالي:</span><b id="cartTotal">$0.00</b></div>
       <div class="pay-methods">
         <p>اختر طريقة الدفع:</p>
         <div class="pay-grid" id="payGrid"></div>
@@ -226,12 +276,10 @@
           <input type="file" id="receiptInput" accept="image/*" />
         </label>
       </div>
-
       <button class="btn btn-primary btn-block" id="checkoutBtn">تأكيد الطلب ✅</button>
     </div>
   </aside>
 
-  <!-- تنبيه منبثق -->
   <div class="toast" id="toast"></div>
 
   <script src="assets/js/api.js"></script>

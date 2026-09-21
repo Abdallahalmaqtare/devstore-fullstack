@@ -1,51 +1,46 @@
-# DevStore — متجر رقمي + منصة تعليمية (Full-Stack)
+# DevStore — الإصدار الثالث (OTP + Profile + تأمين الإدارة)
 
-واجهة أمامية (HTML/CSS/JS) + خادم Node.js/Express + MongoDB + JWT + Cloudinary + Telegram Bot.
+## الجديد في هذا الإصدار
+- **مصادقة OTP** عند التسجيل واستعادة كلمة المرور (رمز 6 أرقام، صلاحية 10 دقائق، مؤقت إعادة إرسال 60 ثانية)
+- الرمز يصل فوراً إلى **بوت تليجرام الأدمن** لتسليمه للعميل عبر واتساب (رابط جاهز يظهر في نافذة الـ OTP)، مع دعم اختياري لـ **Twilio SMS**
+- **الملف الشخصي للمستخدم**: تعديل البيانات + تغيير كلمة المرور + طلباتي السابقة، ويفتح من شريحة الاسم في شريط التنقل
+- **فصل المنتجات عن الخدمات الاستشارية**: نوع `product` (بسعر وسلة) أو `service` (تواصل للاتفاق بدون سعر) — يُحدَّد من نموذج الأدمن
+- زر "💬 تواصل للاتفاق" ينشئ رابط واتساب/تليجرام برسالة جاهزة وإشعار فوري للأدمن
+- **تأمين لوحة الإدارة**: إزالة رابطها من Footer، شاشة `#adminLoginForm` مستقلة تظهر أولاً، ومسار خادم منفصل `POST /api/auth/admin-login` يقبل فقط `role === 'admin'`
+- قسم "أمان حساب المدير" في إعدادات اللوحة: تغيير كلمة مرور الأدمن + تحديث روابط التواصل الظاهرة للعملاء
 
-## التشغيل المحلي
+## المسارات البرمجية الجديدة
+| Method | Path | الوصف |
+|---|---|---|
+| POST | `/api/auth/send-otp` | إرسال رمز OTP (`purpose: register | reset`) |
+| POST | `/api/auth/verify-otp` | التحقق من الرمز (عند التسجيل يُنشئ الحساب مباشرةً) |
+| POST | `/api/auth/reset-password` | تعيين كلمة مرور جديدة بعد OTP |
+| POST | `/api/auth/admin-login` | دخول الأدمن فقط |
+| PUT | `/api/users/profile` | تعديل الاسم والهاتف |
+| PUT | `/api/users/change-password` | تغيير كلمة المرور (للمستخدم والأدمن) |
+| GET | `/api/orders/my-orders` | طلبات المستخدم الحالي |
+| POST | `/api/inquiries` | استفسار عن خدمة استشارية + إشعار تليجرام |
+| GET/PUT | `/api/settings/site` | روابط التواصل الظاهرة في المتجر |
 
+## التشغيل
 ```bash
 npm install
-cp .env.example .env   # ثم عبّئ القيم
-npm run dev            # http://localhost:3000
-node server/src/seed.js  # مرة واحدة: بيانات أولية (منتجات + طرق دفع)
+cp .env.example .env    # عبّئ القيم
+node server/src/seed.js # بيانات أولية (منتجات + خدمات + طرق دفع)
+npm run dev             # http://localhost:3000
 ```
 
 - المتجر: `http://localhost:3000`
-- لوحة الإدارة: `http://localhost:3000/admin.html` (ادخل بحساب ADMIN_PHONE / ADMIN_PASSWORD من ملف .env)
+- لوحة الإدارة: `http://localhost:3000/admin.html` (شاشة دخول داخلية بحساب `ADMIN_PHONE` / `ADMIN_PASSWORD`)
 
-## إعداد الخدمات المجانية
+## قناة OTP الافتراضية
+1. رقم العميل يُرسل لخادمك
+2. الخادم يولّد رمزاً عشوائياً ويحفظ نسخة مشفّرة صالحة 10 دقائق
+3. الرمز يصل **إلى بوت تليجرامك** (لك أنت كأدمن) مع رقم هاتف الطالب
+4. يظهر للعميل زر "💬 استلام الرمز عبر واتساب الدعم" ينقله لمحادثة الدعم — تسلّمه الرمز يدوياً
+5. (اختياري) لو ضبطت مفاتيح Twilio في `.env` يُرسل تلقائياً كـ SMS
 
-### 1) MongoDB Atlas (قاعدة البيانات)
-1. أنشئ حساباً على cloud.mongodb.com ← Build a Database ← **M0 Free**
-2. Database Access ← أضف مستخدماً بكلمة مرور
-3. Network Access ← أضف `0.0.0.0/0` (مطلوب لـ Render)
-4. Connect ← Drivers ← انسخ الرابط وضعه في `MONGODB_URI`
-
-### 2) Cloudinary (تخزين صور السندات)
-1. أنشئ حساباً على cloudinary.com (الخطة المجانية: 25GB)
-2. من Dashboard انسخ: Cloud Name / API Key / API Secret إلى `.env`
-
-### 3) Telegram Bot (الإشعارات الفورية)
-1. في تليجرام افتح `@BotFather` ← `/newbot` ← انسخ التوكن إلى `TELEGRAM_BOT_TOKEN`
-2. أرسل أي رسالة لبوتك، ثم افتح: `https://api.telegram.org/bot<TOKEN>/getUpdates`
-3. انسخ قيمة `chat.id` إلى `TELEGRAM_CHAT_ID`
-
-## النشر على Render (مجاناً)
-
-الواجهة والخادم **مدمجان في خدمة واحدة** (Express يقدّم مجلد `public`) — الأسهل والأنسب للخطة المجانية:
-
-1. ارفع المشروع إلى GitHub
-2. Render ← New ← **Web Service** ← اربط المستودع
-3. Build Command: `npm install` — Start Command: `node server/src/index.js`
-4. أضف Environment Variables من `.env.example` (كل القيم الحساسة تُضبط هنا، ولا ترفع `.env` أبداً)
-5. بعد التشغيل نفّذ البذر مرة واحدة من Render Shell: `node server/src/seed.js`
-
-بديل: ملف `render.yaml` المرفق ينشئ الخدمة تلقائياً عبر New ← Blueprint.
-
-## الأمان والصلاحيات
-- تسجيل دخول بهاتف + كلمة مرور مشفّرة (bcrypt) وجلسات JWT لمدة 30 يوماً
-- دوران: `user` (تصفح وشراء) و`admin` (لوحة التحكم) — حساب الأدمن يُنشأ من متغيرات البيئة فقط
-- لوحة الإدارة محمية من جهة الخادم (كل مسارات /api للأدمن تتحقق من الدور) ومن جهة الواجهة
-- الإجمالي يُحسب من قاعدة البيانات وليس من المتصفح (منع التلاعب بالأسعار)
-- صور السندات على Cloudinary ولا تستهلك مساحة Render
+## النشر على Render
+- ارفع على GitHub ← New Web Service ← Build: `npm install` — Start: `node server/src/index.js`
+- أضف كل متغيرات `.env.example` من Environment (لا ترفع `.env`)
+- من Render Shell شغّل `node server/src/seed.js` مرة واحدة

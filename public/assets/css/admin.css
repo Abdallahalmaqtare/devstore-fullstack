@@ -1,141 +1,83 @@
-/* ============================================================
-   لوحة الإدارة — تنسيقات إضافية (تعتمد على style.css للمتغيرات)
-   ============================================================ */
-
+/* ============ لوحة الإدارة ============ */
 .admin-body { display: flex; min-height: 100svh; }
 
-/* ============ الشريط الجانبي ============ */
+/* شاشة الدخول */
+.admin-login {
+  position: fixed; inset: 0; z-index: 500;
+  display: grid; place-items: center; padding: 20px;
+  background: radial-gradient(ellipse at top, color-mix(in srgb, var(--primary) 18%, var(--bg)), var(--bg));
+}
+.admin-login .modal { display: flex; flex-direction: column; gap: 14px; }
+.admin-login label { display: flex; flex-direction: column; gap: 6px; font-size: .9rem; font-weight: 600; }
+.admin-login input {
+  padding: 12px 14px; border-radius: 10px; border: 1.5px solid var(--border);
+  background: var(--surface-2); color: var(--text); font-size: .95rem;
+}
+.admin-login input:focus { outline: none; border-color: var(--primary); }
+
+#adminApp { display: flex; width: 100%; }
+
 .sidebar {
-  width: 250px; flex-shrink: 0;
-  background: var(--surface); border-inline-end: 1px solid var(--border);
-  display: flex; flex-direction: column;
-  position: sticky; top: 0; height: 100svh;
+  width: 250px; flex-shrink: 0; background: var(--surface); border-inline-end: 1px solid var(--border);
+  display: flex; flex-direction: column; position: sticky; top: 0; height: 100svh;
   padding: 20px 16px; gap: 20px;
 }
 .sidebar-brand { padding-bottom: 16px; border-bottom: 1px solid var(--border); }
-
 .side-nav { display: flex; flex-direction: column; gap: 6px; flex: 1; }
-.side-link {
-  text-align: start; padding: 12px 16px; border-radius: 12px;
-  font-weight: 600; font-size: .98rem; color: var(--muted);
-  transition: .25s;
-}
+.side-link { text-align: start; padding: 12px 16px; border-radius: 12px; font-weight: 600; font-size: .98rem; color: var(--muted); transition: .25s; }
 .side-link:hover { background: var(--surface-2); color: var(--text); }
-.side-link.active {
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  color: #fff; box-shadow: 0 6px 18px rgba(99, 102, 241, .3);
-}
-
-.sidebar-footer { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.side-link.active { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; box-shadow: 0 6px 18px rgba(99, 102, 241, .3); }
+.sidebar-footer { display: flex; flex-direction: column; gap: 10px; }
 .sidebar-footer .icon-btn { width: 100%; }
+.sidebar-overlay { position: fixed; inset: 0; z-index: 140; background: rgba(5, 8, 18, .5); opacity: 0; pointer-events: none; transition: .3s; }
 
-.sidebar-overlay {
-  position: fixed; inset: 0; z-index: 140;
-  background: rgba(5, 8, 18, .5);
-  opacity: 0; pointer-events: none; transition: .3s;
-}
-
-/* ============ المحتوى ============ */
 .admin-main { flex: 1; min-width: 0; padding: 0 26px 60px; }
-
-.admin-topbar {
-  display: flex; align-items: center; gap: 14px;
-  padding: 18px 0; margin-bottom: 24px;
-  border-bottom: 1px solid var(--border);
-  position: sticky; top: 0; z-index: 50;
-  background: var(--bg);
-}
+.admin-topbar { display: flex; align-items: center; gap: 14px; padding: 18px 0; margin-bottom: 24px; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; background: var(--bg); }
 .admin-topbar h2 { flex: 1; font-size: 1.3rem; }
-.admin-user {
-  padding: 8px 16px; background: var(--surface-2); border-radius: 99px;
-  font-size: .9rem; font-weight: 600; border: 1px solid var(--border);
-}
+.admin-user { padding: 8px 16px; background: var(--surface-2); border-radius: 99px; font-size: .9rem; font-weight: 600; border: 1px solid var(--border); }
 #sideMenuBtn { display: none; }
 
-/* ============ الصفحات ============ */
 .admin-page { display: none; flex-direction: column; gap: 22px; }
 .admin-page.active { display: flex; }
 
-/* ============ بطاقات الإحصائيات ============ */
-.stats-grid {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px;
-}
-.stat-card {
-  display: flex; align-items: center; gap: 16px;
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 22px; transition: .3s;
-}
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; }
+.stat-card { display: flex; align-items: center; gap: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; transition: .3s; }
 .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
-.stat-icon {
-  width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center;
-  font-size: 1.5rem; background: color-mix(in srgb, var(--primary) 12%, transparent);
-}
+.stat-icon { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; font-size: 1.5rem; background: color-mix(in srgb, var(--primary) 12%, transparent); }
 .stat-card b { font-size: 1.5rem; font-weight: 900; color: var(--primary); }
 .stat-card p { color: var(--muted); font-size: .88rem; }
 
-/* ============ اللوحات والجداول ============ */
-.panel {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 24px;
-}
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
 .panel h3 { margin-bottom: 18px; font-size: 1.1rem; }
 
-.table-wrap { overflow-x: auto; }
-.admin-table { width: 100%; border-collapse: collapse; min-width: 560px; }
-.admin-table th, .admin-table td {
-  padding: 12px 14px; text-align: start; font-size: .92rem;
-  border-bottom: 1px solid var(--border); white-space: nowrap;
-}
-.admin-table th { color: var(--muted); font-weight: 700; background: var(--surface-2); }
+.admin-table { min-width: 560px; }
+.admin-table td { white-space: nowrap; }
 .admin-table tr:hover td { background: color-mix(in srgb, var(--primary) 4%, transparent); }
-
-/* شارات حالة الطلب */
-.status-badge {
-  padding: 5px 14px; border-radius: 99px; font-size: .8rem; font-weight: 700;
-  border: none; cursor: pointer; transition: .2s;
-}
-.status-review { background: color-mix(in srgb, var(--warning) 16%, transparent); color: var(--warning); }
-.status-done { background: color-mix(in srgb, var(--success) 16%, transparent); color: var(--success); }
-.status-cancel { background: color-mix(in srgb, var(--danger) 14%, transparent); color: var(--danger); }
+.status-badge { cursor: pointer; border: none; }
 .status-badge:hover { filter: brightness(1.1); transform: scale(1.04); }
 
-/* ============ النماذج ============ */
 .admin-form { display: flex; flex-direction: column; gap: 16px; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .admin-form label { display: flex; flex-direction: column; gap: 6px; font-size: .9rem; font-weight: 600; }
 .admin-form input:not([type="checkbox"]), .admin-form select, .admin-form textarea {
   padding: 11px 14px; border-radius: 10px; border: 1.5px solid var(--border);
-  background: var(--surface-2); color: var(--text); font-size: .95rem; transition: .2s;
+  background: var(--surface-2); color: var(--text); font-size: .95rem;
 }
-.admin-form input:focus, .admin-form select:focus, .admin-form textarea:focus {
-  outline: none; border-color: var(--primary);
-}
-.check-row { flex-direction: row !important; align-items: center; gap: 10px !important; font-weight: 500 !important; }
-.check-row input { width: 18px; height: 18px; accent-color: var(--primary); }
+.admin-form input:focus, .admin-form select:focus, .admin-form textarea:focus { outline: none; border-color: var(--primary); }
 .form-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
-/* أزرار إجراءات الجدول */
 .row-actions { display: flex; gap: 6px; }
-.row-btn {
-  padding: 7px 14px; border-radius: 9px; font-size: .82rem; font-weight: 700; transition: .2s;
-}
+.row-btn { padding: 7px 14px; border-radius: 9px; font-size: .82rem; font-weight: 700; transition: .2s; }
 .row-edit { background: color-mix(in srgb, var(--primary) 14%, transparent); color: var(--primary); }
 .row-del { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
 .row-btn:hover { transform: translateY(-2px); }
 
-.empty-row { text-align: center; color: var(--muted); padding: 30px 10px !important; }
-
-/* ============ استجابة الشاشات ============ */
 @media (max-width: 920px) {
-  .sidebar {
-    position: fixed; inset-inline-start: 0; top: 0; z-index: 150;
-    transform: translateX(105%); transition: transform .3s;
-    box-shadow: var(--shadow-lg);
-  }
-  [dir="ltr"] .sidebar { transform: translateX(-105%); }
+  .sidebar { position: fixed; inset-inline-start: 0; top: 0; z-index: 150; transform: translateX(-105%); box-shadow: var(--shadow-lg); }
+  [dir="rtl"] .sidebar { transform: translateX(105%); }
   .sidebar.open { transform: none; }
   .sidebar-overlay.open { opacity: 1; pointer-events: auto; }
-  #sideMenuBtn { display: grid; }
+  #sideMenuBtn { display: inline-flex; }
   .admin-main { padding: 0 16px 60px; }
   .form-row { grid-template-columns: 1fr; }
 }
