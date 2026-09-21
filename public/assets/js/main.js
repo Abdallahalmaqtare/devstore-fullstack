@@ -18,6 +18,11 @@ var CAT_LABELS = {
   tools: '🛠️ أدوات وصيانة', courses: '🎓 خدمات وتدريب',
 };
 
+/* عرض صورة المنتج إن وُجدت، وإلا الإيموجي */
+function iconHtml(p) {
+  return p.image ? '<img class="p-img" src="' + p.image + '" alt="' + p.name + '" loading="lazy" />' : (p.icon || '📦');
+}
+
 /* ---------------- تحميل البيانات ---------------- */
 async function loadAll() {
   try {
@@ -79,7 +84,7 @@ function renderProducts() {
         '</select></div>'
       : '';
     return '<article class="product-card' + (isGroup ? ' group-card' : '') + '"' + (isGroup ? ' data-group="' + p._id + '"' : '') + '>' +
-      '<div class="product-icon">' + p.icon + '</div>' +
+      '<div class="product-icon">' + iconHtml(p) + '</div>' +
       '<span class="product-cat">' + (CAT_LABELS[p.cat] || '') + '</span>' +
       '<h3 class="product-name">' + p.name + '</h3>' +
       '<p class="product-desc">' + (p.desc || '') + '</p>' +
@@ -111,7 +116,7 @@ function openGroupModal(id) {
   var g = PRODUCTS.find(function (p) { return p._id === id; });
   if (!g || !(g.variants || []).length) return;
   openGroupId = id;
-  document.getElementById('groupIcon').textContent = g.icon || '📦';
+  document.getElementById('groupIcon').innerHTML = iconHtml(g);
   document.getElementById('groupName').textContent = g.name;
   document.getElementById('groupDesc').textContent = (g.desc || '') + (g.requiresAccountId ? ' — 🆔 سيطلب معرّف الحساب في السلة' : '');
   document.getElementById('variantsList').innerHTML = g.variants.map(function (v, i) {
@@ -135,7 +140,7 @@ document.querySelector('[data-close="groupModal"]').addEventListener('click', fu
 function renderCourses() {
   document.getElementById('coursesGrid').innerHTML = COURSES.map(function (c) {
     return '<article class="course-card">' +
-      '<div class="course-cover">' + c.icon + '</div>' +
+      '<div class="course-cover">' + iconHtml(c) + '</div>' +
       '<div class="course-body">' +
       '<h3 class="course-name">' + c.name + '</h3>' +
       '<p class="course-desc">' + (c.desc || '') + '</p>' +
@@ -172,6 +177,7 @@ function addToCart(id) {
   pushItem({
     id: id, variant: '', extra: extra,
     name: product.name, price: product.price, icon: product.icon,
+    image: product.image || '',
     requiresAccountId: !!product.requiresAccountId,
   });
 }
@@ -183,7 +189,8 @@ function addVariantToCart(idx) {
   pushItem({
     id: g._id, variant: v.name, extra: '',
     name: g.name + ' — ' + v.name, price: v.price,
-    icon: v.icon || g.icon, requiresAccountId: !!g.requiresAccountId,
+    icon: v.icon || g.icon, image: g.image || '',
+    requiresAccountId: !!g.requiresAccountId,
   });
   groupModal.classList.remove('open');
 }
@@ -208,7 +215,7 @@ function renderCart() {
       ? '<input type="text" class="cart-acct" data-acct="' + i.key + '" value="' + (i.accountId || '') + '" dir="ltr" placeholder="🆔 معرّف الحساب / Player ID (إلزامي)" />'
       : '';
     return '<div class="cart-item">' +
-      '<span class="cart-item-icon">' + i.icon + '</span>' +
+      '<span class="cart-item-icon">' + (i.image ? '<img class="p-img" src="' + i.image + '" alt="" />' : i.icon) + '</span>' +
       '<div class="cart-item-info"><b>' + i.name + '</b><span>' + (i.extra ? i.extra + ' • ' : '') + '$' + i.price.toFixed(2) + '</span>' + acct + '</div>' +
       '<div class="cart-item-actions">' +
       '<button class="qty-btn" data-dec="' + i.key + '">−</button><b>' + i.qty + '</b>' +

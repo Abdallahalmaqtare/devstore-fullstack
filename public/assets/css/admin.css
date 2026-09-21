@@ -91,6 +91,12 @@
 .row-del { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
 .row-btn:hover { transform: translateY(-2px); }
 
+/* معاينة صورة المنتج */
+.img-preview { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px dashed var(--border); border-radius: 12px; background: var(--surface-2); }
+.img-preview img { width: 56px; height: 56px; border-radius: 12px; object-fit: cover; border: 1px solid var(--border); }
+.img-preview small { color: var(--muted); }
+.table-thumb { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; vertical-align: middle; }
+
 @media (max-width: 920px) {
   .sidebar { position: fixed; inset-inline-start: 0; top: 0; z-index: 150; transform: translateX(-105%); box-shadow: var(--shadow-lg); }
   [dir="rtl"] .sidebar { transform: translateX(105%); }

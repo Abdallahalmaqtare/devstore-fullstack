@@ -112,6 +112,11 @@
               <label>الأيقونة (إيموجي)<input type="text" id="pIcon" placeholder="🎮" /></label>
             </div>
             <label>الوصف<textarea id="pDesc" rows="2"></textarea></label>
+            <label>🖼️ صورة/أيقونة من جهازك (اختياري — تتقدم على الإيموجي)
+              <input type="file" id="pImageFile" accept="image/*" />
+              <small class="field-hint">PNG / JPG / WebP حتى 3MB — مثال: شعار PUBG من هاتفك أو حاسوبك</small>
+            </label>
+            <div id="pImagePreview" class="img-preview hidden"></div>
 
             <div id="productFields">
               <div class="form-row">

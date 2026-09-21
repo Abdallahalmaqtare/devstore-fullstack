@@ -153,7 +153,7 @@ async function renderProducts() {
         : '—';
       return `
       <tr>
-        <td>${p.icon || '📦'} <b>${p.name}</b></td>
+        <td>${p.image ? '<img class="table-thumb" src="' + p.image + '" alt="" />' : (p.icon || '📦')} <b>${p.name}</b></td>
         <td>${p.type === 'service' ? '💬 خدمة' : isGroup ? '📦 مجموعة' : '🛒 سلعة'}</td>
         <td>${CAT_LABELS[p.cat] || p.cat}</td>
         <td>${p.type === 'service' ? '—' : isGroup ? `${p.variants.length} باقة (من $${Math.min(...p.variants.map(v => v.price)).toFixed(2)})` : '$' + (+p.price).toFixed(2)}</td>
@@ -192,8 +192,17 @@ document.getElementById('productForm').addEventListener('submit', async e => {
   if (type === 'product' && !variants.length && !body.price)
     return showToast('⚠️ أدخل سعراً للسلعة أو أضف باقات للمجموعة');
   try {
-    if (id) await API.req('/products/' + id, { method: 'PUT', body });
-    else await API.req('/products', { method: 'POST', body });
+    const imgFile = document.getElementById('pImageFile').files[0];
+    if (imgFile) {
+      const fd = new FormData();
+      Object.entries(body).forEach(([k, v]) => fd.append(k, Array.isArray(v) ? JSON.stringify(v) : v));
+      fd.append('image', imgFile);
+      if (id) await API.req('/products/' + id, { method: 'PUT', form: fd });
+      else await API.req('/products', { method: 'POST', form: fd });
+    } else {
+      if (id) await API.req('/products/' + id, { method: 'PUT', body });
+      else await API.req('/products', { method: 'POST', body });
+    }
     resetProductForm();
     renderProducts(); renderDashboard();
     showToast(id ? '✅ تم التحديث' : '✅ تمت الإضافة');
@@ -205,8 +214,24 @@ function resetProductForm() {
   document.getElementById('pId').value = '';
   document.getElementById('pReqId').checked = false;
   variantRows.innerHTML = '';
+  document.getElementById('pImageFile').value = '';
+  const _prev = document.getElementById('pImagePreview');
+  _prev.classList.add('hidden'); _prev.innerHTML = '';
   syncTypeFields();
 }
+
+/* معاينة فورية للصورة المختارة من الجهاز */
+document.getElementById('pImageFile').addEventListener('change', e => {
+  const f = e.target.files[0];
+  const prev = document.getElementById('pImagePreview');
+  if (!f) { prev.classList.add('hidden'); prev.innerHTML = ''; return; }
+  const rd = new FileReader();
+  rd.onload = () => {
+    prev.innerHTML = '<img src="' + rd.result + '" alt="" /><small>معاينة — ستُرفع إلى السحابة عند الحفظ</small>';
+    prev.classList.remove('hidden');
+  };
+  rd.readAsDataURL(f);
+});
 document.getElementById('pReset').addEventListener('click', resetProductForm);
 
 document.getElementById('productsTable').addEventListener('click', async e => {
@@ -223,6 +248,12 @@ document.getElementById('productsTable').addEventListener('click', async e => {
     document.getElementById('pUnit').value = p.unit || '';
     document.getElementById('pDesc').value = p.desc || '';
     document.getElementById('pReqId').checked = !!p.requiresAccountId;
+    document.getElementById('pImageFile').value = '';
+    const _pv = document.getElementById('pImagePreview');
+    if (p.image) {
+      _pv.innerHTML = '<img src="' + p.image + '" alt="" /><small>الصورة الحالية — اختر ملفاً جديداً للاستبدال</small>';
+      _pv.classList.remove('hidden');
+    } else { _pv.classList.add('hidden'); _pv.innerHTML = ''; }
     document.getElementById('pMeta').value = p.meta || '';
     document.getElementById('pContactWa').value = p.contactWhatsapp || '';
     document.getElementById('pContactTg').value = p.contactTelegram || '';

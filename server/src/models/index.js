@@ -35,6 +35,7 @@ const productSchema = new Schema({
   type: { type: String, enum: ['product', 'service'], default: 'product' },
   cat: { type: String, enum: ['apps', 'numbers', 'games', 'tools', 'courses'], required: true },
   icon: { type: String, default: '📦' },
+  image: { type: String, default: '' },   // صورة مرفوعة من الجهاز (Cloudinary) — تتقدم على الإيموجي
   unit: { type: String, default: '' },
   /* باقات المجموعة — لو فيها عناصر يصبح المنتج "مجموعة" تُفتح باقاتها في نافذة */
   variants: { type: [variantSchema], default: [] },
