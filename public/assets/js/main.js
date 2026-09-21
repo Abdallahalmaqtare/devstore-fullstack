@@ -34,7 +34,7 @@ async function loadAll() {
 }
 
 function renderContact() {
-  const wa = (SITE.whatsapp || '').replace(/\D/g, '');
+  const wa = normalizePhone(SITE.whatsapp);
   const tg = (SITE.telegram || '').replace(/^@/, '');
   document.getElementById('waLink').href = wa ? `https://wa.me/${wa}` : '#';
   document.getElementById('tgLink').href = tg ? `https://t.me/${tg}` : '#';
@@ -67,6 +67,11 @@ function renderProducts(filter = 'all') {
             ${COUNTRIES.map(([f, n]) => `<option value="${n}">${f} ${n}</option>`).join('')}
           </select>
         </div>` : ''}
+      ${p.requiresAccountId ? `
+        <div class="product-extra">
+          <input type="text" id="acct-${p._id}" class="acct-input"
+            placeholder="🆔 معرّف الحساب / Player ID (إلزامي)" required dir="ltr" />
+        </div>` : ''}
       <div class="product-footer">
         <div class="product-price">$${p.price.toFixed(2)} <small>${p.unit || ''}</small></div>
         <button class="buy-btn" data-buy="${p._id}">شراء فوري ⚡</button>
@@ -82,7 +87,7 @@ document.getElementById('storeFilters').addEventListener('click', e => {
   renderProducts(chip.dataset.filter);
 });
 
-/* ---------------- الدورات والخدمات (بدون سعر — تواصل للاتفاق) ---------------- */
+/* ---------------- الدورات والخدمات ---------------- */
 function renderCourses() {
   document.getElementById('coursesGrid').innerHTML = COURSES.map(c => `
     <article class="course-card">
@@ -115,18 +120,35 @@ const getItemInfo = id => PRODUCTS.find(p => p._id === id);
 function addToCart(id) {
   const product = getItemInfo(id);
   if (!product) return;
+
   let extra = '';
   if (product.countrySelect) {
     const sel = document.getElementById(`country-${id}`);
     if (!sel?.value) { showToast('⚠️ اختر الدولة أولاً'); sel?.focus(); return; }
     extra = sel.value;
   }
-  const key = extra ? `${id}|${extra}` : id;
+
+  let accountId = '';
+  if (product.requiresAccountId) {
+    const inp = document.getElementById(`acct-${id}`);
+    accountId = (inp?.value || '').trim();
+    if (!accountId) {
+      showToast('⚠️ أدخل معرّف الحساب / Player ID أولاً');
+      inp?.focus();
+      return;
+    }
+  }
+
+  const key = [id, extra, accountId].filter(Boolean).join('|');
   const found = cart.find(i => i.key === key);
-  found ? found.qty++ : cart.push({ key, id, extra, qty: 1, name: product.name, price: product.price, icon: product.icon });
+  found ? found.qty++ : cart.push({
+    key, id, extra, accountId, qty: 1,
+    name: product.name, price: product.price, icon: product.icon,
+  });
   saveCart(); renderCart();
   showToast(`✅ تمت الإضافة: ${product.name}`);
 }
+
 function renderCart() {
   cartBadge.textContent = cart.reduce((s, i) => s + i.qty, 0);
   if (!cart.length) {
@@ -136,7 +158,10 @@ function renderCart() {
   cartItemsEl.innerHTML = cart.map(i => `
     <div class="cart-item">
       <span class="cart-item-icon">${i.icon}</span>
-      <div class="cart-item-info"><b>${i.name}</b><span>${i.extra ? i.extra + ' • ' : ''}$${i.price.toFixed(2)}</span></div>
+      <div class="cart-item-info">
+        <b>${i.name}</b>
+        <span>${[i.extra, i.accountId ? '🆔 ' + i.accountId : ''].filter(Boolean).join(' • ')} ${i.extra || i.accountId ? '• ' : ''}$${i.price.toFixed(2)}</span>
+      </div>
       <div class="cart-item-actions">
         <button class="qty-btn" data-dec="${i.key}">−</button><b>${i.qty}</b>
         <button class="qty-btn" data-inc="${i.key}">+</button>
@@ -199,7 +224,7 @@ document.getElementById('checkoutBtn').addEventListener('click', async () => {
   btn.disabled = true; btn.textContent = '⏳ جارٍ الإرسال...';
   try {
     const form = new FormData();
-    form.append('items', JSON.stringify(cart.map(i => ({ id: i.id, qty: i.qty, extra: i.extra }))));
+    form.append('items', JSON.stringify(cart.map(i => ({ id: i.id, qty: i.qty, extra: i.extra, accountId: i.accountId }))));
     form.append('paymentMethodId', selectedPmId);
     form.append('receipt', receipt);
     const res = await API.req('/orders', { method: 'POST', form });
@@ -217,34 +242,27 @@ document.getElementById('checkoutBtn').addEventListener('click', async () => {
 const authModal = document.getElementById('authModal');
 const authForms = { login: 'loginForm', register: 'registerForm', forgot: 'forgotForm', otp: 'otpForm', reset: 'resetForm' };
 
-function openAuth(which = 'login') {
-  authModal.classList.add('open');
-  showAuthForm(which);
-}
+function openAuth(which = 'login') { authModal.classList.add('open'); showAuthForm(which); }
 function showAuthForm(which) {
   document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
   document.getElementById(authForms[which]).classList.add('active');
-  document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === which));
+  document.querySelectorAll('#authTabs .auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === which));
 }
 
-/* زر الحساب في الشريط: يفتح الملف الشخصي إن كان مسجلاً، وإلا يفتح الدخول */
 document.getElementById('loginBtn').addEventListener('click', () => {
   API.user() ? openProfile() : openAuth('login');
 });
-
 authModal.addEventListener('click', e => { if (e.target === authModal) authModal.classList.remove('open'); });
 document.querySelector('[data-close="authModal"]').addEventListener('click', () => authModal.classList.remove('open'));
-
 document.getElementById('authTabs').addEventListener('click', e => {
   const tab = e.target.closest('.auth-tab');
   if (tab) showAuthForm(tab.dataset.tab);
 });
 document.querySelectorAll('[data-goto]').forEach(el =>
   el.addEventListener('click', e => { e.preventDefault(); showAuthForm(el.dataset.goto); }));
-
 document.getElementById('forgotLink').addEventListener('click', e => { e.preventDefault(); showAuthForm('forgot'); });
 
-/* --- OTP: تحكم الحقول الستة، مؤقت 60 ثانية، ورابط واتساب --- */
+/* --- OTP: ست خانات، تنقل تلقائي، مؤقت 60 ثانية --- */
 let otpState = { purpose: '', phone: '', payload: null, timer: null };
 const otpInputs = document.querySelectorAll('#otpInputs input');
 otpInputs.forEach((inp, idx) => {
@@ -281,10 +299,9 @@ function startOtpTimer(sec = 60) {
 async function requestOtp(purpose, phone, payload) {
   otpState = { purpose, phone, payload: payload || null, timer: null };
   try {
-    const body = { phone, purpose, ...(payload || {}) };
-    const res = await API.req('/auth/send-otp', { method: 'POST', body });
+    const res = await API.req('/auth/send-otp', { method: 'POST', body: { phone, purpose, ...(payload || {}) } });
     document.getElementById('otpHint').innerHTML =
-      `أُرسل رمز مكوّن من 6 أرقام إلى الرقم <b>${phone}</b><br>صالح 10 دقائق`;
+      `أُرسل رمز مكوّن من 6 أرقام للرقم <b dir="ltr">${phone}</b><br>صالح 10 دقائق`;
     document.getElementById('otpWaLink').href = res.whatsappUrl || '#';
     otpInputs.forEach(i => i.value = ''); document.getElementById('otpCode').value = '';
     showAuthForm('otp'); otpInputs[0].focus(); startOtpTimer(60);
@@ -296,20 +313,22 @@ document.getElementById('otpResend').addEventListener('click', e => {
   requestOtp(otpState.purpose, otpState.phone, otpState.payload);
 });
 
-/* تسجيل مستخدم جديد → طلب OTP */
+/* تسجيل → OTP */
 document.getElementById('registerForm').addEventListener('submit', e => {
   e.preventDefault();
   const name = document.getElementById('regName').value.trim();
-  const phone = document.getElementById('regPhone').value.replace(/\D/g, '');
+  const phone = normalizePhone(document.getElementById('regPhone').value);
   const password = document.getElementById('regPass').value;
-  if (!name || !phone || password.length < 6) return showToast('⚠️ عبّئ الحقول بشكل صحيح');
+  if (!name || phone.length < 9 || password.length < 6)
+    return showToast('⚠️ تحقق من البيانات — الهاتف بالصيغة الدولية بدون +');
   requestOtp('register', phone, { name, password });
 });
 
-/* استعادة كلمة المرور → طلب OTP */
+/* استعادة → OTP */
 document.getElementById('forgotForm').addEventListener('submit', e => {
   e.preventDefault();
-  const phone = document.getElementById('forgotPhone').value.replace(/\D/g, '');
+  const phone = normalizePhone(document.getElementById('forgotPhone').value);
+  if (phone.length < 9) return showToast('⚠️ أدخل الرقم بالصيغة الدولية بدون +');
   requestOtp('reset', phone);
 });
 
@@ -335,7 +354,7 @@ document.getElementById('otpForm').addEventListener('submit', async e => {
   } catch (err) { showToast('❌ ' + err.message); }
 });
 
-/* تعيين كلمة مرور جديدة بعد OTP */
+/* كلمة مرور جديدة */
 document.getElementById('resetForm').addEventListener('submit', async e => {
   e.preventDefault();
   const p1 = document.getElementById('resetPass').value;
@@ -352,21 +371,23 @@ document.getElementById('resetForm').addEventListener('submit', async e => {
   } catch (err) { showToast('❌ ' + err.message); }
 });
 
-/* تسجيل الدخول العادي */
+/* تسجيل الدخول — مع تنظيف الرقم قبل الإرسال */
 document.getElementById('loginForm').addEventListener('submit', async e => {
   e.preventDefault();
+  const phone = normalizePhone(document.getElementById('loginPhone').value);
+  if (phone.length < 9) return showToast('⚠️ أدخل الرقم بالصيغة الدولية بدون +');
   try {
     const { token, user } = await API.req('/auth/login', {
       method: 'POST',
-      body: { phone: document.getElementById('loginPhone').value, password: document.getElementById('loginPass').value },
+      body: { phone, password: document.getElementById('loginPass').value },
     });
     API.setSession(token, user); authModal.classList.remove('open');
     updateUserChip();
-    showToast(user.role === 'admin' ? `⚙️ أهلاً بالمدير — ادخل من admin.html` : `👋 أهلاً ${user.name}`);
+    showToast(user.role === 'admin' ? `⚙️ أهلاً بالمدير — اللوحة من admin.html` : `👋 أهلاً ${user.name}`);
   } catch (err) { showToast('❌ ' + err.message); }
 });
 
-/* شريحة المستخدم في الـ Navbar */
+/* شريحة المستخدم */
 function updateUserChip() {
   const u = API.user();
   const chip = document.getElementById('loginBtn');
@@ -412,7 +433,7 @@ document.getElementById('profileInfoForm').addEventListener('submit', async e =>
   try {
     const { user } = await API.req('/users/profile', {
       method: 'PUT',
-      body: { name: document.getElementById('pfName').value, phone: document.getElementById('pfPhone').value },
+      body: { name: document.getElementById('pfName').value, phone: normalizePhone(document.getElementById('pfPhone').value) },
     });
     API.setSession(API.token(), user); updateUserChip();
     showToast('✅ تم تحديث البيانات');
@@ -421,12 +442,13 @@ document.getElementById('profileInfoForm').addEventListener('submit', async e =>
 
 document.getElementById('profilePassForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const cur = document.getElementById('pfCur').value;
   const n1 = document.getElementById('pfNew').value;
   const n2 = document.getElementById('pfNew2').value;
   if (n1 !== n2) return showToast('⚠️ كلمتا المرور غير متطابقتين');
   try {
-    await API.req('/users/change-password', { method: 'PUT', body: { current: cur, next: n1 } });
+    await API.req('/users/change-password', {
+      method: 'PUT', body: { current: document.getElementById('pfCur').value, next: n1 },
+    });
     e.target.reset();
     showToast('✅ تم تحديث كلمة المرور');
   } catch (err) { showToast('❌ ' + err.message); }
@@ -454,42 +476,70 @@ async function loadMyOrders() {
 }
 
 /* ================================================================ */
-/* ========== نافذة "تواصل للاتفاق" للخدمات الاستشارية ============= */
+/* ===== نافذة "تواصل للاتفاق" — روابط واتساب/تليجرام جاهزة ======= */
 /* ================================================================ */
 const inquireModal = document.getElementById('inquireModal');
+let inqService = null;
+
 inquireModal.addEventListener('click', e => { if (e.target === inquireModal) inquireModal.classList.remove('open'); });
 document.querySelector('[data-close="inquireModal"]').addEventListener('click', () => inquireModal.classList.remove('open'));
 
-async function openInquiry(id) {
-  const svc = COURSES.find(c => c._id === id);
-  if (!svc) return;
-  document.getElementById('inqServiceName').textContent = svc.name;
-  inquireModal.classList.add('open');
+function buildInquiryLinks() {
+  if (!inqService) return;
+  const u = API.user();
+  const name = document.getElementById('inqName').value.trim() || u?.name || 'زائر';
+  const phone = normalizePhone(document.getElementById('inqPhone').value) || u?.phone || '—';
+  const category = (inqService.meta || '').split('•')[0].trim() || 'خدمة استشارية';
 
-  // روابط أولية من إعدادات الموقع
-  const text = encodeURIComponent(`السلام عليكم، أرغب بالاتفاق على خدمة: ${svc.name}`);
-  const wa = (SITE.whatsapp || '').replace(/\D/g, '');
+  // نص معدّ مسبقاً ومشفّر التنسيق يحمل: اسم الخدمة + التصنيف + بيانات المستخدم
+  const text = encodeURIComponent(
+    `السلام عليكم،\nأرغب بالاتفاق على الخدمة التالية:\n\n` +
+    `🛎️ الخدمة: ${inqService.name}\n` +
+    `🗂️ التصنيف: ${category}\n` +
+    `👤 الاسم: ${name}\n` +
+    `📱 الهاتف: ${phone}`
+  );
+
+  const wa = normalizePhone(SITE.whatsapp);
   const tg = (SITE.telegram || '').replace(/^@/, '');
   document.getElementById('inqWa').href = wa ? `https://wa.me/${wa}?text=${text}` : '#';
   document.getElementById('inqTg').href = tg ? `https://t.me/${tg}` : '#';
-
-  // إخطار الأدمن فوراً + استلام روابط جاهزة من الخادم
-  const clickHandler = async () => {
-    try {
-      const res = await API.req('/inquiries', {
-        method: 'POST',
-        body: {
-          serviceName: svc.name,
-          name: document.getElementById('inqName').value,
-          phone: document.getElementById('inqPhone').value,
-        },
-      });
-      if (res.whatsappUrl) document.getElementById('inqWa').href = res.whatsappUrl + '';
-    } catch { /* لا نمنع فتح واتساب لو فشل الإخطار */ }
-  };
-  document.getElementById('inqWa').onclick = clickHandler;
-  document.getElementById('inqTg').onclick = clickHandler;
+  document.getElementById('inqCategory').textContent = '🗂️ ' + category;
 }
+
+async function openInquiry(id) {
+  inqService = COURSES.find(c => c._id === id);
+  if (!inqService) return;
+  const u = API.user();
+  document.getElementById('inqServiceName').textContent = inqService.name;
+  document.getElementById('inqName').value = u?.name || '';
+  document.getElementById('inqPhone').value = u?.phone || '';
+  buildInquiryLinks();
+  inquireModal.classList.add('open');
+}
+
+/* تحديث الروابط لحظياً عند كتابة الاسم/الهاتف */
+document.getElementById('inqName').addEventListener('input', buildInquiryLinks);
+document.getElementById('inqPhone').addEventListener('input', buildInquiryLinks);
+
+/* إشعار فوري لبوت الإدارة عند الضغط على أي قناة تواصل */
+async function notifyInquiry() {
+  if (!inqService) return;
+  const u = API.user();
+  try {
+    await API.req('/inquiries', {
+      method: 'POST',
+      body: {
+        serviceName: inqService.name,
+        category: (inqService.meta || '').split('•')[0].trim(),
+        name: document.getElementById('inqName').value.trim() || u?.name || '',
+        phone: normalizePhone(document.getElementById('inqPhone').value) || u?.phone || '',
+      },
+    });
+  } catch { /* لا نمنع فتح المحادثة لو فشل الإخطار */ }
+}
+document.getElementById('inqWa').addEventListener('click', notifyInquiry);
+document.getElementById('inqTg').addEventListener('click', notifyInquiry);
 
 /* ================================================================ */
 /* =========================== Toast ============================== */

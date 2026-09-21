@@ -20,7 +20,6 @@
 </head>
 <body class="admin-body">
 
-  <!-- ============ شاشة دخول الأدمن (تظهر أولاً قبل الوصول لأي محتوى) ============ -->
   <section class="admin-login" id="adminLoginScreen">
     <form class="modal" id="adminLoginForm">
       <a href="index.html" class="brand" style="justify-content:center; margin-bottom:8px">
@@ -28,14 +27,16 @@
       </a>
       <h3 style="text-align:center">🔐 دخول لوحة الإدارة</h3>
       <p class="auth-note" style="text-align:center">هذه المنطقة مخصصة للمدير فقط</p>
-      <label>رقم الهاتف<input type="tel" id="adLoginPhone" required placeholder="9677xxxxxxxx" /></label>
+      <label>رقم الهاتف
+        <input type="tel" id="adLoginPhone" required placeholder="96777xxxxxxx" inputmode="numeric" dir="ltr" />
+        <small class="field-hint">بالصيغة الدولية بدون علامة +</small>
+      </label>
       <label>كلمة المرور<input type="password" id="adLoginPass" required placeholder="••••••••" /></label>
       <button type="submit" class="btn btn-primary btn-block">دخول</button>
       <p class="auth-note" style="text-align:center"><a href="index.html">← العودة إلى المتجر</a></p>
     </form>
   </section>
 
-  <!-- ============ واجهة لوحة الإدارة (تظهر بعد الدخول فقط) ============ -->
   <div id="adminApp" class="hidden">
     <aside class="sidebar" id="sidebar">
       <a href="index.html" class="brand sidebar-brand">
@@ -66,7 +67,6 @@
         <span class="admin-user" id="adminNameChip">👑 المدير</span>
       </header>
 
-      <!-- الرئيسية -->
       <section class="admin-page active" id="page-dashboard">
         <div class="stats-grid">
           <div class="stat-card"><span class="stat-icon">💰</span><div><b id="statRevenue">$0</b><p>إجمالي المبيعات</p></div></div>
@@ -85,7 +85,6 @@
         </div>
       </section>
 
-      <!-- المنتجات والخدمات -->
       <section class="admin-page" id="page-products">
         <div class="panel">
           <h3>➕ إضافة / تعديل عنصر (منتج بسعر أو خدمة استشارية)</h3>
@@ -116,6 +115,10 @@
               <label>الوحدة / المدة<input type="text" id="pUnit" placeholder="مثال: يبدأ من / 3 أشهر" /></label>
             </div>
             <label>الوصف<textarea id="pDesc" rows="2"></textarea></label>
+            <label class="check-row">
+              <input type="checkbox" id="pReqId" />
+              🆔 هل يتطلب إدخال معرّف الحساب / Player ID من العميل؟ (لمنتجات الشحن)
+            </label>
             <div class="form-actions">
               <button type="submit" class="btn btn-primary">💾 حفظ</button>
               <button type="button" class="btn btn-outline" id="pReset">إلغاء التعديل</button>
@@ -126,14 +129,13 @@
           <h3>📋 القائمة الحالية</h3>
           <div class="table-wrap">
             <table class="admin-table" id="productsTable">
-              <thead><tr><th>العنصر</th><th>النوع</th><th>القسم</th><th>السعر</th><th>إجراءات</th></tr></thead>
+              <thead><tr><th>العنصر</th><th>النوع</th><th>القسم</th><th>السعر</th><th>🆔 ID؟</th><th>إجراءات</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>
         </div>
       </section>
 
-      <!-- الطلبات -->
       <section class="admin-page" id="page-orders">
         <div class="panel">
           <h3>📦 الطلبات الواردة</h3>
@@ -146,7 +148,6 @@
         </div>
       </section>
 
-      <!-- المستخدمون -->
       <section class="admin-page" id="page-users">
         <div class="panel">
           <h3>👥 العملاء المسجلون</h3>
@@ -159,7 +160,6 @@
         </div>
       </section>
 
-      <!-- الإعدادات -->
       <section class="admin-page" id="page-settings">
         <div class="panel">
           <h3>➕ إضافة طريقة دفع يدوية</h3>
@@ -187,8 +187,8 @@
           <h3>📞 روابط التواصل المعروضة للعملاء</h3>
           <form class="admin-form" id="siteForm">
             <div class="form-row">
-              <label>رقم واتساب الدعم (دولي بدون +)<input type="tel" id="setWhatsapp" placeholder="967771234567" /></label>
-              <label>حساب تليجرام (بدون @)<input type="text" id="setTelegram" placeholder="devstore_support" /></label>
+              <label>رقم واتساب الدعم (دولي بدون +)<input type="tel" id="setWhatsapp" placeholder="967771234567" inputmode="numeric" dir="ltr" /></label>
+              <label>حساب تليجرام (بدون @)<input type="text" id="setTelegram" placeholder="devstore_support" dir="ltr" /></label>
             </div>
             <label>البريد الإلكتروني<input type="email" id="setEmail" /></label>
             <div class="form-actions"><button type="submit" class="btn btn-primary">💾 حفظ</button></div>

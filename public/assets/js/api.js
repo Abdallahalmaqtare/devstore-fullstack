@@ -27,3 +27,8 @@ const API = {
     return data;
   },
 };
+
+/* توحيد أرقام الهاتف: حذف + والمسافات والشرطات والأقواس — أرقام فقط */
+function normalizePhone(p) {
+  return String(p || '').replace(/[\s\-()+.]/g, '').replace(/\D/g, '');
+}

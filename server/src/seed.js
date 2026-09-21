@@ -4,21 +4,22 @@ const mongoose = require('mongoose');
 const { Product, PaymentMethod, SiteSettings } = require('./models');
 
 const products = [
-  // 🛒 منتجات بسعر (تُضاف للسلة)
-  { type: 'product', cat: 'games', icon: '🟥', name: 'شدات ببجي موبايل (UC)', desc: 'شحن فوري عبر ID — باقات 60 إلى 8100 شدة.', price: 1.20, unit: 'يبدأ من' },
-  { type: 'product', cat: 'games', icon: '💎', name: 'ألماس فري فاير', desc: 'شحن ألماس فوري وآمن عبر ID اللاعب.', price: 1.00, unit: 'يبدأ من' },
+  // 🛒 منتجات بسعر (شحن يتطلب Player ID)
+  { type: 'product', cat: 'games', icon: '🟥', name: 'شدات ببجي موبايل (UC)', desc: 'شحن فوري عبر ID — باقات 60 إلى 8100 شدة.', price: 1.20, unit: 'يبدأ من', requiresAccountId: true },
+  { type: 'product', cat: 'games', icon: '💎', name: 'ألماس فري فاير', desc: 'شحن ألماس فوري وآمن عبر ID اللاعب.', price: 1.00, unit: 'يبدأ من', requiresAccountId: true },
   { type: 'product', cat: 'games', icon: '🎁', name: 'بطاقات جوجل بلاي', desc: 'بطاقات هدايا أمريكية وسعودية بفئات متعددة.', price: 5.00, unit: 'يبدأ من' },
   { type: 'product', cat: 'numbers', icon: '📱', name: 'رقم وهمي — واتساب', desc: 'رقم جاهز لتفعيل واتساب مع كود التفعيل فوراً.', price: 1.50, countrySelect: true },
   { type: 'product', cat: 'numbers', icon: '✈️', name: 'رقم وهمي — تليجرام', desc: 'رقم موثوق لتفعيل تليجرام، ضمان استلام الكود.', price: 1.50, countrySelect: true },
   { type: 'product', cat: 'tools', icon: '🔧', name: 'SamFw Tool — أرصدة', desc: 'شحن كريدت SamFw لتخطي FRP وفتح الشبكات.', price: 2.50, unit: 'للرصيد الواحد' },
   { type: 'product', cat: 'tools', icon: '🧰', name: 'Chimera Tool — كريدت', desc: 'أرصدة وتفعيلات Chimera الأصلية بأفضل سعر.', price: 9.00, unit: 'يبدأ من' },
   { type: 'product', cat: 'tools', icon: '📡', name: 'DFS CDMA Tool — تفعيل', desc: 'تفعيل رسمي لبرمجة هواتف CDMA وضبط الشبكات.', price: 15.00, unit: 'سنوي' },
-  // 📩 خدمات تعليمية/استشارية (بدون سعر — تواصل للاتفاق)
-  { type: 'service', cat: 'courses', icon: '📲', name: 'تطوير تطبيقات الجوال — Flutter & Dart', desc: 'من الصفر حتى نشر تطبيقك على المتاجر: واجهات، إدارة حالة، ربط API.', modes: ['online', 'onsite'], meta: '3 أشهر • مبتدئ → محترف' },
-  { type: 'service', cat: 'courses', icon: '📡', name: 'برمجة الهواتف وضبط الشبكات (CDMA / VoLTE)', desc: 'تفعيل أنظمة CDMA وخدمة VoLTE لشبكة يمن موبايل وضبط الأجهزة المستوردة.', modes: ['onsite'], meta: '6 أسابيع • متوسط' },
-  { type: 'service', cat: 'courses', icon: '💼', name: 'دليلك للعمل الحر — ملف IT Specialist على Upwork', desc: 'بناء بروفايل احترافي، كتابة عروض مقنعة، والفوز بأول عميل دولي.', modes: ['online', 'onsite'], meta: '4 أسابيع • جميع المستويات' },
-  { type: 'service', cat: 'courses', icon: '🎓', name: 'مشاريع التخرج البرمجية', desc: 'تنفيذ ومناقشة مشاريع التخرج (تطبيقات، مواقع، أنظمة إدارة) باحترافية.', modes: ['online', 'onsite'], meta: 'حسب المشروع' },
-  { type: 'service', cat: 'courses', icon: '🗄️', name: 'إصلاح المشاكل وقواعد البيانات', desc: 'حل مشاكل السيرفرات وقواعد البيانات واسترجاع البيانات وتحسين الأداء.', modes: ['online'], meta: 'خدمة حسب الطلب' },
+  // 📩 خدمات استشارية/تعليمية (بدون سعر — تواصل للاتفاق)
+  { type: 'service', cat: 'courses', icon: '📲', name: 'تطوير تطبيقات الجوال — Flutter & Dart', desc: 'من الصفر حتى نشر تطبيقك على المتاجر: واجهات، إدارة حالة، ربط API.', modes: ['online', 'onsite'], meta: 'دورة تدريبية • 3 أشهر' },
+  { type: 'service', cat: 'courses', icon: '📡', name: 'برمجة الهواتف وضبط الشبكات (CDMA / VoLTE)', desc: 'تفعيل أنظمة CDMA وخدمة VoLTE لشبكة يمن موبايل وضبط الأجهزة المستوردة.', modes: ['onsite'], meta: 'دورة تدريبية • 6 أسابيع' },
+  { type: 'service', cat: 'courses', icon: '💼', name: 'دليلك للعمل الحر — ملف IT Specialist على Upwork', desc: 'بناء بروفايل احترافي، كتابة عروض مقنعة، والفوز بأول عميل دولي.', modes: ['online', 'onsite'], meta: 'دورة تدريبية • 4 أسابيع' },
+  { type: 'service', cat: 'courses', icon: '🎓', name: 'مشاريع التخرج البرمجية', desc: 'تنفيذ ومناقشة مشاريع التخرج (تطبيقات، مواقع، أنظمة إدارة) باحترافية.', modes: ['online', 'onsite'], meta: 'مشروع تخرج • حسب المشروع' },
+  { type: 'service', cat: 'courses', icon: '📚', name: 'التكاليف والواجبات الجامعية', desc: 'مساعدة احترافية في التكاليف البرمجية والتقارير الجامعية.', modes: ['online'], meta: 'تكليف جامعي • حسب الحجم' },
+  { type: 'service', cat: 'courses', icon: '🗄️', name: 'إصلاح المشاكل وقواعد البيانات', desc: 'حل مشاكل السيرفرات وقواعد البيانات واسترجاع البيانات وتحسين الأداء.', modes: ['online'], meta: 'خدمة برمجية • حسب الطلب' },
 ];
 
 const methods = [
@@ -29,6 +30,7 @@ const methods = [
 
 mongoose.connect(process.env.MONGODB_URI).then(async () => {
   if (!(await Product.countDocuments())) { await Product.insertMany(products); console.log('✅ تم إدراج المنتجات والخدمات'); }
+  else console.log('ℹ️ المنتجات موجودة مسبقاً — احذف المجموعة لإعادة البذر');
   if (!(await PaymentMethod.countDocuments())) { await PaymentMethod.insertMany(methods); console.log('✅ تم إدراج طرق الدفع'); }
   await SiteSettings.findOneAndUpdate({ key: 'site' }, {}, { upsert: true });
   console.log('✅ إعدادات الموقع جاهزة');

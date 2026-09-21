@@ -134,7 +134,7 @@
     <div class="footer-bottom"><p>© <span id="year"></span> DevStore — جميع الحقوق محفوظة. صُنع بشغف في اليمن 🇾🇪</p></div>
   </footer>
 
-  <!-- ==================== نافذة المصادقة (دخول / تسجيل / OTP / نسيت كلمة المرور) ==================== -->
+  <!-- ==================== نافذة المصادقة ==================== -->
   <div class="modal-overlay" id="authModal">
     <div class="modal">
       <button class="modal-close" data-close="authModal">✕</button>
@@ -146,7 +146,10 @@
       <!-- دخول -->
       <form class="auth-form active" id="loginForm">
         <h3>أهلاً بعودتك 👋</h3>
-        <label>رقم الهاتف<input type="tel" id="loginPhone" required placeholder="77xxxxxxx" /></label>
+        <label>رقم الهاتف
+          <input type="tel" id="loginPhone" required placeholder="96777xxxxxxx" inputmode="numeric" dir="ltr" />
+          <small class="field-hint">أدخل الرقم بالصيغة الدولية مسبوقاً برمز الدولة وبدون علامة + — مثال: <b dir="ltr">967771234567</b></small>
+        </label>
         <label>كلمة المرور<input type="password" id="loginPass" required placeholder="••••••••" /></label>
         <button type="submit" class="btn btn-primary btn-block">دخول</button>
         <p class="auth-note">نسيت كلمة المرور؟ <a href="#" id="forgotLink">استعادة</a></p>
@@ -156,30 +159,38 @@
       <form class="auth-form" id="registerForm">
         <h3>انضم إلينا 🚀</h3>
         <label>الاسم الكامل<input type="text" id="regName" required placeholder="محمد أحمد" /></label>
-        <label>رقم الهاتف (بصيغة دولية بدون +، مثال: 967771234567)<input type="tel" id="regPhone" required placeholder="9677xxxxxxxx" /></label>
+        <label>رقم الهاتف
+          <input type="tel" id="regPhone" required placeholder="96777xxxxxxx" inputmode="numeric" dir="ltr" />
+          <small class="field-hint">أدخل الرقم بالصيغة الدولية مسبوقاً برمز الدولة وبدون علامة + — مثال: <b dir="ltr">967771234567</b></small>
+        </label>
         <label>كلمة المرور<input type="password" id="regPass" required minlength="6" placeholder="6 أحرف على الأقل" /></label>
         <button type="submit" class="btn btn-primary btn-block">إرسال رمز التحقق</button>
       </form>
 
-      <!-- نسيت كلمة المرور: إدخال الهاتف -->
+      <!-- نسيت كلمة المرور -->
       <form class="auth-form" id="forgotForm">
         <h3>استعادة كلمة المرور 🔑</h3>
-        <label>رقم الهاتف المسجل<input type="tel" id="forgotPhone" required placeholder="9677xxxxxxxx" /></label>
+        <label>رقم الهاتف المسجل
+          <input type="tel" id="forgotPhone" required placeholder="96777xxxxxxx" inputmode="numeric" dir="ltr" />
+          <small class="field-hint">بالصيغة الدولية بدون علامة + — مثال: <b dir="ltr">967771234567</b></small>
+        </label>
         <button type="submit" class="btn btn-primary btn-block">إرسال رمز التحقق</button>
         <p class="auth-note"><a href="#" data-goto="login">← العودة لتسجيل الدخول</a></p>
       </form>
 
-      <!-- التحقق من OTP -->
+      <!-- OTP -->
       <form class="auth-form" id="otpForm">
         <h3>رمز التحقق 🔢</h3>
         <p class="auth-note" id="otpHint">أدخل الرمز المكوّن من 6 أرقام المرسل إلى هاتفك</p>
-        <div class="otp-inputs" id="otpInputs">
-          <input type="text" inputmode="numeric" maxlength="1" />
-          <input type="text" inputmode="numeric" maxlength="1" />
-          <input type="text" inputmode="numeric" maxlength="1" />
-          <input type="text" inputmode="numeric" maxlength="1" />
-          <input type="text" inputmode="numeric" maxlength="1" />
-          <input type="text" inputmode="numeric" maxlength="1" />
+        <div class="otp-container" dir="ltr">
+          <div class="otp-inputs" id="otpInputs">
+            <input type="text" inputmode="numeric" maxlength="1" autocomplete="one-time-code" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+            <input type="text" inputmode="numeric" maxlength="1" />
+          </div>
         </div>
         <input type="hidden" id="otpCode" />
         <p class="auth-note">
@@ -192,7 +203,7 @@
         </p>
       </form>
 
-      <!-- تعيين كلمة مرور جديدة (بعد استعادة) -->
+      <!-- كلمة مرور جديدة -->
       <form class="auth-form" id="resetForm">
         <h3>كلمة مرور جديدة 🔐</h3>
         <label>كلمة المرور الجديدة<input type="password" id="resetPass" required minlength="6" placeholder="6 أحرف على الأقل" /></label>
@@ -214,7 +225,10 @@
 
       <form class="profile-form active" id="profileInfoForm" data-ppage="info">
         <label>الاسم الكامل<input type="text" id="pfName" required /></label>
-        <label>رقم الهاتف<input type="tel" id="pfPhone" required /></label>
+        <label>رقم الهاتف
+          <input type="tel" id="pfPhone" required inputmode="numeric" dir="ltr" />
+          <small class="field-hint">بالصيغة الدولية بدون علامة +</small>
+        </label>
         <button type="submit" class="btn btn-primary btn-block">💾 حفظ التعديلات</button>
       </form>
 
@@ -243,15 +257,15 @@
     <div class="modal">
       <button class="modal-close" data-close="inquireModal">✕</button>
       <h3>💬 تواصل للاتفاق</h3>
-      <p class="auth-note">أنت على وشك الاستفسار عن: <b id="inqServiceName">—</b></p>
+      <p class="auth-note">الخدمة: <b id="inqServiceName">—</b><br><span id="inqCategory" class="inq-cat"></span></p>
       <form class="auth-form active" id="inquireForm">
-        <label>الاسم<input type="text" id="inqName" placeholder="اختياري" /></label>
-        <label>رقم الهاتف<input type="tel" id="inqPhone" placeholder="اختياري" /></label>
-        <div style="display:flex; gap:10px; flex-wrap:wrap">
-          <a id="inqWa" href="#" target="_blank" rel="noopener" class="btn btn-success" style="flex:1">🟢 واتساب مباشر</a>
-          <a id="inqTg" href="#" target="_blank" rel="noopener" class="btn btn-outline" style="flex:1">✈️ تليجرام</a>
+        <label>الاسم<input type="text" id="inqName" placeholder="اختياري — يُعبأ تلقائياً إن كنت مسجلاً" /></label>
+        <label>رقم الهاتف<input type="tel" id="inqPhone" inputmode="numeric" dir="ltr" placeholder="اختياري — 9677xxxxxxxx" /></label>
+        <div class="inq-actions">
+          <a id="inqWa" href="#" target="_blank" rel="noopener" class="btn btn-success">🟢 تواصل عبر واتساب</a>
+          <a id="inqTg" href="#" target="_blank" rel="noopener" class="btn btn-outline">✈️ تواصل عبر تليجرام</a>
         </div>
-        <p class="auth-note">سيتم إعلام إدارتنا فور فتحك للمحادثة لتحضير عرض مناسب.</p>
+        <p class="auth-note">يُرسل اسم الخدمة وبياناتك برسالة جاهزة تلقائياً، وتصل إدارتنا إشعار فوري.</p>
       </form>
     </div>
   </div>

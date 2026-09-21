@@ -15,7 +15,7 @@ const otpSchema = new Schema({
   phone: { type: String, required: true },
   codeHash: { type: String, required: true },
   purpose: { type: String, enum: ['register', 'reset'], required: true },
-  payload: { name: String, password: String }, // بيانات التسجيل المعلّقة (كلمة المرور مشفّرة)
+  payload: { name: String, password: String },
   attempts: { type: Number, default: 0 },
   expiresAt: { type: Date, required: true },
 });
@@ -26,12 +26,13 @@ const productSchema = new Schema({
   name: { type: String, required: true },
   desc: { type: String, default: '' },
   price: { type: Number, default: 0, min: 0 },
-  /* product = بسعر ويُضاف للسلة | service = استشارية/تعليمية للتواصل المباشر بدون سعر */
   type: { type: String, enum: ['product', 'service'], default: 'product' },
   cat: { type: String, enum: ['games', 'numbers', 'tools', 'courses'], required: true },
   icon: { type: String, default: '📦' },
   unit: { type: String, default: '' },
   countrySelect: { type: Boolean, default: false },
+  /* يطلب من العميل إدخال معرّف الحساب (Player ID) قبل الإضافة للسلة */
+  requiresAccountId: { type: Boolean, default: false },
   modes: [{ type: String, enum: ['online', 'onsite'] }],
   meta: { type: String, default: '' },
   active: { type: Boolean, default: true },
@@ -53,7 +54,9 @@ const orderSchema = new Schema({
   customerPhone: String,
   items: [{
     product: { type: Schema.Types.ObjectId, ref: 'Product' },
-    name: String, price: Number, qty: Number, extra: String,
+    name: String, price: Number, qty: Number,
+    extra: String,        // الدولة المختارة مثلاً
+    accountId: String,    // معرّف الحساب / Player ID
   }],
   total: { type: Number, required: true },
   paymentMethod: { name: String, account: String },
@@ -61,7 +64,7 @@ const orderSchema = new Schema({
   status: { type: String, enum: ['قيد المراجعة', 'مكتمل', 'ملغي'], default: 'قيد المراجعة' },
 }, { timestamps: true });
 
-/* ===== إعدادات الموقع (روابط التواصل الظاهرة للعملاء) ===== */
+/* ===== إعدادات الموقع ===== */
 const settingsSchema = new Schema({
   key: { type: String, unique: true, default: 'site' },
   whatsapp: { type: String, default: '967700000000' },

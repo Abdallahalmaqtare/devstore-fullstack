@@ -14,7 +14,7 @@ function showToast(msg) {
   toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
-/* ---------------- شاشة تسجيل الدخول للأدمن ---------------- */
+/* ---------------- شاشة دخول الأدمن ---------------- */
 const loginScreen = document.getElementById('adminLoginScreen');
 const app = document.getElementById('adminApp');
 
@@ -26,7 +26,6 @@ function showApp() {
   bootAdmin();
 }
 
-/* التحقق من التوكن الحالي: هل هو أدمن فعلاً؟ */
 async function verifyAdmin() {
   const u = API.user();
   if (!API.token() || !u || u.role !== 'admin') return showLogin();
@@ -45,7 +44,7 @@ document.getElementById('adminLoginForm').addEventListener('submit', async e => 
     const { token, user } = await API.req('/auth/admin-login', {
       method: 'POST',
       body: {
-        phone: document.getElementById('adLoginPhone').value,
+        phone: normalizePhone(document.getElementById('adLoginPhone').value),
         password: document.getElementById('adLoginPass').value,
       },
     });
@@ -55,7 +54,7 @@ document.getElementById('adminLoginForm').addEventListener('submit', async e => 
   } catch (err) { showToast('❌ ' + err.message); }
 });
 
-/* ---------------- تشغيل باقي عناصر اللوحة بعد نجاح الدخول ---------------- */
+/* ---------------- تشغيل اللوحة بعد الدخول ---------------- */
 function bootAdmin() {
   document.getElementById('adminLogout').addEventListener('click', () => {
     API.clearSession(); showLogin();
@@ -67,7 +66,6 @@ function bootAdmin() {
     localStorage.setItem('tg-theme', next);
   });
 
-  /* التنقل بين الصفحات */
   const sidebar = document.getElementById('sidebar');
   const sidebarOverlay = document.getElementById('sidebarOverlay');
   const pageTitles = {
@@ -117,12 +115,13 @@ async function renderProducts() {
         <td>${p.type === 'service' ? '💬 خدمة' : '🛒 منتج'}</td>
         <td>${CAT_LABELS[p.cat] || p.cat}</td>
         <td>${p.type === 'service' ? '—' : '$' + (+p.price).toFixed(2)}</td>
+        <td>${p.requiresAccountId ? '✅' : '—'}</td>
         <td class="row-actions">
           <button class="row-btn row-edit" data-edit='${JSON.stringify(p).replace(/'/g, "&#39;")}'>✏️ تعديل</button>
           <button class="row-btn row-del" data-del="${p._id}">🗑️ حذف</button>
         </td>
       </tr>`).join('')
-      : '<tr><td colspan="5" class="empty-row">لا توجد عناصر — أضف من الأعلى</td></tr>';
+      : '<tr><td colspan="6" class="empty-row">لا توجد عناصر — أضف من الأعلى</td></tr>';
   } catch (e) { showToast('❌ ' + e.message); }
 }
 
@@ -140,12 +139,15 @@ document.getElementById('productForm').addEventListener('submit', async e => {
     meta: document.getElementById('pUnit').value.trim(),
     desc: document.getElementById('pDesc').value.trim(),
     countrySelect: cat === 'numbers',
+    requiresAccountId: type === 'product' && document.getElementById('pReqId').checked,
     modes: cat === 'courses' ? ['online', 'onsite'] : [],
   };
   try {
     if (id) await API.req('/products/' + id, { method: 'PUT', body });
     else await API.req('/products', { method: 'POST', body });
-    e.target.reset(); document.getElementById('pId').value = '';
+    e.target.reset();
+    document.getElementById('pId').value = '';
+    document.getElementById('pReqId').checked = false;
     renderProducts(); renderDashboard();
     showToast(id ? '✅ تم التحديث' : '✅ تمت الإضافة');
   } catch (err) { showToast('❌ ' + err.message); }
@@ -154,6 +156,7 @@ document.getElementById('productForm').addEventListener('submit', async e => {
 document.getElementById('pReset').addEventListener('click', () => {
   document.getElementById('productForm').reset();
   document.getElementById('pId').value = '';
+  document.getElementById('pReqId').checked = false;
 });
 
 document.getElementById('productsTable').addEventListener('click', async e => {
@@ -169,6 +172,7 @@ document.getElementById('productsTable').addEventListener('click', async e => {
     document.getElementById('pIcon').value = p.icon || '';
     document.getElementById('pUnit').value = p.unit || p.meta || '';
     document.getElementById('pDesc').value = p.desc || '';
+    document.getElementById('pReqId').checked = !!p.requiresAccountId;
     document.getElementById('pName').focus();
   }
   if (delBtn && confirm('حذف هذا العنصر نهائياً؟')) {
@@ -179,14 +183,16 @@ document.getElementById('productsTable').addEventListener('click', async e => {
   }
 });
 
-/* ---------------- الطلبات ---------------- */
+/* ---------------- الطلبات (تعرض معرّف الحساب لكل عنصر) ---------------- */
 async function renderOrders() {
   try {
     const orders = await API.req('/orders');
     document.querySelector('#ordersTable tbody').innerHTML = orders.length ? orders.map(o => `
       <tr>
         <td><b>${o.code}</b><br><small>${o.customerName} — ${o.customerPhone}</small></td>
-        <td>${o.items.map(i => `${i.name} ×${i.qty}${i.extra ? ` (${i.extra})` : ''}`).join('، ')}</td>
+        <td>${o.items.map(i =>
+          `${i.name} ×${i.qty}${i.extra ? ` (${i.extra})` : ''}${i.accountId ? `<br>🆔 <b dir="ltr">${i.accountId}</b>` : ''}`
+        ).join('<hr style="border-color:var(--border);margin:4px 0">')}</td>
         <td>$${o.total.toFixed(2)}</td>
         <td>${o.paymentMethod?.name || '—'}</td>
         <td>${new Date(o.createdAt).toLocaleString('ar')}</td>
@@ -214,7 +220,7 @@ async function renderUsers() {
     document.querySelector('#usersTable tbody').innerHTML = users.map(u => `
       <tr>
         <td><b>${u.name}</b>${u.role === 'admin' ? ' 👑' : ''}</td>
-        <td>${u.phone}</td><td>${u.date || ''}</td><td>${u.orders}</td>
+        <td dir="ltr">${u.phone}</td><td>${u.date || ''}</td><td>${u.orders}</td>
         <td>${u.role === 'admin' ? '—' : `<button class="status-badge ${u.active ? 'status-done' : 'status-cancel'}" data-user="${u.id}">${u.active ? 'نشط' : 'موقوف'}</button>`}</td>
       </tr>`).join('');
   } catch (e) { showToast('❌ ' + e.message); }
@@ -280,7 +286,7 @@ async function loadSiteSettings() {
     document.getElementById('setWhatsapp').value = s.whatsapp || '';
     document.getElementById('setTelegram').value = s.telegram || '';
     document.getElementById('setEmail').value = s.email || '';
-  } catch { /* المستخدم يمكنه تعبئتها من جديد */ }
+  } catch { /* يعبّئها المستخدم من جديد */ }
 }
 document.getElementById('siteForm').addEventListener('submit', async e => {
   e.preventDefault();
@@ -288,8 +294,8 @@ document.getElementById('siteForm').addEventListener('submit', async e => {
     await API.req('/settings/site', {
       method: 'PUT',
       body: {
-        whatsapp: document.getElementById('setWhatsapp').value,
-        telegram: document.getElementById('setTelegram').value,
+        whatsapp: normalizePhone(document.getElementById('setWhatsapp').value),
+        telegram: document.getElementById('setTelegram').value.replace(/^@/, ''),
         email: document.getElementById('setEmail').value,
       },
     });

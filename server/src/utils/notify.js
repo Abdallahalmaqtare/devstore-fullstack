@@ -6,7 +6,6 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-/** رفع صورة (Buffer) إلى Cloudinary وإرجاع رابطها الآمن */
 function uploadImage(buffer, folder = 'devstore/receipts') {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
@@ -17,7 +16,6 @@ function uploadImage(buffer, folder = 'devstore/receipts') {
   });
 }
 
-/** إرسال رسالة فورية إلى تليجرام عبر البوت */
 async function sendTelegram(text) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;

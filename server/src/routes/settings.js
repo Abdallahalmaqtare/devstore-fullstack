@@ -24,7 +24,7 @@ router.delete('/payment-methods/:id', authRequired, adminOnly, async (req, res) 
   res.json({ ok: true });
 });
 
-/* ===== إعدادات الموقع: روابط التواصل الظاهرة للعملاء ===== */
+/* ===== إعدادات الموقع ===== */
 router.get('/site', async (req, res) => {
   const s = await SiteSettings.findOne({ key: 'site' }).lean();
   res.json(s || { whatsapp: '', telegram: '', email: '' });
@@ -34,7 +34,7 @@ router.put('/site', authRequired, adminOnly, async (req, res) => {
   const s = await SiteSettings.findOneAndUpdate(
     { key: 'site' },
     {
-      whatsapp: String(whatsapp || '').replace(/\D/g, ''),
+      whatsapp: String(whatsapp || '').replace(/[\s\-()+]/g, ''),
       telegram: String(telegram || '').replace(/^@/, ''),
       email: email || '',
     },

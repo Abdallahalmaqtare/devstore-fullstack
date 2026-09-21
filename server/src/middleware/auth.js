@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 const { User } = require('../models');
 
-/** يتحقق من توكن JWT ويُرفق المستخدم بالطلب */
 async function authRequired(req, res, next) {
   try {
     const header = req.headers.authorization || '';
@@ -19,7 +18,6 @@ async function authRequired(req, res, next) {
   }
 }
 
-/** يسمح فقط لمن دوره admin */
 function adminOnly(req, res, next) {
   if (req.user?.role !== 'admin') return res.status(403).json({ message: 'صلاحيات المدير مطلوبة' });
   next();

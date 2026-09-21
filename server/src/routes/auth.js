@@ -5,18 +5,16 @@ const { authRequired, adminOnly, signToken } = require('../middleware/auth');
 const { sendTelegram } = require('../utils/notify');
 
 const publicUser = u => ({ id: u._id, name: u.name, phone: u.phone, role: u.role });
-const cleanPhone = p => String(p || '').replace(/\D/g, '');
+/* توحيد الرقم: حذف + والمسافات والشرطات والأقواس — أرقام فقط */
+const cleanPhone = p => String(p || '').replace(/[\s\-()+]/g, '').replace(/\D/g, '');
 
-/* ---------- توليد وإرسال OTP ----------
-   القناة الافتراضية: يصل الرمز فوراً إلى بوت تليجرام الخاص بالأدمن ليُسلّمه للعميل.
-   قناة إضافية اختيارية: Twilio SMS إن ضُبطت مفاتيحها في env. */
 async function issueOtp(phone, purpose, payload) {
   const code = String(Math.floor(100000 + Math.random() * 900000));
   await Otp.deleteMany({ phone, purpose });
   await Otp.create({
     phone, purpose, payload,
     codeHash: await bcrypt.hash(code, 8),
-    expiresAt: new Date(Date.now() + 10 * 60 * 1000), // صالح 10 دقائق
+    expiresAt: new Date(Date.now() + 10 * 60 * 1000),
   });
 
   const purposeAr = purpose === 'register' ? 'تفعيل حساب جديد' : 'استعادة كلمة المرور';
@@ -27,7 +25,6 @@ async function issueOtp(phone, purpose, payload) {
     `⏱️ صالح 10 دقائق — سلّمه للعميل عبر واتساب`
   );
 
-  // Twilio (اختياري)
   if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM) {
     try {
       const auth = Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64');
@@ -52,7 +49,7 @@ async function checkOtp(phone, purpose, code) {
   return { otp };
 }
 
-/* POST /api/auth/send-otp — طلب رمز تحقق (تسجيل أو استعادة) */
+/* POST /api/auth/send-otp */
 router.post('/send-otp', async (req, res) => {
   const phone = cleanPhone(req.body?.phone);
   const { purpose, name, password } = req.body || {};
@@ -80,7 +77,7 @@ router.post('/send-otp', async (req, res) => {
   });
 });
 
-/* POST /api/auth/verify-otp — التحقق وإنشاء الحساب (purpose=register) */
+/* POST /api/auth/verify-otp */
 router.post('/verify-otp', async (req, res) => {
   const phone = cleanPhone(req.body?.phone);
   const { code, purpose } = req.body || {};
@@ -95,7 +92,7 @@ router.post('/verify-otp', async (req, res) => {
   res.json({ ok: true });
 });
 
-/* POST /api/auth/reset-password — التحقق من الرمز وتعيين كلمة مرور جديدة */
+/* POST /api/auth/reset-password */
 router.post('/reset-password', async (req, res) => {
   const phone = cleanPhone(req.body?.phone);
   const { code, password } = req.body || {};
@@ -111,7 +108,7 @@ router.post('/reset-password', async (req, res) => {
   res.json({ token: signToken(user), user: publicUser(user) });
 });
 
-/* POST /api/auth/login — دخول المستخدمين */
+/* POST /api/auth/login */
 router.post('/login', async (req, res) => {
   const phone = cleanPhone(req.body?.phone);
   const user = await User.findOne({ phone });
@@ -121,7 +118,7 @@ router.post('/login', async (req, res) => {
   res.json({ token: signToken(user), user: publicUser(user) });
 });
 
-/* POST /api/auth/admin-login — دخول الأدمن فقط (يرفض أي حساب ليس role=admin) */
+/* POST /api/auth/admin-login — يرفض أي حساب ليس admin */
 router.post('/admin-login', async (req, res) => {
   const phone = cleanPhone(req.body?.phone);
   const user = await User.findOne({ phone, role: 'admin' });
@@ -133,7 +130,6 @@ router.post('/admin-login', async (req, res) => {
 
 router.get('/me', authRequired, (req, res) => res.json({ user: publicUser(req.user) }));
 
-/* أدمن: قائمة المستخدمين */
 router.get('/users', authRequired, adminOnly, async (req, res) => {
   const users = await User.find().select('-password').sort('-createdAt').lean();
   const counts = await Order.aggregate([{ $group: { _id: '$user', n: { $sum: 1 } } }]);
@@ -144,7 +140,6 @@ router.get('/users', authRequired, adminOnly, async (req, res) => {
   })));
 });
 
-/* أدمن: تفعيل / إيقاف مستخدم */
 router.put('/users/:id/toggle', authRequired, adminOnly, async (req, res) => {
   const u = await User.findById(req.params.id);
   if (!u) return res.status(404).json({ message: 'غير موجود' });

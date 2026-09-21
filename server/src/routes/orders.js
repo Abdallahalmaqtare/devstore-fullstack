@@ -11,7 +11,7 @@ const upload = multer({
     /^image\//.test(file.mimetype) ? cb(null, true) : cb(new Error('يُسمح بالصور فقط')),
 });
 
-/* POST /api/orders — إنشاء طلب (منتجات مسعّرة فقط + سند إجباري) */
+/* POST /api/orders — إنشاء طلب (منتجات مسعّرة فقط + سند إجباري + accountId) */
 router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
   try {
     const items = JSON.parse(req.body.items || '[]');
@@ -30,8 +30,14 @@ router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
     const orderItems = items.map(i => {
       const p = pmap[i.id];
       if (!p) throw Object.assign(new Error('عنصر غير قابل للشراء المباشر'), { status: 400 });
+      // تحقق خادمي: المنتج الذي يتطلب معرّف حساب يجب أن يصل معه
+      if (p.requiresAccountId && !String(i.accountId || '').trim())
+        throw Object.assign(new Error(`معرّف الحساب (Player ID) مطلوب لـ «${p.name}»`), { status: 400 });
       total += p.price * (i.qty || 1);
-      return { product: p._id, name: p.name, price: p.price, qty: i.qty || 1, extra: i.extra || '' };
+      return {
+        product: p._id, name: p.name, price: p.price, qty: i.qty || 1,
+        extra: i.extra || '', accountId: String(i.accountId || '').trim(),
+      };
     });
 
     const receiptUrl = await uploadImage(req.file.buffer);
@@ -46,7 +52,9 @@ router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
       receiptUrl,
     });
 
-    const lines = orderItems.map(i => `• ${i.name} ×${i.qty}${i.extra ? ` (${i.extra})` : ''}`).join('\n');
+    const lines = orderItems.map(i =>
+      `• ${i.name} ×${i.qty}${i.extra ? ` (${i.extra})` : ''}${i.accountId ? `\n  🆔 الحساب: <code>${i.accountId}</code>` : ''}`
+    ).join('\n');
     await sendTelegram(
       `🛒 <b>طلب جديد!</b>\n\n🔢 رقم الطلب: <b>${order.code}</b>\n👤 العميل: ${order.customerName}\n📱 الهاتف: ${order.customerPhone}\n\n📦 الخدمات:\n${lines}\n\n💰 الإجمالي: <b>$${order.total}</b>\n💳 الدفع: ${pm.name} (${pm.account})\n🧾 السند: ${receiptUrl}`
     );
@@ -54,7 +62,7 @@ router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
   } catch (e) { res.status(e.status || 500).json({ message: e.message }); }
 });
 
-/* GET /api/orders/my-orders — طلبات المستخدم الحالي */
+/* طلبات المستخدم */
 router.get('/my-orders', authRequired, async (req, res) => {
   res.json(await Order.find({ user: req.user._id }).sort('-createdAt').lean());
 });
@@ -62,7 +70,7 @@ router.get('/mine', authRequired, async (req, res) => {
   res.json(await Order.find({ user: req.user._id }).sort('-createdAt').lean());
 });
 
-/* أدمن: كل الطلبات + تحديث الحالة */
+/* أدمن: الكل + تحديث الحالة */
 router.get('/', authRequired, adminOnly, async (req, res) => {
   res.json(await Order.find().sort('-createdAt').lean());
 });
