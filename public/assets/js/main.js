@@ -1178,3 +1178,142 @@ loadAll();
   }
   applyLang(lang);
 })();
+
+
+/* ════════════ v17: نوافذ الحساب المستقلة ════════════ */
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  function toast(m){ try{ showToast(m); }catch(e){} }
+  function tk(){ return (window.API && API.token) ? API.token() : null; }
+  function openM(id){ var m=$(id); if(!m) return; m.classList.add('show'); m.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden'; }
+  function closeM(id){ var m=$(id); if(!m) return; m.classList.remove('show'); m.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
+  function closeDrawer(){ var d=$('sideDrawer'),o=$('drawerOverlay'); if(d){d.classList.remove('open');} if(o){o.classList.remove('show');} }
+  function needAuth(){ if(!tk()){ toast('⚠️ سجّل الدخول أولاً'); var lb=$('loginBtn'); if(lb) lb.click(); return true; } return false; }
+  document.querySelectorAll('.modal-close').forEach(function(b){ b.addEventListener('click', function(){ closeM(b.dataset.close); }); });
+  document.querySelectorAll('.ds-modal').forEach(function(m){ m.addEventListener('click', function(e){ if(e.target===m) closeM(m.id); }); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape') document.querySelectorAll('.ds-modal.show').forEach(function(m){ closeM(m.id); }); });
+
+  /* الملف الشخصي */
+  var bp=$('drawerOpenProfile');
+  if (bp) bp.addEventListener('click', function(){
+    if (needAuth()) return; closeDrawer();
+    var un=$('drawerUserName'), up=$('drawerUserPhone');
+    if ($('modalNameInput') && un) $('modalNameInput').value = un.textContent==='زائر'?'':un.textContent;
+    if ($('modalPhoneInput') && up) $('modalPhoneInput').value = up.textContent;
+    openM('modalProfile');
+  });
+  var mns=$('modalNameSave');
+  if (mns) mns.addEventListener('click', async function(){
+    var v=($('modalNameInput').value||'').trim(); if(v.length<2) return toast('⚠️ أدخل اسماً صحيحاً');
+    try{ await API.req('/users/profile',{method:'PUT',body:{name:v}}); var un=$('drawerUserName'); if(un)un.textContent=v; toast('✅ تم حفظ الاسم'); }
+    catch(e){ toast('❌ '+e.message); }
+  });
+
+  /* الأمان */
+  var bs=$('drawerOpenSecurity');
+  if (bs) bs.addEventListener('click', function(){
+    if (needAuth()) return; closeDrawer();
+    if ($('secSessionInfo')) $('secSessionInfo').textContent = tk() ? '🟢 جلسة نشطة على هذا الجهاز — '+new Date().toLocaleString('ar-EG') : '🔴 لا توجد جلسة';
+    openM('modalSecurity');
+  });
+  var sps=$('secPwSave');
+  if (sps) sps.addEventListener('click', async function(){
+    var c=$('secCurPw'),n=$('secNewPw'),n2=$('secNewPw2');
+    if(!c.value||n.value.length<6) return toast('⚠️ أدخل كلمة المرور الحالية وجديدة (6 أحرف+)');
+    if(n.value!==n2.value) return toast('⚠️ تأكيد كلمة المرور غير متطابق');
+    try{ await API.req('/users/change-password',{method:'PUT',body:{currentPassword:c.value,newPassword:n.value,oldPassword:c.value}});
+      c.value='';n.value='';n2.value=''; toast('✅ تم تغيير كلمة المرور بنجاح'); }
+    catch(e){ toast('❌ '+e.message); }
+  });
+  var sla=$('secLogoutAll');
+  if (sla) sla.addEventListener('click', function(){
+    if(!confirm('تسجيل الخروج من كافة الأجهزة؟')) return;
+    try{ Object.keys(localStorage).forEach(function(k){ if(/token|ds_|devstore|user/i.test(k)) localStorage.removeItem(k); }); }catch(e){}
+    try{ Object.keys(sessionStorage).forEach(function(k){ if(/token|ds_|devstore|user/i.test(k)) sessionStorage.removeItem(k); }); }catch(e){}
+    if (window.API && API.logout){ try{ API.logout(); }catch(e){} }
+    location.reload();
+  });
+
+  /* التقارير وسجل الطلبات */
+  var CANCEL_MIN=30, ORDERS=[];
+  try{ API.req('/orders/cancel-window').then(function(r){ if(r&&r.minutes!=null) CANCEL_MIN=r.minutes; }); }catch(e){}
+  function stBadge(st){ var c = st==='مكتمل'?'#2ed573':(st==='ملغي'?'#ff6b81':'#ffa502'); return '<span style="color:'+c+';font-weight:800">'+st+'</span>'; }
+  function renderOrders(){
+    var host=$('reportsList'); if(!host) return;
+    if(!ORDERS.length){ host.innerHTML='<p class="drawer-note">لا توجد طلبات بعد.</p>'; return; }
+    host.innerHTML = ORDERS.map(function(o){
+      var items=(o.items||[]).map(function(i){return i.name;}).join(' + ');
+      var ids=(o.items||[]).map(function(i){return i.accountId;}).filter(Boolean).join(' ، ');
+      var dt=new Date(o.createdAt).toLocaleString('ar-EG');
+      var extra='';
+      if(o.status==='قيد المراجعة'){
+        var left=CANCEL_MIN*60000-(Date.now()-new Date(o.createdAt).getTime());
+        extra = left>0
+          ? '<button class="oc-cancel" data-cancel="'+o._id+'">🚫 إلغاء الطلب ('+Math.ceil(left/60000)+'د متبقية)</button>'
+          : '<span class="oc-expired">انتهت مهلة الإلغاء التلقائي — تواصل مع الدعم</span>';
+      }
+      return '<div class="order-card"><div class="oc-head"><span>'+o.code+'</span>'+stBadge(o.status)+'</div>'
+        +'<div class="oc-row">🧾 '+items+(ids?'<br>🆔 '+ids:'')+'<br>🕒 '+dt+'<br>💰 $'+o.total+'</div>'+extra+'</div>';
+    }).join('');
+    host.querySelectorAll('[data-cancel]').forEach(function(b){
+      b.addEventListener('click', async function(){
+        if(!confirm('تأكيد إلغاء هذا الطلب؟')) return;
+        try{ await API.req('/orders/'+b.dataset.cancel+'/cancel',{method:'POST'}); toast('✅ تم إلغاء الطلب'); loadOrders(); }
+        catch(e){ toast('❌ '+e.message); }
+      });
+    });
+  }
+  async function loadOrders(){
+    try{ var res=await API.req('/orders/my-orders'); ORDERS = Array.isArray(res)?res:(res&&res.orders)||[]; renderOrders(); }
+    catch(e){ var host=$('reportsList'); if(host) host.innerHTML='<p class="drawer-note">تعذر التحميل</p>'; }
+  }
+  var br=$('drawerOpenReports');
+  if (br) br.addEventListener('click', function(){ if(needAuth()) return; closeDrawer(); openM('modalReports'); loadOrders(); });
+
+  async function exportPdf(){
+    try{
+      var list=ORDERS.slice();
+      var f=$('repFromM').value, t=$('repToM').value;
+      if(f) list=list.filter(function(o){return new Date(o.createdAt)>=new Date(f);});
+      if(t) list=list.filter(function(o){return new Date(o.createdAt)<=new Date(t+'T23:59:59');});
+      if(!list.length) return toast('⚠️ لا توجد طلبات في هذا النطاق');
+      var rates={}, sel=document.getElementById('currencySelect');
+      try{ var cs=await API.req('/currencies'); (Array.isArray(cs)?cs:(cs.currencies||[])).forEach(function(c){rates[c.code]=c.rate;}); }catch(e){}
+      function loc(u){ var code=sel&&sel.value; return (code&&code!=='USD'&&rates[code])?' / '+Math.round(u*rates[code])+' '+code:''; }
+      var rows=list.map(function(o){
+        var items=(o.items||[]).map(function(i){return i.name;}).join(' + ');
+        var ids=(o.items||[]).map(function(i){return i.accountId;}).filter(Boolean).join(' ، ')||'—';
+        return '<tr><td>'+o.code+'</td><td>'+new Date(o.createdAt).toLocaleString('ar-EG')+'</td><td>'+items+'</td><td>'+ids+'</td><td>$'+o.total+loc(o.total)+'</td><td>'+((o.paymentMethod&&o.paymentMethod.name)||'—')+'</td><td>'+o.status+'</td></tr>';
+      }).join('');
+      var html='<div dir="rtl" style="font-family:Tahoma,Arial;padding:16px;background:#fff;color:#111">'
+        +'<div style="display:flex;justify-content:space-between;border-bottom:3px solid #6c5ce7;padding-bottom:8px;margin-bottom:10px"><h2 style="margin:0;color:#6c5ce7">⚡ DevStore</h2><b>كشف حساب / تقرير الطلبات</b></div>'
+        +'<div style="font-size:12px;margin-bottom:10px">👤 '+($('drawerUserName')||{}).textContent+' | 📱 <b dir="ltr">'+($('drawerUserPhone')||{}).textContent+'</b><br>🕒 '+new Date().toLocaleString('ar-EG')+'</div>'
+        +'<table style="width:100%;border-collapse:collapse;font-size:11px" border="1" cellpadding="6"><thead><tr style="background:#6c5ce7;color:#fff"><th>رقم الطلب</th><th>التاريخ والوقت</th><th>الخدمة</th><th>ID</th><th>المبلغ</th><th>الدفع</th><th>الحالة</th></tr></thead><tbody>'+rows+'</tbody></table>'
+        +'<p style="margin-top:12px;font-size:10px;color:#888">صادر آلياً من منصة DevStore</p></div>';
+      var host=document.createElement('div'); host.innerHTML=html; document.body.appendChild(host);
+      if(window.html2pdf) html2pdf().set({margin:8,filename:'DevStore-report.pdf',html2canvas:{scale:2},jsPDF:{unit:'mm',format:'a4',orientation:'landscape'}}).from(host).save().then(function(){host.remove();});
+      else { toast('❌ مكتبة PDF غير محمّلة'); host.remove(); }
+    }catch(e){ toast('❌ '+e.message); }
+  }
+  var rpb=$('reportsPdfBtn'); if(rpb) rpb.addEventListener('click', exportPdf);
+})();
+
+/* ═══ v17: إصلاح زر اللغة (ربط مباشر مضمون) ═══ */
+(function(){
+  var btn = document.getElementById('langToggle');
+  if (!btn) return;
+  if (!btn.dataset.v17bound) {
+    btn.dataset.v17bound = '1';
+    btn.addEventListener('click', function(){
+      var cur = localStorage.getItem('lang') || 'ar';
+      var nxt = (cur === 'en') ? 'ar' : 'en';
+      localStorage.setItem('lang', nxt);
+      document.documentElement.lang = nxt;
+      document.documentElement.dir = (nxt === 'en') ? 'ltr' : 'rtl';
+      btn.textContent = (nxt === 'en') ? '🌐 العربية' : '🌐 English';
+      location.reload();
+    });
+  }
+  var cur = localStorage.getItem('lang') || 'ar';
+  btn.textContent = (cur === 'en') ? '🌐 العربية' : '🌐 English';
+})();
