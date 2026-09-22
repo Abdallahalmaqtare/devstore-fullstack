@@ -460,13 +460,19 @@ async function requestOtp(purpose, phone, payload) {
       'أُرسل رمز مكوّن من 6 أرقام للرقم <b dir="ltr">' + phone + '</b><br>صالح 10 دقائق';
     document.getElementById('otpWaLink').href = res.whatsappUrl || '#';
     var tgLink = document.getElementById('otpTgLink');
+    tgLink.classList.remove('hidden');
     if (res.telegramBotUrl) {
       tgLink.href = res.telegramBotUrl;
-      tgLink.classList.remove('hidden');
       tgLink.onclick = function () {
-        showToast('✈️ اضغط Start في البوت وسيصلك الرمز فوراً هناك');
+        showToast('✈️ اضغط Start ثم زر «📲 تأكيد ومشاركة رقم هاتفي» وسيصلك الرمز فوراً');
       };
-    } else { tgLink.classList.add('hidden'); }
+    } else {
+      tgLink.href = '#';
+      tgLink.onclick = function (e) {
+        e.preventDefault();
+        showToast('⚠️ بوت تليجرام غير مُفعّل حالياً — استخدم زر واتساب بالأسفل');
+      };
+    }
     otpInputs.forEach(function (i) { i.value = ''; });
     document.getElementById('otpCode').value = '';
     showAuthForm('otp'); otpInputs[0].focus(); startOtpTimer(60);

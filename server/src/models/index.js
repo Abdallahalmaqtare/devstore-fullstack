@@ -20,7 +20,9 @@ const otpSchema = new Schema({
   payload: { name: String, password: String },
   attempts: { type: Number, default: 0 },
   linkToken: String,   // رمز ربط بوت تليجرام (start=otp_<linkToken>)
-  codePlain: String,   // الكود الصريح مؤقتاً لتسليمه آلياً عبر البوت — يُمحى بعد 10 دقائق بالـ TTL
+  codePlain: String,
+  pendingChatId: String,                    // محادثة تليجرام المرتبطة بطلب OTP الجاري
+  delivered: { type: Boolean, default: false },  // هل سُلّم الكود عبر البوت؟ (منع إعادة الاستخدام)   // الكود الصريح مؤقتاً لتسليمه آلياً عبر البوت — يُمحى بعد 10 دقائق بالـ TTL
 }, { timestamps: true });
 otpSchema.index({ createdAt: 1 }, { expireAfterSeconds: 600 });
 

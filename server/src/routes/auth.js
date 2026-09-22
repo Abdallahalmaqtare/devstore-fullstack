@@ -82,7 +82,7 @@ router.post('/send-otp', async (req, res) => {
     res.json({
       ok: true,
       whatsappUrl: wa ? 'https://wa.me/' + wa + '?text=' + encodeURIComponent('مرحباً، أطلب رمز التحقق (' + purposeAr + ') لرقم هاتفي: ' + phone) : '',
-      telegramBotUrl: botUser && otpRef?.linkToken ? 'https://t.me/' + botUser + '?start=otp_' + otpRef.linkToken : '',
+      telegramBotUrl: botUser && otpRef?.linkToken ? 'https://t.me/' + botUser + '?start=req_' + otpRef.linkToken : '',
       linkToken: otpRef?.linkToken || '',
     });
   } catch (e) { res.status(500).json({ message: 'خطأ في الخادم: ' + e.message }); }
