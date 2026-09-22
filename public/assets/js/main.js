@@ -987,8 +987,7 @@ loadAll();
     if ($('drawerUserName')) $('drawerUserName').textContent = name;
     if ($('drawerUserPhone')) $('drawerUserPhone').textContent = phone;
     var logged = !!tk();
-    if ($('drawerTools')) $('drawerTools').style.display = '';
-    var _lo = $('drawerLogout'); if (_lo) _lo.style.display = logged ? '' : 'none';
+    if ($('drawerTools')) $('drawerTools').style.display = logged ? '' : 'none';
     if ($('drawerSessionInfo')) $('drawerSessionInfo').textContent = logged
       ? '🟢 أنت مسجل الدخول بجلسة نشطة على هذا الجهاز.' : '🔴 لا توجد جلسة دخول حالياً.';
   }
@@ -1299,3 +1298,22 @@ loadAll();
   var rpb=$('reportsPdfBtn'); if(rpb) rpb.addEventListener('click', exportPdf);
 })();
 
+/* ═══ v17: إصلاح زر اللغة (ربط مباشر مضمون) ═══ */
+(function(){
+  var btn = document.getElementById('langToggle');
+  if (!btn) return;
+  if (!btn.dataset.v17bound) {
+    btn.dataset.v17bound = '1';
+    btn.addEventListener('click', function(){
+      var cur = localStorage.getItem('lang') || 'ar';
+      var nxt = (cur === 'en') ? 'ar' : 'en';
+      localStorage.setItem('lang', nxt);
+      document.documentElement.lang = nxt;
+      document.documentElement.dir = (nxt === 'en') ? 'ltr' : 'rtl';
+      btn.textContent = (nxt === 'en') ? '🌐 العربية' : '🌐 English';
+      location.reload();
+    });
+  }
+  var cur = localStorage.getItem('lang') || 'ar';
+  btn.textContent = (cur === 'en') ? '🌐 العربية' : '🌐 English';
+})();
