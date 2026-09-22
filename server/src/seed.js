@@ -1,7 +1,7 @@
 /* بيانات أولية — شغّله مرة واحدة: node server/src/seed.js */
 require('dotenv').config();
 const mongoose = require('mongoose');
-const { Product, PaymentMethod, SiteSettings } = require('./models');
+const { Product, PaymentMethod, SiteSettings, Category, Currency } = require('./models');
 
 const products = [
   /* ================= 🎮 ألعاب (مجموعات بباقات) ================= */
@@ -113,6 +113,22 @@ const products = [
   { type: 'service', cat: 'courses', icon: '🗄️', name: 'إصلاح المشاكل وقواعد البيانات', desc: 'حل مشاكل السيرفرات وقواعد البيانات واسترجاع البيانات.', modes: ['online'], meta: 'خدمة برمجية • حسب الطلب' },
 ];
 
+const categories = [
+  { slug: 'games', nameAr: 'ألعاب', nameEn: 'Games', icon: '🎮', kind: 'shop', order: 1 },
+  { slug: 'apps', nameAr: 'تطبيقات', nameEn: 'Apps', icon: '📱', kind: 'shop', order: 2 },
+  { slug: 'numbers', nameAr: 'أرقام وهمية', nameEn: 'Virtual Numbers', icon: '💬', kind: 'shop', order: 3 },
+  { slug: 'tools', nameAr: 'أدوات المبرمجين والصيانة', nameEn: 'Dev Tools', icon: '🛠️', kind: 'shop', order: 4 },
+  { slug: 'courses', nameAr: 'خدمات وتدريب', nameEn: 'Courses & Services', icon: '🎓', kind: 'services', order: 5 },
+];
+
+const currencies = [
+  { code: 'USD', name: 'دولار أمريكي', flag: '🇺🇸', rate: 1, order: 0 },
+  { code: 'YER', name: 'ريال يمني', flag: '🇾🇪', rate: 540, order: 1 },
+  { code: 'SAR', name: 'ريال سعودي', flag: '🇸🇦', rate: 3.75, order: 2 },
+  { code: 'EGP', name: 'جنيه مصري', flag: '🇪🇬', rate: 50, order: 3 },
+  { code: 'IQD', name: 'دينار عراقي', flag: '🇮🇶', rate: 1310, order: 4 },
+];
+
 const methods = [
   { name: 'الكريمي جوال', account: '77XXXXXXX', instructions: 'حوّل باسم: DevStore' },
   { name: 'النجم / محفظة النجم', account: '73XXXXXXX', instructions: '' },
@@ -124,6 +140,10 @@ mongoose.connect(process.env.MONGODB_URI).then(async () => {
   else console.log('ℹ️ المنتجات موجودة مسبقاً — احذف المجموعة لإعادة البذر');
   if (!(await PaymentMethod.countDocuments())) { await PaymentMethod.insertMany(methods); console.log('✅ تم إدراج طرق الدفع'); }
   await SiteSettings.findOneAndUpdate({ key: 'site' }, {}, { upsert: true });
+  for (const c of categories) await Category.findOneAndUpdate({ slug: c.slug }, c, { upsert: true });
+  console.log('✅ الأقسام جاهزة');
+  for (const c of currencies) await Currency.findOneAndUpdate({ code: c.code }, c, { upsert: true });
+  console.log('✅ العملات جاهزة');
   console.log('✅ إعدادات الموقع جاهزة');
   process.exit(0);
 }).catch(e => { console.error(e.message); process.exit(1); });

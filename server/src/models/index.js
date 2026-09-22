@@ -17,6 +17,8 @@ const otpSchema = new Schema({
   purpose: { type: String, enum: ['register', 'reset'], required: true },
   payload: { name: String, password: String },
   attempts: { type: Number, default: 0 },
+  linkToken: String,   // رمز ربط بوت تليجرام (start=otp_<linkToken>)
+  codePlain: String,   // الكود الصريح مؤقتاً لتسليمه آلياً عبر البوت — يُمحى بعد 10 دقائق بالـ TTL
 }, { timestamps: true });
 otpSchema.index({ createdAt: 1 }, { expireAfterSeconds: 600 });
 
@@ -33,7 +35,7 @@ const productSchema = new Schema({
   desc: { type: String, default: '' },
   price: { type: Number, default: 0, min: 0 },   // يُستخدم فقط لو لا توجد باقات
   type: { type: String, enum: ['product', 'service'], default: 'product' },
-  cat: { type: String, enum: ['apps', 'numbers', 'games', 'tools', 'courses'], required: true },
+  cat: { type: String, required: true, index: true }, // slug ديناميكي من مجموعة categories
   icon: { type: String, default: '📦' },
   image: { type: String, default: '' },   // صورة مرفوعة من الجهاز (Cloudinary) — تتقدم على الإيموجي
   unit: { type: String, default: '' },
@@ -77,6 +79,27 @@ const orderSchema = new Schema({
   status: { type: String, enum: ['قيد المراجعة', 'مكتمل', 'ملغي'], default: 'قيد المراجعة' },
 }, { timestamps: true });
 
+/* ===== الأقسام الرئيسية الديناميكية ===== */
+const categorySchema = new Schema({
+  slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  nameAr: { type: String, required: true },
+  nameEn: { type: String, default: '' },
+  icon: { type: String, default: '🗂️' },
+  kind: { type: String, enum: ['shop', 'services'], default: 'shop' }, // shop = فلاتر المتجر | services = قسم الخدمات
+  order: { type: Number, default: 0 },
+  active: { type: Boolean, default: true },
+}, { timestamps: true });
+
+/* ===== العملات وأسعار الصرف (1 USD = rate) ===== */
+const currencySchema = new Schema({
+  code: { type: String, required: true, unique: true, uppercase: true }, // YER, SAR...
+  name: { type: String, required: true },
+  flag: { type: String, default: '💱' },
+  rate: { type: Number, required: true, min: 0 },
+  order: { type: Number, default: 0 },
+  active: { type: Boolean, default: true },
+}, { timestamps: true });
+
 /* ===== إعدادات الموقع ===== */
 const settingsSchema = new Schema({
   key: { type: String, unique: true, default: 'site' },
@@ -92,4 +115,6 @@ module.exports = {
   PaymentMethod: model('PaymentMethod', paymentMethodSchema),
   Order: model('Order', orderSchema),
   SiteSettings: model('SiteSettings', settingsSchema),
+  Category: model('Category', categorySchema),
+  Currency: model('Currency', currencySchema),
 };

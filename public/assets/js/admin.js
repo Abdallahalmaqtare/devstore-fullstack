@@ -2,10 +2,7 @@
    DevStore Admin — v6 (مجموعات وباقات + قنوات منسق الخدمة)
    ============================================================ */
 
-const CAT_LABELS = {
-  games: '🎮 ألعاب', apps: '📱 تطبيقات', numbers: '💬 أرقام وهمية',
-  tools: '🛠️ أدوات وصيانة', courses: '🎓 خدمات وتدريب',
-};
+let CAT_LABELS = {}; /* تُملأ ديناميكياً من مجموعة categories */
 const STATUS_FLOW = ['قيد المراجعة', 'مكتمل', 'ملغي'];
 const STATUS_CLASS = { 'قيد المراجعة': 'status-review', 'مكتمل': 'status-done', 'ملغي': 'status-cancel' };
 
@@ -72,7 +69,7 @@ function bootAdmin() {
   const sidebar = document.getElementById('sidebar');
   const sidebarOverlay = document.getElementById('sidebarOverlay');
   const pageTitles = {
-    dashboard: '📊 الرئيسية', products: '🛍️ المنتجات والخدمات',
+    dashboard: '📊 الرئيسية', products: '🛍️ المنتجات والخدمات', categories: '🗂️ إدارة الأقسام',
     orders: '📦 إدارة الطلبات', users: '👥 إدارة المستخدمين', settings: '⚙️ الإعدادات',
   };
   document.querySelectorAll('.side-link').forEach(link => link.addEventListener('click', () => {
@@ -86,7 +83,7 @@ function bootAdmin() {
   document.getElementById('sideMenuBtn').addEventListener('click', () => { sidebar.classList.add('open'); sidebarOverlay.classList.add('open'); });
   sidebarOverlay.addEventListener('click', () => { sidebar.classList.remove('open'); sidebarOverlay.classList.remove('open'); });
 
-  renderDashboard(); renderProducts(); renderOrders(); renderUsers(); renderPayMethods(); loadSiteSettings();
+  renderDashboard(); renderProducts(); renderOrders(); renderUsers(); renderPayMethods(); loadSiteSettings(); loadCategories(); renderCurrencies();
 }
 
 /* ---------------- الإحصائيات ---------------- */
@@ -388,6 +385,164 @@ document.getElementById('siteForm').addEventListener('submit', async e => {
       },
     });
     showToast('✅ تم حفظ قنوات الدعم العامة');
+  } catch (err) { showToast('❌ ' + err.message); }
+});
+
+/* ============================================================
+   إدارة الأقسام الديناميكية
+   ============================================================ */
+let CATS = [];
+async function loadCategories() {
+  try {
+    CATS = await API.req('/categories/all');
+    CAT_LABELS = {};
+    CATS.forEach(c => { CAT_LABELS[c.slug] = (c.icon || '🗂️') + ' ' + c.nameAr; });
+    fillProductCats();
+    renderCategories();
+  } catch (e) { showToast('❌ ' + e.message); }
+}
+function fillProductCats() {
+  const sel = document.getElementById('pCat');
+  if (!CATS.length || !sel) return;
+  const cur = sel.value;
+  sel.innerHTML = CATS.filter(c => c.active).map(c =>
+    '<option value="' + c.slug + '">' + (c.icon || '') + ' ' + c.nameAr + '</option>').join('');
+  if (cur) sel.value = cur;
+}
+async function renderCategories() {
+  document.querySelector('#catTable tbody').innerHTML = CATS.length ? CATS.map(c => `
+    <tr>
+      <td>${c.icon || '🗂️'} <b>${c.nameAr}</b>${c.nameEn ? ' <small>(' + c.nameEn + ')</small>' : ''}</td>
+      <td dir="ltr">${c.slug}</td>
+      <td>${c.kind === 'services' ? '🎓 خدمات' : '🛍️ متجر'}</td>
+      <td>${c.order}</td>
+      <td><button class="status-badge ${c.active ? 'status-done' : 'status-cancel'}" data-cattoggle="${c._id}" data-active="${c.active}">${c.active ? 'ظاهر' : 'مخفي'}</button></td>
+      <td class="row-actions">
+        <button class="row-btn row-edit" data-catedit='${JSON.stringify(c).replace(/'/g, "&#39;")}'>✏️</button>
+        <button class="row-btn row-del" data-catdel="${c._id}">🗑️</button>
+      </td>
+    </tr>`).join('')
+    : '<tr><td colspan="6" class="empty-row">أضف أول قسم — مثال: شحن ألعاب / كورسات</td></tr>';
+}
+document.getElementById('catForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const id = document.getElementById('cId').value;
+  const body = {
+    nameAr: document.getElementById('cNameAr').value.trim(),
+    nameEn: document.getElementById('cNameEn').value.trim(),
+    slug: document.getElementById('cSlug').value.trim().toLowerCase(),
+    icon: document.getElementById('cIcon').value.trim() || '🗂️',
+    kind: document.getElementById('cKind').value,
+    order: parseInt(document.getElementById('cOrder').value || '0', 10),
+  };
+  try {
+    if (id) await API.req('/categories/' + id, { method: 'PUT', body });
+    else await API.req('/categories', { method: 'POST', body });
+    e.target.reset(); document.getElementById('cId').value = '';
+    loadCategories(); renderProducts();
+    showToast(id ? '✅ تم تحديث القسم' : '✅ تمت إضافة القسم — ظهر فوراً في المتجر');
+  } catch (err) { showToast('❌ ' + err.message); }
+});
+document.getElementById('cReset').addEventListener('click', () => {
+  document.getElementById('catForm').reset();
+  document.getElementById('cId').value = '';
+  document.getElementById('cSlug').disabled = false;
+});
+document.getElementById('catTable').addEventListener('click', async e => {
+  const edit = e.target.closest('[data-catedit]');
+  const del = e.target.closest('[data-catdel]');
+  const tog = e.target.closest('[data-cattoggle]');
+  try {
+    if (edit) {
+      const c = JSON.parse(edit.dataset.catedit);
+      document.getElementById('cId').value = c._id;
+      document.getElementById('cNameAr').value = c.nameAr;
+      document.getElementById('cNameEn').value = c.nameEn || '';
+      document.getElementById('cSlug').value = c.slug;
+      document.getElementById('cSlug').disabled = true; // المعرف ثابت بعد الإنشاء
+      document.getElementById('cIcon').value = c.icon || '';
+      document.getElementById('cKind').value = c.kind;
+      document.getElementById('cOrder').value = c.order;
+    }
+    if (tog) {
+      await API.req('/categories/' + tog.dataset.cattoggle, { method: 'PUT', body: { active: tog.dataset.active !== 'true' } });
+      loadCategories(); showToast('🔄 تم تحديث القسم');
+    }
+    if (del && confirm('حذف هذا القسم؟ (المنتجات المرتبطة به تبقى لكن بلا فلتر)')) {
+      await API.req('/categories/' + del.dataset.catdel, { method: 'DELETE' });
+      loadCategories(); showToast('🗑️ تم الحذف');
+    }
+  } catch (err) { showToast('❌ ' + err.message); }
+});
+
+/* ============================================================
+   إدارة العملات وأسعار الصرف
+   ============================================================ */
+async function renderCurrencies() {
+  try {
+    const curs = await API.req('/currencies/all');
+    document.querySelector('#curTable tbody').innerHTML = curs.length ? curs.map(c => `
+      <tr>
+        <td>${c.flag || '💱'} <b dir="ltr">${c.code}</b></td>
+        <td>${c.name}</td>
+        <td><b>${c.rate}</b></td>
+        <td><button class="status-badge ${c.active ? 'status-done' : 'status-cancel'}" data-curtoggle="${c._id}" data-active="${c.active}">${c.active ? 'مفعّلة' : 'معطّلة'}</button></td>
+        <td class="row-actions">
+          <button class="row-btn row-edit" data-curedit='${JSON.stringify(c).replace(/'/g, "&#39;")}'>✏️</button>
+          <button class="row-btn row-del" data-curdel="${c._id}">🗑️</button>
+        </td>
+      </tr>`).join('')
+      : '<tr><td colspan="5" class="empty-row">أضف أول عملة (مثال: YER بسعر 540)</td></tr>';
+  } catch (e) { showToast('❌ ' + e.message); }
+}
+document.getElementById('curForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const id = document.getElementById('curId').value;
+  const body = {
+    code: document.getElementById('curCode').value.trim().toUpperCase(),
+    name: document.getElementById('curName').value.trim(),
+    flag: document.getElementById('curFlag').value.trim() || '💱',
+    rate: parseFloat(document.getElementById('curRate').value),
+    active: document.getElementById('curActive').checked,
+  };
+  try {
+    if (id) await API.req('/currencies/' + id, { method: 'PUT', body });
+    else await API.req('/currencies', { method: 'POST', body });
+    e.target.reset(); document.getElementById('curId').value = '';
+    document.getElementById('curCode').disabled = false;
+    document.getElementById('curActive').checked = true;
+    renderCurrencies();
+    showToast('✅ تم حفظ العملة — الأسعار في المتجر تتحول فوراً');
+  } catch (err) { showToast('❌ ' + err.message); }
+});
+document.getElementById('curReset').addEventListener('click', () => {
+  document.getElementById('curForm').reset();
+  document.getElementById('curId').value = '';
+  document.getElementById('curCode').disabled = false;
+});
+document.getElementById('curTable').addEventListener('click', async e => {
+  const edit = e.target.closest('[data-curedit]');
+  const del = e.target.closest('[data-curdel]');
+  const tog = e.target.closest('[data-curtoggle]');
+  try {
+    if (edit) {
+      const c = JSON.parse(edit.dataset.curedit);
+      document.getElementById('curId').value = c._id;
+      document.getElementById('curCode').value = c.code;
+      document.getElementById('curCode').disabled = true;
+      document.getElementById('curName').value = c.name;
+      document.getElementById('curFlag').value = c.flag || '';
+      document.getElementById('curRate').value = c.rate;
+      document.getElementById('curActive').checked = !!c.active;
+    }
+    if (tog) {
+      await API.req('/currencies/' + tog.dataset.curtoggle, { method: 'PUT', body: { active: tog.dataset.active !== 'true' } });
+      renderCurrencies(); showToast('🔄 تم التحديث');
+    }
+    if (del && confirm('حذف هذه العملة؟')) {
+      await API.req('/currencies/' + del.dataset.curdel, { method: 'DELETE' });
+      renderCurrencies(); showToast('🗑️ تم الحذف');
+    }
   } catch (err) { showToast('❌ ' + err.message); }
 });
 

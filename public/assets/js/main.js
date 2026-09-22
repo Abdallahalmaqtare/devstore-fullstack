@@ -3,6 +3,46 @@
    ============================================================ */
 
 var PRODUCTS = [], COURSES = [], PAY_METHODS = [], SITE = {};
+var CATEGORIES = [], CURRENCIES = [];
+var currentCurrency = localStorage.getItem('ds-currency') || 'USD';
+
+/* رموز الاتصال الدولية لمحدد الهاتف */
+var DIALS = [
+  ['967', '🇾🇪 اليمن'], ['966', '🇸🇦 السعودية'], ['971', '🇦🇪 الإمارات'],
+  ['20', '🇪🇬 مصر'], ['964', '🇮🇶 العراق'], ['965', '🇰🇼 الكويت'],
+  ['974', '🇶🇦 قطر'], ['973', '🇧🇭 البحرين'], ['968', '🇴🇲 عُمان'],
+  ['962', '🇯🇴 الأردن'], ['963', '🇸🇾 سوريا'], ['218', '🇱🇾 ليبيا'],
+  ['216', '🇹🇳 تونس'], ['213', '🇩🇿 الجزائر'], ['212', '🇲🇦 المغرب'],
+  ['249', '🇸🇩 السودان'], ['90', '🇹🇷 تركيا'], ['92', '🇵🇰 باكستان'],
+  ['91', '🇮🇳 الهند'], ['1', '🇺🇸 أمريكا'], ['44', '🇬🇧 بريطانيا'],
+];
+
+/* ربط كل محدد رمز دولة بحقله + القيمة الافتراضية 967 */
+function initDialPickers() {
+  ['loginDial', 'regDial', 'forgotDial'].forEach(function (id) {
+    var sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = DIALS.map(function (d) {
+      return '<option value="' + d[0] + '"' + (d[0] === '967' ? ' selected' : '') + '>' + d[1] + ' +' + d[0] + '</option>';
+    }).join('');
+  });
+}
+
+/* دمج رمز الدولة مع الرقم المحلي: إزالة الصفر الأول ثم الدمج — ناتج صافٍ بلا + ولا مسافات */
+function fullPhone(dialId, phoneId) {
+  var dial = document.getElementById(dialId) ? document.getElementById(dialId).value : '967';
+  var local = normalizePhone(document.getElementById(phoneId).value).replace(/^0+/, '');
+  return dial + local;
+}
+
+/* تنسيق السعر المزدوج: $2 / 1080 YER */
+function cur() { return CURRENCIES.find(function (c) { return c.code === currentCurrency; }) || null; }
+function fmtPrice(usd) {
+  var c = cur();
+  var base = '$' + (+usd).toFixed(2);
+  if (!c || c.code === 'USD') return base;
+  return base + ' <small class="local-price">/ ' + Math.round(usd * c.rate).toLocaleString('en') + ' ' + c.code + '</small>';
+}
 var cart = JSON.parse(localStorage.getItem('ds-cart') || '[]');
 var selectedPmId = '';
 var currentFilter = 'all';
@@ -30,10 +70,17 @@ async function loadAll() {
       API.req('/products'),
       API.req('/settings/payment-methods'),
       API.req('/settings/site'),
+      API.req('/categories'),
+      API.req('/currencies'),
     ]);
     var items = res[0]; PAY_METHODS = res[1]; SITE = res[2] || {};
-    PRODUCTS = items.filter(function (p) { return p.cat !== 'courses'; });
-    COURSES = items.filter(function (p) { return p.cat === 'courses'; });
+    CATEGORIES = res[3] || []; CURRENCIES = res[4] || [];
+    var serviceSlugs = CATEGORIES.filter(function (c) { return c.kind === 'services'; }).map(function (c) { return c.slug; });
+    var shopSlugs = CATEGORIES.filter(function (c) { return c.kind === 'shop'; }).map(function (c) { return c.slug; });
+    PRODUCTS = items.filter(function (p) { return serviceSlugs.indexOf(p.cat) === -1; });
+    COURSES = items.filter(function (p) { return serviceSlugs.indexOf(p.cat) !== -1 || (!serviceSlugs.length && p.cat === 'courses'); });
+    renderFilters(shopSlugs);
+    renderCurrencySelect();
     renderProducts();
     renderCourses();
     renderPayMethods();
@@ -74,9 +121,9 @@ function renderProducts() {
     var isGroup = (p.variants || []).length > 0;
     var minPrice = isGroup ? Math.min.apply(null, p.variants.map(function (v) { return v.price; })) : p.price;
     var footer = isGroup
-      ? '<div class="product-price">$' + minPrice.toFixed(2) + ' <small>يبدأ من</small></div>' +
+      ? '<div class="product-price">' + fmtPrice(minPrice) + ' <small>يبدأ من</small></div>' +
         '<button class="buy-btn group-btn" data-group="' + p._id + '">📦 عرض الباقات (' + p.variants.length + ')</button>'
-      : '<div class="product-price">$' + p.price.toFixed(2) + ' <small>' + (p.unit || '') + '</small></div>' +
+      : '<div class="product-price">' + fmtPrice(p.price) + ' <small>' + (p.unit || '') + '</small></div>' +
         '<button class="buy-btn" data-buy="' + p._id + '">أضف للسلة 🛒</button>';
     var countrySel = p.countrySelect
       ? '<div class="product-extra"><select id="country-' + p._id + '"><option value="">اختر الدولة 🌍</option>' +
@@ -93,6 +140,33 @@ function renderProducts() {
       '</article>';
   }).join('')
   : '<p class="cart-empty">لا توجد نتائج مطابقة لبحثك 🔍</p>';
+}
+
+/* بناء فلاتر المتجر من الأقسام الديناميكية */
+function renderFilters(shopSlugs) {
+  var wrap = document.getElementById('storeFilters');
+  var cats = CATEGORIES.filter(function (c) { return shopSlugs.indexOf(c.slug) !== -1; });
+  wrap.innerHTML = '<button class="filter-chip active" data-filter="all">الكل</button>' +
+    cats.map(function (c) {
+      return '<button class="filter-chip" data-filter="' + c.slug + '">' + (c.icon || '') + ' ' + c.nameAr + '</button>';
+    }).join('');
+}
+
+/* محدد العملة في الشريط */
+function renderCurrencySelect() {
+  var sel = document.getElementById('currencySelect');
+  if (!sel) return;
+  if (!CURRENCIES.find(function (c) { return c.code === 'USD'; }))
+    CURRENCIES.unshift({ code: 'USD', name: 'دولار أمريكي', flag: '🇺🇸', rate: 1 });
+  sel.innerHTML = CURRENCIES.filter(function (c) { return c.active !== false; }).map(function (c) {
+    return '<option value="' + c.code + '"' + (c.code === currentCurrency ? ' selected' : '') + '>' + c.flag + ' ' + c.code + '</option>';
+  }).join('');
+  sel.onchange = function () {
+    currentCurrency = sel.value;
+    localStorage.setItem('ds-currency', currentCurrency);
+    renderProducts(); renderCart();
+    showToast('💱 العملة: ' + currentCurrency);
+  };
 }
 
 document.getElementById('storeFilters').addEventListener('click', function (e) {
@@ -123,7 +197,7 @@ function openGroupModal(id) {
     return '<div class="variant-row">' +
       '<span class="variant-icon">' + (v.icon || g.icon || '🎁') + '</span>' +
       '<span class="variant-name">' + v.name + '</span>' +
-      '<span class="variant-price">$' + v.price.toFixed(2) + '</span>' +
+      '<span class="variant-price">' + fmtPrice(v.price) + '</span>' +
       '<button class="buy-btn" data-variant="' + i + '">أضف للسلة 🛒</button>' +
       '</div>';
   }).join('');
@@ -216,14 +290,15 @@ function renderCart() {
       : '';
     return '<div class="cart-item">' +
       '<span class="cart-item-icon">' + (i.image ? '<img class="p-img" src="' + i.image + '" alt="" />' : i.icon) + '</span>' +
-      '<div class="cart-item-info"><b>' + i.name + '</b><span>' + (i.extra ? i.extra + ' • ' : '') + '$' + i.price.toFixed(2) + '</span>' + acct + '</div>' +
+      '<div class="cart-item-info"><b>' + i.name + '</b><span>' + (i.extra ? i.extra + ' • ' : '') + fmtPrice(i.price) + '</span>' + acct + '</div>' +
       '<div class="cart-item-actions">' +
       '<button class="qty-btn" data-dec="' + i.key + '">−</button><b>' + i.qty + '</b>' +
       '<button class="qty-btn" data-inc="' + i.key + '">+</button>' +
       '<button class="remove-btn" data-remove="' + i.key + '">🗑️</button>' +
       '</div></div>';
   }).join('');
-  cartTotal.textContent = '$' + cart.reduce(function (s, i) { return s + i.price * i.qty; }, 0).toFixed(2);
+  var totalUsd = cart.reduce(function (s, i) { return s + i.price * i.qty; }, 0);
+  cartTotal.innerHTML = fmtPrice(totalUsd);
 }
 renderCart();
 
@@ -374,6 +449,24 @@ function startOtpTimer(sec) {
   tick(); otpState.timer = setInterval(tick, 1000);
 }
 
+/* استطلاع بوت تليجرام: عند ضغط العميل /start otp_xxx يُرسل الكود له آلياً */
+var botPollTimer = null;
+function startBotPolling(linkToken) {
+  clearInterval(botPollTimer);
+  if (!linkToken) return;
+  var tries = 0;
+  botPollTimer = setInterval(async function () {
+    if (++tries > 20) return clearInterval(botPollTimer); // دقيقتان كحد أقصى
+    try {
+      var r = await API.req('/auth/bot-code?token=' + linkToken);
+      if (r.delivered) {
+        clearInterval(botPollTimer);
+        showToast('✈️ تم إرسال الرمز آلياً إلى تليجرام الخاص بك');
+      } else if (r.expired) { clearInterval(botPollTimer); }
+    } catch (e) { }
+  }, 6000);
+}
+
 async function requestOtp(purpose, phone, payload) {
   otpState = { purpose: purpose, phone: phone, payload: payload || null, timer: null };
   try {
@@ -383,6 +476,12 @@ async function requestOtp(purpose, phone, payload) {
     document.getElementById('otpHint').innerHTML =
       'أُرسل رمز مكوّن من 6 أرقام للرقم <b dir="ltr">' + phone + '</b><br>صالح 10 دقائق';
     document.getElementById('otpWaLink').href = res.whatsappUrl || '#';
+    var tgLink = document.getElementById('otpTgLink');
+    if (res.telegramBotUrl) {
+      tgLink.href = res.telegramBotUrl;
+      tgLink.classList.remove('hidden');
+      startBotPolling(res.linkToken);
+    } else { tgLink.classList.add('hidden'); }
     otpInputs.forEach(function (i) { i.value = ''; });
     document.getElementById('otpCode').value = '';
     showAuthForm('otp'); otpInputs[0].focus(); startOtpTimer(60);
@@ -397,7 +496,7 @@ document.getElementById('otpResend').addEventListener('click', function (e) {
 document.getElementById('registerForm').addEventListener('submit', function (e) {
   e.preventDefault();
   var name = document.getElementById('regName').value.trim();
-  var phone = normalizePhone(document.getElementById('regPhone').value);
+  var phone = fullPhone('regDial', 'regPhone');
   var password = document.getElementById('regPass').value;
   if (!name || phone.length < 9 || password.length < 6)
     return showToast('⚠️ تحقق من البيانات — الهاتف بالصيغة الدولية بدون +');
@@ -406,7 +505,7 @@ document.getElementById('registerForm').addEventListener('submit', function (e) 
 
 document.getElementById('forgotForm').addEventListener('submit', function (e) {
   e.preventDefault();
-  var phone = normalizePhone(document.getElementById('forgotPhone').value);
+  var phone = fullPhone('forgotDial', 'forgotPhone');
   if (phone.length < 9) return showToast('⚠️ أدخل الرقم بالصيغة الدولية بدون +');
   requestOtp('reset', phone);
 });
@@ -450,7 +549,7 @@ document.getElementById('resetForm').addEventListener('submit', async function (
 
 document.getElementById('loginForm').addEventListener('submit', async function (e) {
   e.preventDefault();
-  var phone = normalizePhone(document.getElementById('loginPhone').value);
+  var phone = fullPhone('loginDial', 'loginPhone');
   var remember = document.getElementById('rememberMe').checked;
   if (phone.length < 9) return showToast('⚠️ أدخل الرقم بالصيغة الدولية بدون +');
   try {
@@ -686,4 +785,5 @@ window.addEventListener('scroll', function () {
   });
 }, { passive: true });
 
+initDialPickers();
 loadAll();

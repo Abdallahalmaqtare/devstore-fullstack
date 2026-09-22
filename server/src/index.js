@@ -15,6 +15,8 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/categories', require('./routes/categories'));
+app.use('/api/currencies', require('./routes/currencies'));
 app.use('/api/inquiries', require('./routes/inquiries'));
 
 app.get('/api/health', (req, res) => res.json({ ok: true, time: new Date() }));

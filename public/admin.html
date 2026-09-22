@@ -46,6 +46,7 @@
       <nav class="side-nav">
         <button class="side-link active" data-page="dashboard">📊 الرئيسية</button>
         <button class="side-link" data-page="products">🛍️ المنتجات والخدمات</button>
+        <button class="side-link" data-page="categories">🗂️ إدارة الأقسام</button>
         <button class="side-link" data-page="orders">📦 إدارة الطلبات</button>
         <button class="side-link" data-page="users">👥 إدارة المستخدمين</button>
         <button class="side-link" data-page="settings">⚙️ الإعدادات</button>
@@ -162,6 +163,45 @@
         </div>
       </section>
 
+      <section class="admin-page" id="page-categories">
+        <div class="panel">
+          <h3>➕ إضافة / تعديل قسم رئيسي</h3>
+          <form class="admin-form" id="catForm">
+            <input type="hidden" id="cId" />
+            <div class="form-row">
+              <label>اسم القسم (عربي)<input type="text" id="cNameAr" required placeholder="شحن ألعاب" /></label>
+              <label>الاسم بالإنجليزية<input type="text" id="cNameEn" placeholder="Games" dir="ltr" /></label>
+            </div>
+            <div class="form-row">
+              <label>المعرّف الفريد (slug — إنجليزي بدون مسافات)<input type="text" id="cSlug" required placeholder="games" dir="ltr" /></label>
+              <label>الأيقونة (إيموجي)<input type="text" id="cIcon" placeholder="🎮" /></label>
+            </div>
+            <div class="form-row">
+              <label>نوع العرض
+                <select id="cKind">
+                  <option value="shop">🛍️ قسم متجر (فلاتر وباقات)</option>
+                  <option value="services">🎓 قسم خدمات (تواصل مباشر)</option>
+                </select>
+              </label>
+              <label>الترتيب<input type="number" id="cOrder" min="0" value="0" /></label>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">💾 حفظ القسم</button>
+              <button type="button" class="btn btn-outline" id="cReset">إلغاء التعديل</button>
+            </div>
+          </form>
+        </div>
+        <div class="panel">
+          <h3>🗂️ الأقسام الحالية (تنعكس على المتجر فوراً)</h3>
+          <div class="table-wrap">
+            <table class="admin-table" id="catTable">
+              <thead><tr><th>القسم</th><th>المعرّف</th><th>النوع</th><th>الترتيب</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <section class="admin-page" id="page-orders">
         <div class="panel">
           <h3>📦 الطلبات الواردة</h3>
@@ -204,6 +244,32 @@
           <div class="table-wrap">
             <table class="admin-table" id="pmTable">
               <thead><tr><th>الاسم</th><th>الحساب</th><th>التعليمات</th><th>الحالة</th><th>حذف</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>💱 إدارة أسعار الصرف والعملات ($1 = X)</h3>
+          <form class="admin-form" id="curForm">
+            <input type="hidden" id="curId" />
+            <div class="form-row">
+              <label>رمز العملة (3 أحرف)<input type="text" id="curCode" required placeholder="YER" dir="ltr" maxlength="3" /></label>
+              <label>اسم العملة<input type="text" id="curName" required placeholder="ريال يمني" /></label>
+            </div>
+            <div class="form-row">
+              <label>العلم (إيموجي)<input type="text" id="curFlag" placeholder="🇾🇪" /></label>
+              <label>سعر الصرف مقابل $1<input type="number" id="curRate" step="0.0001" min="0" required placeholder="540" /></label>
+            </div>
+            <label class="check-row"><input type="checkbox" id="curActive" checked /> مفعّلة في قائمة العملاء</label>
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary">💾 حفظ العملة</button>
+              <button type="button" class="btn btn-outline" id="curReset">إلغاء التعديل</button>
+            </div>
+          </form>
+          <div class="table-wrap" style="margin-top:16px">
+            <table class="admin-table" id="curTable">
+              <thead><tr><th>العملة</th><th>الاسم</th><th>$1 =</th><th>الحالة</th><th>إجراءات</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>

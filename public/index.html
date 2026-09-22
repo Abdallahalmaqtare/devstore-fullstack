@@ -30,6 +30,7 @@
         <a href="#footer" class="nav-link">اتصل بنا</a>
       </nav>
       <div class="nav-actions">
+        <select id="currencySelect" class="currency-select" title="اختر العملة" aria-label="اختيار العملة"></select>
         <button class="icon-btn" id="themeToggle" title="تبديل الوضع الليلي" aria-label="تبديل الوضع الليلي">
           <span class="theme-icon-sun">☀️</span><span class="theme-icon-moon">🌙</span>
         </button>
@@ -79,13 +80,7 @@
           <input type="search" id="storeSearch" placeholder="ابحث بالاسم... (مثال: PUBG، تيك توك، Chimera)" />
         </div>
 
-        <div class="store-filters" id="storeFilters">
-          <button class="filter-chip active" data-filter="all">الكل</button>
-          <button class="filter-chip" data-filter="games">🎮 ألعاب</button>
-          <button class="filter-chip" data-filter="apps">📱 تطبيقات</button>
-          <button class="filter-chip" data-filter="numbers">💬 أرقام وهمية</button>
-          <button class="filter-chip" data-filter="tools">🛠️ أدوات المبرمجين والصيانة</button>
-        </div>
+        <div class="store-filters" id="storeFilters"></div>
         <div class="cards-grid" id="productsGrid"></div>
       </div>
     </section>
@@ -168,8 +163,11 @@
       <form class="auth-form active" id="loginForm">
         <h3>أهلاً بعودتك 👋</h3>
         <label>رقم الهاتف
-          <input type="tel" id="loginPhone" required placeholder="96777xxxxxxx" inputmode="numeric" dir="ltr" />
-          <small class="field-hint">أدخل الرقم بالصيغة الدولية مسبوقاً برمز الدولة وبدون علامة + — مثال: <b dir="ltr">967771234567</b></small>
+          <div class="phone-row" dir="ltr">
+            <select id="loginDial" class="dial-select"></select>
+            <input type="tel" id="loginPhone" required placeholder="77xxxxxxx" inputmode="numeric" dir="ltr" />
+          </div>
+          <small class="field-hint">اختر رمز دولتك من القائمة ثم اكتب رقمك المحلي بدون الصفر الأول — يُدمج الرمز تلقائياً</small>
         </label>
         <label>كلمة المرور<input type="password" id="loginPass" required placeholder="••••••••" /></label>
         <label class="remember-row"><input type="checkbox" id="rememberMe" checked /> تذكرني على هذا الجهاز</label>
@@ -181,8 +179,11 @@
         <h3>انضم إلينا 🚀</h3>
         <label>الاسم الكامل<input type="text" id="regName" required placeholder="محمد أحمد" /></label>
         <label>رقم الهاتف
-          <input type="tel" id="regPhone" required placeholder="96777xxxxxxx" inputmode="numeric" dir="ltr" />
-          <small class="field-hint">أدخل الرقم بالصيغة الدولية مسبوقاً برمز الدولة وبدون علامة + — مثال: <b dir="ltr">967771234567</b></small>
+          <div class="phone-row" dir="ltr">
+            <select id="regDial" class="dial-select"></select>
+            <input type="tel" id="regPhone" required placeholder="77xxxxxxx" inputmode="numeric" dir="ltr" />
+          </div>
+          <small class="field-hint">اختر رمز دولتك من القائمة ثم اكتب رقمك المحلي بدون الصفر الأول — يُدمج الرمز تلقائياً</small>
         </label>
         <label>كلمة المرور<input type="password" id="regPass" required minlength="6" placeholder="6 أحرف على الأقل" /></label>
         <button type="submit" class="btn btn-primary btn-block">إرسال رمز التحقق</button>
@@ -191,8 +192,11 @@
       <form class="auth-form" id="forgotForm">
         <h3>استعادة كلمة المرور 🔑</h3>
         <label>رقم الهاتف المسجل
-          <input type="tel" id="forgotPhone" required placeholder="96777xxxxxxx" inputmode="numeric" dir="ltr" />
-          <small class="field-hint">بالصيغة الدولية بدون علامة + — مثال: <b dir="ltr">967771234567</b></small>
+          <div class="phone-row" dir="ltr">
+            <select id="forgotDial" class="dial-select"></select>
+            <input type="tel" id="forgotPhone" required placeholder="77xxxxxxx" inputmode="numeric" dir="ltr" />
+          </div>
+          <small class="field-hint">اختر رمز الدولة ثم اكتب رقمك المحلي فقط</small>
         </label>
         <button type="submit" class="btn btn-primary btn-block">إرسال رمز التحقق</button>
         <p class="auth-note"><a href="#" data-goto="login">← العودة لتسجيل الدخول</a></p>
@@ -213,6 +217,7 @@
         </div>
         <input type="hidden" id="otpCode" />
         <p class="auth-note">
+          <a id="otpTgLink" href="#" target="_blank" rel="noopener" class="otp-channel hidden">✈️ استلام الرمز آلياً من بوت تليجرام</a>
           <a id="otpWaLink" href="#" target="_blank" rel="noopener" class="otp-channel">💬 استلام الرمز عبر واتساب الدعم</a>
         </p>
         <button type="submit" class="btn btn-primary btn-block" id="otpSubmit">تحقق</button>
