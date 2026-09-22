@@ -31,7 +31,10 @@ const variantSchema = new Schema({
   name: { type: String, required: true },   // مثال: 60 شدة UC
   price: { type: Number, required: true, min: 0 },
   icon: { type: String, default: '' },
-  finalPrice: { type: Number, default: 0 },  // يُحتسب من خصم المجموعة
+  /* خصم مستقل خاص بهذه الباقة فقط */
+  isOnSale: { type: Boolean, default: false },
+  discountPercent: { type: Number, default: 0, min: 0, max: 100 },
+  finalPrice: { type: Number, default: 0 },  // يُحتسب آلياً من خصم الباقة (price = الأصلي)
 }, { _id: false });
 
 /* ===== المنتجات / المجموعات / الخدمات ===== */

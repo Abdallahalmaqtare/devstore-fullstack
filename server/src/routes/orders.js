@@ -39,12 +39,12 @@ router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
       if (!p) throw Object.assign(new Error('عنصر غير قابل للشراء المباشر'), { status: 400 });
 
       /* حسم السعر والاسم من قاعدة البيانات: من الباقة إن وُجدت، وإلا من المنتج نفسه */
-      let name = p.name, price = salePrice(p, p.price), variant = '';
+      let name = p.name, price = (p.finalPrice > 0 ? p.finalPrice : salePrice(p, p.price)), variant = '';
       if (p.variants?.length) {
         const v = p.variants.find(x => x.name === i.variant);
         if (!v) throw Object.assign(new Error(`الباقة غير متوفرة في «${p.name}»`), { status: 400 });
         name = `${p.name} — ${v.name}`;
-        price = salePrice(p, v.price);
+        price = (v.finalPrice > 0 ? v.finalPrice : salePrice(p, v.price));
         variant = v.name;
       }
 

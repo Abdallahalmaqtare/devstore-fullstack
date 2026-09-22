@@ -126,7 +126,7 @@ function renderProducts() {
   }
   document.getElementById('productsGrid').innerHTML = list.length ? list.map(function (p) {
     var isGroup = (p.variants || []).length > 0;
-    var minPrice = isGroup ? Math.min.apply(null, p.variants.map(function (v) { return v.price; })) : p.price;
+    var minPrice = isGroup ? Math.min.apply(null, p.variants.map(function (v) { return effPrice(v); })) : effPrice(p);
     var footer = isGroup
       ? '<div class="product-price">' + fmtPrice(minPrice) + ' <small>يبدأ من</small></div>' +
         '<button class="buy-btn group-btn" data-group="' + p._id + '">📦 عرض الباقات (' + p.variants.length + ')</button>'
@@ -204,7 +204,10 @@ function openGroupModal(id) {
     return '<div class="variant-row">' +
       '<span class="variant-icon">' + (v.icon || g.icon || '🎁') + '</span>' +
       '<span class="variant-name">' + v.name + '</span>' +
-      '<span class="variant-price">' + fmtPrice(effPrice(v)) + '</span>' +
+      '<span class="variant-price">' +
+        (v.isOnSale && v.discountPercent > 0
+          ? '<span class="v-sale-badge">خصم ' + v.discountPercent + '%</span> <span class="price-old">' + fmtPrice(v.price) + '</span> <span class="price-new">' + fmtPrice(effPrice(v)) + '</span>'
+          : fmtPrice(effPrice(v))) + '</span>' +
       '<button class="buy-btn" data-variant="' + i + '">أضف للسلة 🛒</button>' +
       '</div>';
   }).join('');
@@ -269,7 +272,7 @@ function addVariantToCart(idx) {
   var v = g.variants[idx];
   pushItem({
     id: g._id, variant: v.name, extra: '',
-    name: g.name + ' — ' + v.name, price: v.price,
+    name: g.name + ' — ' + v.name, price: effPrice(v),
     icon: v.icon || g.icon, image: g.image || '',
     requiresAccountId: !!g.requiresAccountId,
   });

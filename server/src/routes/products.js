@@ -24,10 +24,18 @@ function sanitizeProduct(body) {
   if (!b.isOnSale) b.discountPercent = 0;
   var _pr = parseFloat(b.price) || 0;
   b.finalPrice = b.isOnSale && b.discountPercent > 0 ? +(_pr - _pr * b.discountPercent / 100).toFixed(2) : _pr;
-  b.variants = b.variants.map(function(v){ v.finalPrice = b.isOnSale && b.discountPercent > 0 ? +(v.price - v.price * b.discountPercent / 100).toFixed(2) : v.price; return v; });
   b.variants = (Array.isArray(b.variants) ? b.variants : [])
     .filter(v => v && String(v.name || '').trim() && !isNaN(parseFloat(v.price)))
-    .map(v => ({ name: String(v.name).trim(), price: parseFloat(v.price), icon: String(v.icon || '') }));
+    .map(function (v) {
+      var on = v.isOnSale === true || v.isOnSale === 'true';
+      var d = Math.min(100, Math.max(0, parseFloat(v.discountPercent) || 0));
+      if (!on) d = 0;
+      var base = parseFloat(v.price);
+      var fp = on && d > 0 ? +(base - base * d / 100).toFixed(2)
+        : (b.isOnSale && b.discountPercent > 0 ? +(base - base * b.discountPercent / 100).toFixed(2) : base);
+      return { name: String(v.name).trim(), price: base, icon: String(v.icon || ''),
+               isOnSale: on, discountPercent: d, finalPrice: fp };
+    });
   if (b.type === 'service') { b.price = 0; b.variants = []; b.requiresAccountId = false; b.countrySelect = false; }
   b.contactWhatsapp = String(b.contactWhatsapp || '').replace(/\D/g, '');
   b.contactTelegram = String(b.contactTelegram || '').replace(/^@/, '').trim();

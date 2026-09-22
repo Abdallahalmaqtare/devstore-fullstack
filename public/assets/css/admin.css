@@ -112,3 +112,6 @@
 /* v12: صف التخفيض في نموذج المنتج */
 .sale-row{align-items:end}
 .sale-preview{font-weight:800;color:#ff4757;font-size:.95rem;padding-bottom:8px}
+
+/* v13: خلية خصم الباقة في المحرر */
+.v-sale-cell{display:inline-flex;align-items:center;gap:3px;font-size:.85rem;cursor:pointer;white-space:nowrap}

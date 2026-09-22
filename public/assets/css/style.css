@@ -444,3 +444,8 @@ input, select, textarea { font-family: inherit; }
 .drawer-currency-slot .currency-select{max-width:150px}
 .drawer-tool-btn{padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:inherit;font-weight:700;cursor:pointer;transition:background .2s}
 .drawer-tool-btn:hover{background:rgba(255,255,255,.12)}
+
+/* v13: شارة خصم الباقة داخل نافذة الباقات */
+.v-sale-badge{display:inline-block;background:linear-gradient(135deg,#ff4757,#ff6b81);color:#fff;font-size:.68rem;font-weight:800;padding:2px 8px;border-radius:999px;margin-inline-end:4px;vertical-align:middle}
+.variant-price .price-old{font-size:.8rem}
+.variant-price .price-new{font-size:1.05rem}

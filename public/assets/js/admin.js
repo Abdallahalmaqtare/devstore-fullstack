@@ -115,6 +115,8 @@ function addVariantRow(v = {}) {
     <input type="text" class="v-name" placeholder="اسم الباقة — مثال: 100 جوهرة" value="${v.name || ''}" />
     <input type="number" class="v-price" step="0.01" min="0" placeholder="السعر $" value="${v.price ?? ''}" />
     <input type="text" class="v-icon" placeholder="🎁" value="${v.icon || ''}" style="max-width:64px" />
+    <label class="v-sale-cell" title="خصم خاص بهذه الباقة فقط"><input type="checkbox" class="v-onsale" ${v.isOnSale ? 'checked' : ''} /> 🔥</label>
+    <input type="number" class="v-disc" min="0" max="100" step="1" placeholder="خصم %" value="${v.discountPercent || ''}" style="max-width:78px" />
     <button type="button" class="row-btn row-del v-remove">✕</button>`;
   row.querySelector('.v-remove').addEventListener('click', () => row.remove());
   variantRows.appendChild(row);
@@ -126,6 +128,8 @@ function getVariants() {
     name: r.querySelector('.v-name').value.trim(),
     price: parseFloat(r.querySelector('.v-price').value),
     icon: r.querySelector('.v-icon').value.trim(),
+    isOnSale: r.querySelector('.v-onsale').checked,
+    discountPercent: parseFloat(r.querySelector('.v-disc').value || 0),
   })).filter(v => v.name && !isNaN(v.price));
 }
 
