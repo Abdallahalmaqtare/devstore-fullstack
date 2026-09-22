@@ -19,6 +19,12 @@ function sanitizeProduct(body) {
   if (typeof b.modes === 'string') { try { b.modes = JSON.parse(b.modes); } catch { b.modes = []; } }
   b.requiresAccountId = b.requiresAccountId === true || b.requiresAccountId === 'true';
   b.countrySelect = b.countrySelect === true || b.countrySelect === 'true';
+  b.isOnSale = b.isOnSale === true || b.isOnSale === 'true';
+  b.discountPercent = Math.min(100, Math.max(0, parseFloat(b.discountPercent) || 0));
+  if (!b.isOnSale) b.discountPercent = 0;
+  var _pr = parseFloat(b.price) || 0;
+  b.finalPrice = b.isOnSale && b.discountPercent > 0 ? +(_pr - _pr * b.discountPercent / 100).toFixed(2) : _pr;
+  b.variants = b.variants.map(function(v){ v.finalPrice = b.isOnSale && b.discountPercent > 0 ? +(v.price - v.price * b.discountPercent / 100).toFixed(2) : v.price; return v; });
   b.variants = (Array.isArray(b.variants) ? b.variants : [])
     .filter(v => v && String(v.name || '').trim() && !isNaN(parseFloat(v.price)))
     .map(v => ({ name: String(v.name).trim(), price: parseFloat(v.price), icon: String(v.icon || '') }));

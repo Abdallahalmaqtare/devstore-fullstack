@@ -2,6 +2,13 @@ const router = require('express').Router();
 const multer = require('multer');
 const { Order, Product, PaymentMethod } = require('../models');
 const { authRequired, adminOnly } = require('../middleware/auth');
+
+/* السعر المعتمد للطلب: المخفّض إن وُجد خصم نشط — يُحسب من قاعدة البيانات فقط */
+function salePrice(prod, base) {
+  if (prod && prod.isOnSale && prod.discountPercent > 0)
+    return +(base - base * prod.discountPercent / 100).toFixed(2);
+  return base;
+}
 const { uploadImage, sendTelegram } = require('../utils/notify');
 
 const upload = multer({
@@ -32,12 +39,12 @@ router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
       if (!p) throw Object.assign(new Error('عنصر غير قابل للشراء المباشر'), { status: 400 });
 
       /* حسم السعر والاسم من قاعدة البيانات: من الباقة إن وُجدت، وإلا من المنتج نفسه */
-      let name = p.name, price = p.price, variant = '';
+      let name = p.name, price = salePrice(p, p.price), variant = '';
       if (p.variants?.length) {
         const v = p.variants.find(x => x.name === i.variant);
         if (!v) throw Object.assign(new Error(`الباقة غير متوفرة في «${p.name}»`), { status: 400 });
         name = `${p.name} — ${v.name}`;
-        price = v.price;
+        price = salePrice(p, v.price);
         variant = v.name;
       }
 

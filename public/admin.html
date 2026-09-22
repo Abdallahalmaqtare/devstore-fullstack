@@ -125,6 +125,11 @@
                 <label>السعر ($) — للسلعة المفردة فقط<input type="number" id="pPrice" step="0.01" min="0" placeholder="اتركه 0 إن كانت مجموعة باقات" /></label>
                 <label>الوحدة<input type="text" id="pUnit" placeholder="مثال: يبدأ من / شهرياً" /></label>
               </div>
+              <div class="form-row sale-row">
+                <label class="check-row"><input type="checkbox" id="pOnSale" /> 🔥 تفعيل تخفيض / عرض خاص</label>
+                <label>نسبة التخفيض (%)<input type="number" id="pDisc" min="0" max="100" step="1" placeholder="مثال: 20" /></label>
+                <span class="sale-preview" id="pFinalPrice">—</span>
+              </div>
               <label class="check-row">
                 <input type="checkbox" id="pReqId" />
                 🆔 يتطلب إدخال معرّف الحساب / Player ID من العميل (يُطلب في السلة)

@@ -107,3 +107,8 @@
   .form-row { grid-template-columns: 1fr; }
   .variant-edit-row { flex-wrap: wrap; }
 }
+
+
+/* v12: صف التخفيض في نموذج المنتج */
+.sale-row{align-items:end}
+.sale-preview{font-weight:800;color:#ff4757;font-size:.95rem;padding-bottom:8px}

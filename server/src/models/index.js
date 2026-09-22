@@ -31,6 +31,7 @@ const variantSchema = new Schema({
   name: { type: String, required: true },   // مثال: 60 شدة UC
   price: { type: Number, required: true, min: 0 },
   icon: { type: String, default: '' },
+  finalPrice: { type: Number, default: 0 },  // يُحتسب من خصم المجموعة
 }, { _id: false });
 
 /* ===== المنتجات / المجموعات / الخدمات ===== */
@@ -47,6 +48,10 @@ const productSchema = new Schema({
   variants: { type: [variantSchema], default: [] },
   countrySelect: { type: Boolean, default: false },
   requiresAccountId: { type: Boolean, default: false },
+  /* نظام العروض والتخفيضات */
+  isOnSale: { type: Boolean, default: false },
+  discountPercent: { type: Number, default: 0, min: 0, max: 100 },
+  finalPrice: { type: Number, default: 0 },
   /* قنوات تواصل مسؤول الخدمة (للخدمات الاستشارية) — فارغة = قنوات الموقع العامة */
   contactWhatsapp: { type: String, default: '' },
   contactTelegram: { type: String, default: '' },

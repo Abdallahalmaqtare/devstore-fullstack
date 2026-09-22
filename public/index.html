@@ -46,6 +46,25 @@
     </div>
   </header>
 
+  <!-- القائمة الجانبية العصرية -->
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="side-drawer" id="sideDrawer" aria-hidden="true">
+    <div class="drawer-head">
+      <a href="#home" class="brand"><span class="brand-icon">⚡</span><span class="brand-name"><b>Dev</b>Store</span></a>
+      <button class="icon-btn drawer-close" id="drawerClose" aria-label="إغلاق القائمة">✕</button>
+    </div>
+    <nav class="drawer-links">
+      <a href="#home" class="drawer-link">🏠 الرئيسية</a>
+      <a href="#store" class="drawer-link">🛍️ المتجر الرقمي</a>
+      <a href="#courses" class="drawer-link">🎓 الدورات والخدمات</a>
+      <a href="#footer" class="drawer-link">📞 اتصل بنا</a>
+    </nav>
+    <div class="drawer-tools">
+      <div class="drawer-tool-row"><span class="drawer-tool-label">💱 العملة:</span> <span id="drawerCurrencySlot" class="drawer-currency-slot"></span></div>
+      <button class="drawer-tool-btn" id="drawerThemeBtn">🌙 تبديل الوضع الليلي / النهاري</button>
+    </div>
+  </aside>
+
   <main>
     <section class="hero" id="home">
       <div class="hero-bg">
@@ -249,7 +268,7 @@
       <form class="profile-form active" id="profileInfoForm" data-ppage="info">
         <label>الاسم الكامل<input type="text" id="pfName" required /></label>
         <label>رقم الهاتف
-          <input type="tel" id="pfPhone" required inputmode="numeric" dir="ltr" />
+          <input type="tel" id="pfPhone" readonly disabled title="🔒 رقم الهاتف هو معرّف الحساب الموثق ولا يمكن تعديله إلا عبر التواصل مع الدعم" required inputmode="numeric" dir="ltr" />
           <small class="field-hint">بالصيغة الدولية بدون علامة +</small>
         </label>
         <button type="submit" class="btn btn-primary btn-block">💾 حفظ التعديلات</button>

@@ -1,3 +1,10 @@
+
+/* v12: السعر الفعلي بعد الخصم */
+function effPrice(p) {
+  return (p && p.isOnSale && p.discountPercent > 0)
+    ? +(p.price - p.price * p.discountPercent / 100).toFixed(2)
+    : (p ? p.price : 0);
+}
 /* ============================================================
    DevStore — الواجهة العامة (v6): مجموعات وباقات + توجيه مباشر
    ============================================================ */
@@ -123,7 +130,7 @@ function renderProducts() {
     var footer = isGroup
       ? '<div class="product-price">' + fmtPrice(minPrice) + ' <small>يبدأ من</small></div>' +
         '<button class="buy-btn group-btn" data-group="' + p._id + '">📦 عرض الباقات (' + p.variants.length + ')</button>'
-      : '<div class="product-price">' + fmtPrice(p.price) + ' <small>' + (p.unit || '') + '</small></div>' +
+      : '<div class="product-price">' + fmtPrice(effPrice(p)) + ' <small>' + (p.unit || '') + '</small></div>' +
         '<button class="buy-btn" data-buy="' + p._id + '">أضف للسلة 🛒</button>';
     var countrySel = p.countrySelect
       ? '<div class="product-extra"><select id="country-' + p._id + '"><option value="">اختر الدولة 🌍</option>' +
@@ -197,7 +204,7 @@ function openGroupModal(id) {
     return '<div class="variant-row">' +
       '<span class="variant-icon">' + (v.icon || g.icon || '🎁') + '</span>' +
       '<span class="variant-name">' + v.name + '</span>' +
-      '<span class="variant-price">' + fmtPrice(v.price) + '</span>' +
+      '<span class="variant-price">' + fmtPrice(effPrice(v)) + '</span>' +
       '<button class="buy-btn" data-variant="' + i + '">أضف للسلة 🛒</button>' +
       '</div>';
   }).join('');
@@ -778,3 +785,60 @@ window.addEventListener('scroll', function () {
 
 initDialPickers();
 loadAll();
+
+
+/* v12: شارة الخصم + عرض السعر القديم مشطوباً (مزيّن تجميلي — يعتمد /api/products) */
+(function () {
+  var saleMap = {};
+  function eff(p) { return p.isOnSale && p.discountPercent > 0 ? +(p.price - p.price * p.discountPercent / 100).toFixed(2) : p.price; }
+  function decorate() {
+    document.querySelectorAll('[class*="card"], [class*="group"], [data-pid]').forEach(function (card) {
+      if (card.dataset.saleDone) return;
+      var name = '';
+      Object.keys(saleMap).forEach(function (n) { if (card.textContent.indexOf(n) !== -1 && (!name || n.length > name.length)) name = n; });
+      if (!name) return;
+      var p = saleMap[name];
+      card.dataset.saleDone = '1';
+      card.style.position = card.style.position || 'relative';
+      var b = document.createElement('span');
+      b.className = 'sale-badge';
+      b.textContent = 'خصم ' + p.discountPercent + '% 🔥';
+      card.appendChild(b);
+      /* استبدال أول عنصر يحمل سعراً دولارياً صرفاً بصيغة العرض */
+      var els = card.querySelectorAll('*'), k;
+      for (k = 0; k < els.length; k++) {
+        var el = els[k], t = (el.textContent || '').trim();
+        var mch = t.match(/^\$\s*(\d+(?:\.\d+)?)\s*$/);
+        if (mch && el.children.length === 0) {
+          el.innerHTML = '<span class="price-old">$' + mch[1] + '</span> <span class="price-new">$' + eff(p) + '</span>';
+          break;
+        }
+      }
+    });
+  }
+  async function load() {
+    try {
+      var list = await API.req('/products');
+      (list || []).forEach(function (p) { if (p.isOnSale && p.discountPercent > 0) saleMap[p.name] = p; });
+      decorate();
+      new MutationObserver(function () { decorate(); }).observe(document.body, { childList: true, subtree: true });
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
+})();
+
+/* v12: القائمة الجانبية (Off-canvas Drawer) */
+(function () {
+  var d = document.getElementById('sideDrawer'), o = document.getElementById('drawerOverlay'), m = document.getElementById('menuBtn');
+  if (!d || !o || !m) return;
+  function open() { d.classList.add('open'); o.classList.add('show'); document.body.style.overflow = 'hidden'; }
+  function close() { d.classList.remove('open'); o.classList.remove('show'); document.body.style.overflow = ''; }
+  m.addEventListener('click', function (e) { e.preventDefault(); open(); });
+  o.addEventListener('click', close);
+  var x = document.getElementById('drawerClose'); if (x) x.addEventListener('click', close);
+  d.querySelectorAll('.drawer-link').forEach(function (a) { a.addEventListener('click', close); });
+  var cur = document.getElementById('currencySelect'), slot = document.getElementById('drawerCurrencySlot');
+  if (cur && slot) slot.appendChild(cur);
+  var dt = document.getElementById('drawerThemeBtn'), tt = document.getElementById('themeToggle');
+  if (dt && tt) dt.addEventListener('click', function () { tt.click(); });
+})();

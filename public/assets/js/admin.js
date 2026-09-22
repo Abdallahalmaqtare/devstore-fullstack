@@ -181,6 +181,8 @@ document.getElementById('productForm').addEventListener('submit', async e => {
     desc: document.getElementById('pDesc').value.trim(),
     countrySelect: type === 'product' && cat === 'numbers',
     requiresAccountId: type === 'product' && document.getElementById('pReqId').checked,
+    isOnSale: document.getElementById('pOnSale').checked,
+    discountPercent: parseFloat(document.getElementById('pDisc').value || 0),
     modes: type === 'service' ? ['online', 'onsite'] : [],
     meta: type === 'service' ? document.getElementById('pMeta').value.trim() : document.getElementById('pUnit').value.trim(),
     contactWhatsapp: type === 'service' ? normalizePhone(document.getElementById('pContactWa').value) : '',
@@ -245,6 +247,8 @@ document.getElementById('productsTable').addEventListener('click', async e => {
     document.getElementById('pUnit').value = p.unit || '';
     document.getElementById('pDesc').value = p.desc || '';
     document.getElementById('pReqId').checked = !!p.requiresAccountId;
+    document.getElementById('pOnSale').checked = !!p.isOnSale;
+    document.getElementById('pDisc').value = p.discountPercent || '';
     document.getElementById('pImageFile').value = '';
     const _pv = document.getElementById('pImagePreview');
     if (p.image) {
@@ -615,3 +619,19 @@ document.getElementById('adminPassForm').addEventListener('submit', async e => {
     showToast('🔒 تم تحديث كلمة مرور المدير');
   } catch (err) { showToast('❌ ' + err.message); }
 });
+
+
+/* v12: احتساب لحظي للسعر بعد الخصم أثناء الإدخال */
+(function () {
+  var sale = document.getElementById('pOnSale'), pct = document.getElementById('pDisc'),
+      price = document.getElementById('pPrice'), out = document.getElementById('pFinalPrice');
+  if (!sale || !pct || !price) return;
+  function calc() {
+    var p = parseFloat(price.value) || 0, d = Math.min(100, Math.max(0, parseFloat(pct.value) || 0));
+    var on = sale.checked && d > 0;
+    var f = on ? +(p - p * d / 100).toFixed(2) : p;
+    if (out) out.innerHTML = on ? ('السعر بعد الخصم: <b>$' + f + '</b> بدلاً من <s>$' + p + '</s>') : '—';
+  }
+  ['input', 'change'].forEach(function (ev) { sale.addEventListener(ev, calc); pct.addEventListener(ev, calc); price.addEventListener(ev, calc); });
+  calc();
+})();

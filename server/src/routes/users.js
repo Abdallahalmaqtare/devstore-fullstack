@@ -7,14 +7,11 @@ const cleanPhone = p => String(p || '').replace(/\D/g, '');
 
 router.put('/profile', authRequired, async (req, res) => {
   const name = String(req.body?.name || '').trim();
-  const phone = cleanPhone(req.body?.phone);
-  if (!name || !phone) return res.status(400).json({ message: 'الاسم ورقم الهاتف مطلوبان' });
+  if (!name) return res.status(400).json({ message: 'الاسم مطلوب' });
 
-  const clash = await User.findOne({ phone, _id: { $ne: req.user._id } });
-  if (clash) return res.status(409).json({ message: 'رقم الهاتف مستخدم في حساب آخر' });
-
+  /* 🔒 رقم الهاتف هو معرّف الحساب الموثق — يُتجاهل أي تعديل عليه مهما كان مصدر الطلب */
   const user = await User.findById(req.user._id);
-  user.name = name; user.phone = phone;
+  user.name = name;
   await user.save();
   res.json({ user: { id: user._id, name: user.name, phone: user.phone, role: user.role } });
 });
