@@ -88,37 +88,8 @@ router.post('/send-otp', async (req, res) => {
   } catch (e) { res.status(500).json({ message: 'خطأ في الخادم: ' + e.message }); }
 });
 
-/* GET /api/auth/bot-code?token= — تسليم الكود آلياً لمن ضغط رابط البوت */
-router.get('/bot-code', async (req, res) => {
-  try {
-    const token = String(req.query.token || '');
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    if (!botToken) return res.json({ delivered: false });
-
-    let otp = token && token !== 'verify'
-      ? await Otp.findOne({ linkToken: token }).sort('-createdAt')
-      : await Otp.findOne().sort('-createdAt');
-    if (!otp || isExpired(otp)) return res.json({ delivered: false, expired: true });
-
-    const r = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates');
-    const data = await r.json();
-    const wanted = '/start otp_' + token;
-    const hit = (data.result || []).find(u =>
-      u.message?.text === wanted || (token === 'verify' && u.message?.text === '/start verify'));
-    if (!hit) return res.json({ delivered: false });
-
-    await fetch('https://api.telegram.org/bot' + botToken + '/sendMessage', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: hit.message.chat.id,
-        text: '🔐 رمز التحقق الخاص بك في DevStore:\n\n<b>' + otp.codePlain + '</b>\n\n⏱️ صالح 10 دقائق — لا تشاركه مع أحد.',
-        parse_mode: 'HTML',
-      }),
-    });
-    res.json({ delivered: true });
-  } catch { res.json({ delivered: false }); }
-});
+/* ملاحظة: تسليم الكود للعميل صار آلياً عبر Webhook البوت (server/src/telegram.js)
+   بمجرد ضغط العميل /start otp_<TOKEN> يرد البوت فوراً بالرمز — بلا استطلاع. */
 
 /* POST /api/auth/verify-otp */
 router.post('/verify-otp', async (req, res) => {

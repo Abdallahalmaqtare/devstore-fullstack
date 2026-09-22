@@ -31,3 +31,5 @@ services:
         sync: false
       - key: TELEGRAM_BOT_USERNAME
         sync: false
+      - key: PUBLIC_URL
+        sync: false

@@ -16,6 +16,8 @@ app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/admin', require('./routes/admin'));
+const telegram = require('./telegram');
+app.use('/api/telegram', telegram.router);
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/currencies', require('./routes/currencies'));
 app.use('/api/inquiries', require('./routes/inquiries'));
@@ -55,6 +57,9 @@ mongoose.connect(process.env.MONGODB_URI)
   .then(async () => {
     console.log('✅ متصل بقاعدة البيانات MongoDB');
     await seedAdmin();
-    app.listen(PORT, () => console.log(`🚀 DevStore يعمل على http://localhost:${PORT}`));
+    app.listen(PORT, async () => {
+      console.log(`🚀 DevStore يعمل على http://localhost:${PORT}`);
+      await telegram.setupWebhook(process.env.PUBLIC_URL); /* يسجل الـ webhook إن ضُبط PUBLIC_URL */
+    });
   })
   .catch(err => { console.error('❌ فشل الاتصال بقاعدة البيانات:', err.message); process.exit(1); });

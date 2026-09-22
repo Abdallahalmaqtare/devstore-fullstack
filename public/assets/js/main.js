@@ -449,24 +449,7 @@ function startOtpTimer(sec) {
   tick(); otpState.timer = setInterval(tick, 1000);
 }
 
-/* استطلاع بوت تليجرام: عند ضغط العميل /start otp_xxx يُرسل الكود له آلياً */
-var botPollTimer = null;
-function startBotPolling(linkToken) {
-  clearInterval(botPollTimer);
-  if (!linkToken) return;
-  var tries = 0;
-  botPollTimer = setInterval(async function () {
-    if (++tries > 20) return clearInterval(botPollTimer); // دقيقتان كحد أقصى
-    try {
-      var r = await API.req('/auth/bot-code?token=' + linkToken);
-      if (r.delivered) {
-        clearInterval(botPollTimer);
-        showToast('✈️ تم إرسال الرمز آلياً إلى تليجرام الخاص بك');
-      } else if (r.expired) { clearInterval(botPollTimer); }
-    } catch (e) { }
-  }, 6000);
-}
-
+/* التسليم الآلي للكود يتم عبر Webhook البوت (server-side) — الواجهة تعرض الرابط فقط */
 async function requestOtp(purpose, phone, payload) {
   otpState = { purpose: purpose, phone: phone, payload: payload || null, timer: null };
   try {
@@ -480,7 +463,9 @@ async function requestOtp(purpose, phone, payload) {
     if (res.telegramBotUrl) {
       tgLink.href = res.telegramBotUrl;
       tgLink.classList.remove('hidden');
-      startBotPolling(res.linkToken);
+      tgLink.onclick = function () {
+        showToast('✈️ اضغط Start في البوت وسيصلك الرمز فوراً هناك');
+      };
     } else { tgLink.classList.add('hidden'); }
     otpInputs.forEach(function (i) { i.value = ''; });
     document.getElementById('otpCode').value = '';
