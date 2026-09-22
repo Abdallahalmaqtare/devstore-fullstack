@@ -1084,3 +1084,97 @@ loadAll();
 
   var n = 0; (function loop(){ syncUser(); if (++n < 10) setTimeout(loop, 1200); })();
 })();
+
+
+/* ════════════ v16: Accordion + i18n (عربي/إنجليزي) ════════════ */
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+
+  /* ── القوائم القابلة للطي: فتح واحد وإغلاق الباقي ── */
+  document.querySelectorAll('.acc-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var item = btn.closest('.acc-item');
+      var wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.acc-item.open').forEach(function (o) { o.classList.remove('open'); });
+      if (!wasOpen) item.classList.add('open');
+    });
+  });
+
+  /* ── حفظ الاسم من القائمة مباشرة ── */
+  function toast(m){ try{ showToast(m); }catch(e){} }
+  var ni = $('drawerNameInput'), un = $('drawerUserName');
+  if (un && ni) new MutationObserver(function(){ if (document.activeElement !== ni) ni.value = un.textContent === 'زائر' ? '' : un.textContent; }).observe(un, { childList: true, characterData: true, subtree: true });
+  var ns = $('drawerNameSave');
+  if (ns) ns.addEventListener('click', async function () {
+    var v = (ni.value || '').trim();
+    if (v.length < 2) return toast('⚠️ أدخل اسماً صحيحاً');
+    try { await API.req('/users/profile', { method: 'PUT', body: { name: v } }); if (un) un.textContent = v; toast('✅ تم حفظ الاسم'); }
+    catch (e) { toast('❌ ' + e.message); }
+  });
+
+  /* ── i18n: قاموس مركزي ── */
+  var I18N = {
+    'الرئيسية':'Home','المتجر الرقمي':'Digital Store','الدورات والخدمات':'Courses & Services','اتصل بنا':'Contact Us',
+    '🛍️ المتجر الرقمي':'🛍️ Digital Store','🎮 الألعاب وشحن الحسابات':'🎮 Games & Top-ups','📱 التطبيقات':'📱 Apps',
+    '🛠️ أدوات المبرمجين':'🛠️ Developer Tools','🎓 الدورات والخدمات':'🎓 Courses & Services','📞 اتصل بنا':'📞 Contact Us',
+    '👤 الملف الشخصي':'👤 Profile','الاسم المعروض':'Display name','اسمك':'Your name','حفظ الاسم':'Save Name',
+    'عرض وتعديل بياناتي':'View & Edit My Info','فتح الملف الشخصي الكامل':'Open Full Profile',
+    '🔒 الأمن والخصوصية':'🔒 Security & Privacy','🔒 الأمان والخصوصية':'🔒 Security & Privacy',
+    'كلمة المرور الحالية':'Current password','كلمة المرور الجديدة':'New password','تغيير كلمة المرور':'Change Password',
+    'إدارة الجلسة وحالة الدخول':'Session & Login Status',
+    '📄 التقارير وسجل الطلبات':'📄 Reports & Orders','استعراض سجل الطلبات وحالاتها':'Browse Orders & Statuses',
+    'تصدير كشف الحساب والفواتير PDF ⬇️':'Export Statement & Invoices PDF ⬇️',
+    '🚪 تسجيل الخروج':'🚪 Logout','🌙 تبديل الوضع الليلي / النهاري':'🌙 Toggle Dark / Light Mode',
+    '✈️ دعم تليجرام':'✈️ Telegram Support','زائر':'Guest',
+    'أضف للسلة 🛒':'Add to Cart 🛒','💬 تواصل للاتفاق':'💬 Contact to Arrange','تواصل للاتفاق':'Contact to Arrange',
+    'شراء فوري':'Buy Now','تحقق':'Verify','إعادة إرسال الرمز':'Resend Code','سلة المشتريات':'Shopping Cart',
+    'تسجيل الدخول':'Login','إنشاء حساب':'Sign Up','إتمام الطلب':'Checkout',
+    '🚀 بوابتك التقنية الشاملة في اليمن والعالم العربي':'🚀 Your Tech Gateway in Yemen & the Arab World',
+    '🛍️ تصفح المتجر الرقمي':'🛍️ Browse Digital Store'
+  };
+  var TOAST_EN = {
+    '⚠️ سجّل الدخول أولاً':'⚠️ Please log in first','✅ تم حفظ الاسم':'✅ Name saved',
+    '✅ تم تغيير كلمة المرور بنجاح':'✅ Password changed successfully','⚠️ أدخل اسماً صحيحاً':'⚠️ Enter a valid name',
+    '✅ تم إلغاء الطلب':'✅ Order cancelled','⚠️ لا توجد طلبات في هذا النطاق':'⚠️ No orders in this range'
+  };
+  var PH_EN = { 'كلمة المرور الحالية':'Current password','كلمة المرور الجديدة':'New password','اسمك':'Your name' };
+  var PREFIX_EN = { '💬 واتساب الدعم':'💬 WhatsApp Support','📦 عرض الباقات':'📦 View Packages','🟢 جلسة نشطة':'🟢 Active session' };
+  var lang = localStorage.getItem('lang') || 'ar';
+  var translating = false;
+
+  function translateLeaf(el) {
+    var t = el.textContent; if (!t) return;
+    var k = t.trim();
+    if (lang === 'en') {
+      if (el.dataset.i18nOrig === undefined) el.dataset.i18nOrig = t;
+      if (I18N[k] !== undefined) { el.textContent = t.replace(k, I18N[k]); return; }
+      Object.keys(PREFIX_EN).forEach(function (p) { if (k.indexOf(p) === 0) el.textContent = t.replace(p, PREFIX_EN[p]); });
+    } else if (el.dataset.i18nOrig !== undefined) { el.textContent = el.dataset.i18nOrig; }
+  }
+  function applyLang(l) {
+    lang = l; localStorage.setItem('lang', l);
+    document.documentElement.lang = l;
+    document.documentElement.dir = (l === 'en') ? 'ltr' : 'rtl';
+    translating = true;
+    document.querySelectorAll('body *').forEach(function (el) {
+      if (el.children.length === 0) translateLeaf(el);
+      if (el.placeholder !== undefined && el.placeholder) {
+        if (l === 'en') { if (el.dataset.phOrig === undefined) el.dataset.phOrig = el.placeholder; if (PH_EN[el.dataset.phOrig]) el.placeholder = PH_EN[el.dataset.phOrig]; }
+        else if (el.dataset.phOrig) el.placeholder = el.dataset.phOrig;
+      }
+    });
+    translating = false;
+    var lt = $('langToggle'); if (lt) lt.textContent = (l === 'en') ? '🌐 العربية' : '🌐 English';
+  }
+  var lt = $('langToggle');
+  if (lt) lt.addEventListener('click', function () { applyLang(lang === 'en' ? 'ar' : 'en'); });
+  /* ترجمة لحظية للمحتوى الديناميكي عند الإنجليزية */
+  var mo = new MutationObserver(function () { if (lang === 'en' && !translating) { translating = true; document.querySelectorAll('body *').forEach(function (el) { if (el.children.length === 0) translateLeaf(el); }); translating = false; } });
+  mo.observe(document.body, { childList: true, subtree: true });
+  /* ترجمة رسائل Toast المعروفة */
+  if (typeof window.showToast === 'function') {
+    var _st = window.showToast;
+    window.showToast = function (m) { if (lang === 'en' && TOAST_EN[m]) m = TOAST_EN[m]; _st(m); };
+  }
+  applyLang(lang);
+})();
