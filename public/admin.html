@@ -49,6 +49,7 @@
         <button class="side-link" data-page="categories">🗂️ إدارة الأقسام</button>
         <button class="side-link" data-page="orders">📦 إدارة الطلبات</button>
         <button class="side-link" data-page="users">👥 إدارة المستخدمين</button>
+        <button class="side-link" data-page="admins">🛡️ إدارة المسؤولين</button>
         <button class="side-link" data-page="settings">⚙️ الإعدادات</button>
       </nav>
       <div class="sidebar-footer">
@@ -219,7 +220,30 @@
           <h3>👥 العملاء المسجلون</h3>
           <div class="table-wrap">
             <table class="admin-table" id="usersTable">
-              <thead><tr><th>الاسم</th><th>الهاتف</th><th>تاريخ التسجيل</th><th>الطلبات</th><th>الحالة</th></tr></thead>
+              <thead><tr><th>الاسم</th><th>الهاتف</th><th>تاريخ التسجيل</th><th>الطلبات</th><th>الحالة</th><th>حذف</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="admin-page" id="page-admins">
+        <div class="panel">
+          <h3>➕ إضافة مسؤول جديد (صلاحية أدمن) — للمدير العام فقط</h3>
+          <form class="admin-form" id="adminCreateForm">
+            <div class="form-row">
+              <label>اسم المسؤول<input type="text" id="aName" required placeholder="أحمد المشرف" /></label>
+              <label>رقم الهاتف (دولي بدون +)<input type="tel" id="aPhone" required dir="ltr" inputmode="numeric" placeholder="967771234567" /></label>
+            </div>
+            <label>كلمة المرور الأولية<input type="password" id="aPass" required minlength="6" placeholder="يسلّمها للمسؤول ويغيّرها لاحقاً" /></label>
+            <div class="form-actions"><button type="submit" class="btn btn-primary">👑 إنشاء حساب أدمن</button></div>
+          </form>
+        </div>
+        <div class="panel">
+          <h3>🛡️ المسؤولون الحاليون</h3>
+          <div class="table-wrap">
+            <table class="admin-table" id="adminsTable">
+              <thead><tr><th>الاسم</th><th>الهاتف</th><th>تاريخ الإضافة</th><th>الرتبة</th><th>إجراءات</th></tr></thead>
               <tbody></tbody>
             </table>
           </div>

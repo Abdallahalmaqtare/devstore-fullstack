@@ -70,7 +70,7 @@ function bootAdmin() {
   const sidebarOverlay = document.getElementById('sidebarOverlay');
   const pageTitles = {
     dashboard: '📊 الرئيسية', products: '🛍️ المنتجات والخدمات', categories: '🗂️ إدارة الأقسام',
-    orders: '📦 إدارة الطلبات', users: '👥 إدارة المستخدمين', settings: '⚙️ الإعدادات',
+    orders: '📦 إدارة الطلبات', users: '👥 إدارة المستخدمين', admins: '🛡️ إدارة المسؤولين', settings: '⚙️ الإعدادات',
   };
   document.querySelectorAll('.side-link').forEach(link => link.addEventListener('click', () => {
     document.querySelectorAll('.side-link').forEach(l => l.classList.remove('active'));
@@ -83,7 +83,7 @@ function bootAdmin() {
   document.getElementById('sideMenuBtn').addEventListener('click', () => { sidebar.classList.add('open'); sidebarOverlay.classList.add('open'); });
   sidebarOverlay.addEventListener('click', () => { sidebar.classList.remove('open'); sidebarOverlay.classList.remove('open'); });
 
-  renderDashboard(); renderProducts(); renderOrders(); renderUsers(); renderPayMethods(); loadSiteSettings(); loadCategories(); renderCurrencies();
+  renderDashboard(); renderProducts(); renderOrders(); renderUsers(); renderPayMethods(); loadSiteSettings(); loadCategories(); renderCurrencies(); loadAdmins();
 }
 
 /* ---------------- الإحصائيات ---------------- */
@@ -307,10 +307,21 @@ async function renderUsers() {
         <td><b>${u.name}</b>${u.role === 'admin' ? ' 👑' : ''}</td>
         <td dir="ltr">${u.phone}</td><td>${u.date || ''}</td><td>${u.orders}</td>
         <td>${u.role === 'admin' ? '—' : `<button class="status-badge ${u.active ? 'status-done' : 'status-cancel'}" data-user="${u.id}">${u.active ? 'نشط' : 'موقوف'}</button>`}</td>
+        <td>${u.role === 'admin' ? '—' : `<button class="row-btn row-del" data-userdel="${u.id}" title="حذف نهائي">🗑️</button>`}</td>
       </tr>`).join('');
   } catch (e) { showToast('❌ ' + e.message); }
 }
 document.getElementById('usersTable').addEventListener('click', async e => {
+  const udel = e.target.closest('[data-userdel]');
+  if (udel) {
+    if (!confirm('هل أنت متأكد من حذف هذا المستخدم نهائياً من قاعدة البيانات؟')) return;
+    try {
+      await API.req('/admin/users/' + udel.dataset.userdel, { method: 'DELETE' });
+      renderUsers(); renderDashboard();
+      showToast('🗑️ تم حذف المستخدم نهائياً');
+    } catch (err) { showToast('❌ ' + err.message); }
+    return;
+  }
   const btn = e.target.closest('[data-user]');
   if (!btn) return;
   try {
@@ -543,6 +554,49 @@ document.getElementById('curTable').addEventListener('click', async e => {
       await API.req('/currencies/' + del.dataset.curdel, { method: 'DELETE' });
       renderCurrencies(); showToast('🗑️ تم الحذف');
     }
+  } catch (err) { showToast('❌ ' + err.message); }
+});
+
+/* ============================================================
+   إدارة المسؤولين والأدمن (للمدير العام)
+   ============================================================ */
+async function loadAdmins() {
+  try {
+    const admins = await API.req('/admin/admins');
+    document.querySelector('#adminsTable tbody').innerHTML = admins.length ? admins.map(a => `
+      <tr>
+        <td><b>${a.name}</b></td>
+        <td dir="ltr">${a.phone}</td>
+        <td>${a.date || ''}</td>
+        <td>${a.isSuper ? '👑 مدير عام' : '🛡️ أدمن'}</td>
+        <td>${a.isSuper ? '—' : `<button class="row-btn row-del" data-admdel="${a.id}">⬇️ سحب الصلاحية</button>`}</td>
+      </tr>`).join('')
+      : '<tr><td colspan="5" class="empty-row">لا يوجد مسؤولون</td></tr>';
+  } catch (e) { showToast('❌ ' + e.message); }
+}
+document.getElementById('adminCreateForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  try {
+    await API.req('/admin/create-admin', {
+      method: 'POST',
+      body: {
+        name: document.getElementById('aName').value.trim(),
+        phone: normalizePhone(document.getElementById('aPhone').value),
+        password: document.getElementById('aPass').value,
+      },
+    });
+    e.target.reset(); loadAdmins();
+    showToast('👑 تم إنشاء حساب الأدمن — يدخل من admin.html مباشرة');
+  } catch (err) { showToast('❌ ' + err.message); }
+});
+document.getElementById('adminsTable').addEventListener('click', async e => {
+  const del = e.target.closest('[data-admdel]');
+  if (!del) return;
+  if (!confirm('سحب صلاحية الأدمن من هذا الحساب وتحويله لمستخدم عادي؟')) return;
+  try {
+    await API.req('/admin/admins/' + del.dataset.admdel, { method: 'DELETE' });
+    loadAdmins(); renderUsers();
+    showToast('⬇️ تم سحب صلاحية الأدمن');
   } catch (err) { showToast('❌ ' + err.message); }
 });
 

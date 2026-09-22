@@ -15,6 +15,7 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/admin', require('./routes/admin'));
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/currencies', require('./routes/currencies'));
 app.use('/api/inquiries', require('./routes/inquiries'));
@@ -34,12 +35,17 @@ async function seedAdmin() {
   const phone = process.env.ADMIN_PHONE;
   const password = process.env.ADMIN_PASSWORD;
   if (!phone || !password) return console.warn('⚠️ ADMIN_PHONE/ADMIN_PASSWORD غير مضبوطة');
-  if (await User.findOne({ role: 'admin' })) return;
+  const existing = await User.findOne({ role: 'admin' });
+  if (existing) {
+    if (!existing.isSuper) { existing.isSuper = true; await existing.save(); console.log('✅ رُقي الحساب الحالي إلى مدير عام'); }
+    return;
+  }
   await User.create({
     name: process.env.ADMIN_NAME || 'المدير العام',
     phone: String(phone).replace(/\D/g, ''),
     password: await bcrypt.hash(password, 10),
     role: 'admin',
+    isSuper: true,
   });
   console.log('✅ تم إنشاء حساب الأدمن:', phone);
 }

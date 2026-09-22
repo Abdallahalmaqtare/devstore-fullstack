@@ -7,6 +7,7 @@ const userSchema = new Schema({
   phone: { type: String, required: true, unique: true, trim: true },
   password: { type: String, required: true },
   role: { type: String, enum: ['user', 'admin'], default: 'user' },
+  isSuper: { type: Boolean, default: false }, // المدير العام — محمي من الحذف/التخفيض
   active: { type: Boolean, default: true },
 }, { timestamps: true });
 

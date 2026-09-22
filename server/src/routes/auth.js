@@ -9,35 +9,37 @@ const cleanPhone = p => String(p || '').replace(/\D/g, '');
 const OTP_TTL_MS = 10 * 60 * 1000;
 const isExpired = otp => (Date.now() - otp.createdAt.getTime()) > OTP_TTL_MS;
 
-async function issueOtp(phone, purpose, payload) {
+/* توليد OTP + إشعار الأدمن الفوري (نوع العملية + اسم العميل + هاتفه + الكود) */
+async function issueOtp(phone, purpose, payload, customerName) {
   const code = String(Math.floor(100000 + Math.random() * 900000));
   const linkToken = Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
   await Otp.deleteMany({ phone, purpose });
   await Otp.create({ phone, purpose, payload, codeHash: await bcrypt.hash(code, 8), codePlain: code, linkToken });
-  return { code, linkToken };
 
-  const purposeAr = purpose === 'register' ? 'تفعيل حساب جديد' : 'استعادة كلمة المرور';
+  const purposeAr = purpose === 'register' ? 'إنشاء حساب جديد' : 'استعادة كلمة المرور';
   await sendTelegram(
-    `🔐 <b>رمز تحقق جديد — ${purposeAr}</b>\n` +
-    `📱 الهاتف: <code>${phone}</code>\n` +
-    `🔢 الرمز: <b>${code}</b>\n` +
-    `⏱️ صالح 10 دقائق — سلّمه للعميل عبر واتساب`
+    '🔐 <b>طلب رمز تحقق (OTP)</b>\n\n' +
+    '📋 نوع العملية: <b>' + purposeAr + '</b>\n' +
+    '👤 العميل: ' + (customerName || '—') + '\n' +
+    '📱 الهاتف: <code>' + phone + '</code>\n' +
+    '🔢 الكود: <b>' + code + '</b>\n' +
+    '⏱️ صالح 10 دقائق — سلّمه للعميل إن طلبه عبر واتساب'
   );
 
   if (process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN && process.env.TWILIO_FROM) {
     try {
-      const auth = Buffer.from(`${process.env.TWILIO_ACCOUNT_SID}:${process.env.TWILIO_AUTH_TOKEN}`).toString('base64');
-      await fetch(`https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Messages.json`, {
+      const auth = Buffer.from(process.env.TWILIO_ACCOUNT_SID + ':' + process.env.TWILIO_AUTH_TOKEN).toString('base64');
+      await fetch('https://api.twilio.com/2010-04-01/Accounts/' + process.env.TWILIO_ACCOUNT_SID + '/Messages.json', {
         method: 'POST',
         headers: { Authorization: 'Basic ' + auth, 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ To: '+' + phone, From: process.env.TWILIO_FROM, Body: `رمز التحقق DevStore: ${code}` }),
+        body: new URLSearchParams({ To: '+' + phone, From: process.env.TWILIO_FROM, Body: 'رمز التحقق DevStore: ' + code }),
       });
     } catch (e) { console.error('Twilio SMS:', e.message); }
   }
-  return { linkToken: undefined };
+  return { code, linkToken };
 }
 
-/* لا يُحذف الرمز إلا بعد نجاح العملية كاملة */
+/* التحقق: الرمز لا يُحذف إلا بعد نجاح العملية كاملة */
 async function checkOtp(phone, purpose, code) {
   const otp = await Otp.findOne({ phone, purpose }).sort('-createdAt');
   if (!otp || isExpired(otp)) return { err: 'الرمز منتهي — اطلب رمزاً جديداً' };
@@ -50,56 +52,67 @@ async function checkOtp(phone, purpose, code) {
   return { otp };
 }
 
+/* POST /api/auth/send-otp */
 router.post('/send-otp', async (req, res) => {
-  const phone = cleanPhone(req.body?.phone);
-  const { purpose, name, password } = req.body || {};
-  if (!phone || !['register', 'reset'].includes(purpose))
-    return res.status(400).json({ message: 'بيانات غير مكتملة' });
+  try {
+    const phone = cleanPhone(req.body?.phone);
+    const { purpose, name, password } = req.body || {};
+    if (!phone || !['register', 'reset'].includes(purpose))
+      return res.status(400).json({ message: 'بيانات غير مكتملة' });
 
-  if (purpose === 'register') {
-    if (!name?.trim() || !password || password.length < 6)
-      return res.status(400).json({ message: 'الاسم وكلمة المرور (6 أحرف+) مطلوبة' });
-    if (await User.findOne({ phone }))
-      return res.status(409).json({ message: 'رقم الهاتف مسجل مسبقاً — سجّل الدخول' });
-    var otpRef = await issueOtp(phone, 'register', { name: name.trim(), password: await bcrypt.hash(password, 10) });
-  } else {
-    if (!(await User.findOne({ phone })))
-      return res.status(404).json({ message: 'لا يوجد حساب بهذا الرقم' });
-    var otpRef = await issueOtp(phone, 'reset');
-  }
+    let otpRef, customerName;
+    if (purpose === 'register') {
+      if (!name?.trim() || !password || password.length < 6)
+        return res.status(400).json({ message: 'الاسم وكلمة المرور (6 أحرف+) مطلوبة' });
+      if (await User.findOne({ phone }))
+        return res.status(409).json({ message: 'رقم الهاتف مسجل مسبقاً — سجّل الدخول' });
+      customerName = name.trim();
+      otpRef = await issueOtp(phone, 'register', { name: customerName, password: await bcrypt.hash(password, 10) }, customerName);
+    } else {
+      const user = await User.findOne({ phone });
+      if (!user) return res.status(404).json({ message: 'لا يوجد حساب بهذا الرقم' });
+      customerName = user.name;
+      otpRef = await issueOtp(phone, 'reset', null, customerName);
+    }
 
-  const s = await SiteSettings.findOne({ key: 'site' }).lean();
-  const wa = cleanPhone(s?.whatsapp);
-  const botUser = (process.env.TELEGRAM_BOT_USERNAME || '').replace(/^@/, '');
-  res.json({
-    ok: true,
-    whatsappUrl: wa ? `https://wa.me/${wa}?text=${encodeURIComponent('مرحباً، أطلب رمز التحقق لرقم ' + phone)}` : '',
-    telegramBotUrl: botUser && otpRef?.linkToken ? `https://t.me/${botUser}?start=otp_${otpRef.linkToken}` : '',
-    linkToken: otpRef?.linkToken || '',
-  });
+    const s = await SiteSettings.findOne({ key: 'site' }).lean();
+    const wa = cleanPhone(s?.whatsapp);
+    const purposeAr = purpose === 'register' ? 'إنشاء حساب جديد' : 'استعادة كلمة المرور';
+    const botUser = (process.env.TELEGRAM_BOT_USERNAME || '').replace(/^@/, '');
+    res.json({
+      ok: true,
+      whatsappUrl: wa ? 'https://wa.me/' + wa + '?text=' + encodeURIComponent('مرحباً، أطلب رمز التحقق (' + purposeAr + ') لرقم هاتفي: ' + phone) : '',
+      telegramBotUrl: botUser && otpRef?.linkToken ? 'https://t.me/' + botUser + '?start=otp_' + otpRef.linkToken : '',
+      linkToken: otpRef?.linkToken || '',
+    });
+  } catch (e) { res.status(500).json({ message: 'خطأ في الخادم: ' + e.message }); }
 });
 
 /* GET /api/auth/bot-code?token= — تسليم الكود آلياً لمن ضغط رابط البوت */
 router.get('/bot-code', async (req, res) => {
   try {
     const token = String(req.query.token || '');
-    const otp = await Otp.findOne({ linkToken: token }).sort('-createdAt');
-    if (!otp || isExpired(otp)) return res.json({ delivered: false, expired: true });
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     if (!botToken) return res.json({ delivered: false });
 
-    const r = await fetch(`https://api.telegram.org/bot${botToken}/getUpdates`);
+    let otp = token && token !== 'verify'
+      ? await Otp.findOne({ linkToken: token }).sort('-createdAt')
+      : await Otp.findOne().sort('-createdAt');
+    if (!otp || isExpired(otp)) return res.json({ delivered: false, expired: true });
+
+    const r = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates');
     const data = await r.json();
-    const hit = (data.result || []).find(u => u.message?.text === `/start otp_${token}`);
+    const wanted = '/start otp_' + token;
+    const hit = (data.result || []).find(u =>
+      u.message?.text === wanted || (token === 'verify' && u.message?.text === '/start verify'));
     if (!hit) return res.json({ delivered: false });
 
-    const chatId = hit.message.chat.id;
-    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    await fetch('https://api.telegram.org/bot' + botToken + '/sendMessage', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        chat_id: chatId,
-        text: `🔐 رمز التحقق الخاص بك في DevStore:\n\n<b>${otp.codePlain}</b>\n\n⏱️ صالح 10 دقائق — لا تشاركه مع أحد.`,
+        chat_id: hit.message.chat.id,
+        text: '🔐 رمز التحقق الخاص بك في DevStore:\n\n<b>' + otp.codePlain + '</b>\n\n⏱️ صالح 10 دقائق — لا تشاركه مع أحد.',
         parse_mode: 'HTML',
       }),
     });
@@ -107,6 +120,7 @@ router.get('/bot-code', async (req, res) => {
   } catch { res.json({ delivered: false }); }
 });
 
+/* POST /api/auth/verify-otp */
 router.post('/verify-otp', async (req, res) => {
   const phone = cleanPhone(req.body?.phone);
   const { code, purpose } = req.body || {};
@@ -119,10 +133,10 @@ router.post('/verify-otp', async (req, res) => {
     await Otp.deleteOne({ _id: otp._id });
     return res.status(201).json({ token: signToken(user), user: publicUser(user) });
   }
-  /* reset: الرمز يُستهلك في reset-password بعد نجاح التغيير */
   res.json({ ok: true });
 });
 
+/* POST /api/auth/reset-password */
 router.post('/reset-password', async (req, res) => {
   const phone = cleanPhone(req.body?.phone);
   const { code, password } = req.body || {};
@@ -139,6 +153,7 @@ router.post('/reset-password', async (req, res) => {
   res.json({ token: signToken(user), user: publicUser(user) });
 });
 
+/* POST /api/auth/login */
 router.post('/login', async (req, res) => {
   try {
     const phone = cleanPhone(req.body?.phone);
@@ -148,11 +163,10 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'بيانات الدخول غير صحيحة' });
     if (!user.active) return res.status(403).json({ message: 'الحساب موقوف — تواصل مع الدعم' });
     res.json({ token: signToken(user, remember), user: publicUser(user) });
-  } catch (e) {
-    res.status(500).json({ message: 'خطأ في الخادم: ' + e.message });
-  }
+  } catch (e) { res.status(500).json({ message: 'خطأ في الخادم: ' + e.message }); }
 });
 
+/* POST /api/auth/admin-login */
 router.post('/admin-login', async (req, res) => {
   try {
     const phone = cleanPhone(req.body?.phone);
@@ -161,9 +175,7 @@ router.post('/admin-login', async (req, res) => {
       return res.status(401).json({ message: 'بيانات دخول المدير غير صحيحة' });
     if (!user.active) return res.status(403).json({ message: 'الحساب موقوف' });
     res.json({ token: signToken(user, true), user: publicUser(user) });
-  } catch (e) {
-    res.status(500).json({ message: 'خطأ في الخادم: ' + e.message });
-  }
+  } catch (e) { res.status(500).json({ message: 'خطأ في الخادم: ' + e.message }); }
 });
 
 router.get('/me', authRequired, (req, res) => res.json({ user: publicUser(req.user) }));
