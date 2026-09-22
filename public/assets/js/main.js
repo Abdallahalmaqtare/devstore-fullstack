@@ -845,3 +845,141 @@ loadAll();
   var dt = document.getElementById('drawerThemeBtn'), tt = document.getElementById('themeToggle');
   if (dt && tt) dt.addEventListener('click', function () { tt.click(); });
 })();
+
+/* ════════════ v14: توزيع الأزرار + إلغاء الطلبات + تصدير PDF ════════════ */
+(function () {
+  /* ── 1) العملة في الشريط العلوي، الثيم في القائمة الجانبية فقط ── */
+  function arrange() {
+    var nav = document.querySelector('.nav-actions'), cur = document.getElementById('currencySelect'), login = document.getElementById('loginBtn');
+    if (nav && cur && login && cur.parentElement !== nav) nav.insertBefore(cur, login);
+    var slot = document.getElementById('drawerCurrencySlot');
+    if (slot) { var row = slot.closest('.drawer-tool-row'); if (row) row.remove(); }
+    var dtb = document.getElementById('drawerThemeBtn'); if (dtb) dtb.remove();
+    var theme = document.getElementById('themeToggle'), tools = document.querySelector('.drawer-tools');
+    if (theme && tools && theme.parentElement !== tools) {
+      theme.className = 'drawer-tool-btn'; theme.style.cssText = 'width:100%;text-align:right;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:inherit;font-weight:700;cursor:pointer';
+      if (!theme.querySelector('.th-label')) { var l = document.createElement('b'); l.className = 'th-label'; l.textContent = ' تبديل الثيم'; theme.appendChild(l); }
+      tools.appendChild(theme);
+    }
+  }
+
+  /* ── 2) مهلة إلغاء الطلبات في "طلباتي" ── */
+  var CANCEL_WIN_MIN = 30;
+  try { API.req('/orders/cancel-window').then(function (r) { if (r && r.minutes != null) CANCEL_WIN_MIN = r.minutes; }); } catch (e) {}
+  var enhancing = false;
+  async function enhanceOrders() {
+    if (enhancing) return; enhancing = true;
+    try {
+      var res = await API.req('/orders/my-orders');
+      var list = Array.isArray(res) ? res : (res && res.orders) || [];
+      if (!list.length) { enhancing = false; return; }
+      var map = {}; list.forEach(function (o) { if (o.code) map[o.code] = o; });
+      document.querySelectorAll('tr').forEach(function (tr) {
+        if (tr.dataset.v14done) return;
+        var code = Object.keys(map).find(function (c) { return tr.textContent.indexOf(c) !== -1; });
+        if (!code) return;
+        tr.dataset.v14done = '1';
+        var o = map[code];
+        var td = document.createElement('td');
+        var inv = document.createElement('button');
+        inv.className = 'btn-invoice'; inv.textContent = '🧾'; inv.title = 'فاتورة PDF';
+        inv.onclick = function () { exportOrdersPdf([o], 'فاتورة طلب ' + o.code); };
+        td.appendChild(inv);
+        if (o.status === 'قيد المراجعة') {
+          var left = CANCEL_WIN_MIN * 60000 - (Date.now() - new Date(o.createdAt).getTime());
+          if (left > 0) {
+            var b = document.createElement('button');
+            b.className = 'btn-cancel-order';
+            b.textContent = '🚫 إلغاء (' + Math.ceil(left / 60000) + 'د)';
+            b.onclick = async function () {
+              if (!confirm('تأكيد إلغاء الطلب ' + o.code + '؟')) return;
+              try { await API.req('/orders/' + o._id + '/cancel', { method: 'POST' }); showToast('✅ تم إلغاء الطلب'); setTimeout(function(){ location.reload(); }, 800); }
+              catch (e) { showToast('❌ ' + e.message); }
+            };
+            td.appendChild(b);
+          } else {
+            var sp = document.createElement('small'); sp.className = 'cancel-expired';
+            sp.textContent = 'انتهت مهلة الإلغاء التلقائي، يرجى التواصل مع الدعم';
+            td.appendChild(sp);
+          }
+        }
+        tr.appendChild(td);
+      });
+    } catch (e) {}
+    enhancing = false;
+  }
+
+  /* ── 3) تصدير PDF (كشف حساب / فاتورة) ── */
+  var CUR_LIST = [];
+  try { API.req('/currencies').then(function (r) { CUR_LIST = Array.isArray(r) ? r : (r && r.currencies) || []; }); } catch (e) {}
+  function localAmount(usd) {
+    var sel = document.getElementById('currencySelect');
+    var code = sel && sel.value;
+    var c = CUR_LIST.find(function (x) { return x.code === code; });
+    if (c && c.rate && code !== 'USD') return ' / ' + Math.round(usd * c.rate) + ' ' + code;
+    return '';
+  }
+  function profileInfo() {
+    var phone = (document.getElementById('pfPhone') || {}).value || '';
+    var nameEl = document.querySelector('#profileModal input[type="text"], [id*="rofile"] input[type="text"]');
+    return { name: nameEl ? nameEl.value : '', phone: phone };
+  }
+  function orderRows(list) {
+    return list.map(function (o) {
+      var items = (o.items || []).map(function (i) { return i.name; }).join(' + ');
+      var ids = (o.items || []).map(function (i) { return i.accountId; }).filter(Boolean).join(' ، ') || '—';
+      var dt = new Date(o.createdAt).toLocaleString('ar-EG');
+      return '<tr><td>' + o.code + '</td><td>' + dt + '</td><td>' + items + '</td><td>' + ids + '</td><td>$' + o.total + localAmount(o.total) + '</td><td>' + ((o.paymentMethod && o.paymentMethod.name) || '—') + '</td><td>' + o.status + '</td></tr>';
+    }).join('');
+  }
+  function pdfShell(title, infoHtml, rowsHtml) {
+    return '<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;padding:16px;color:#111;background:#fff">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #6c5ce7;padding-bottom:8px;margin-bottom:10px">'
+      + '<h2 style="margin:0;color:#6c5ce7">⚡ DevStore</h2><b style="font-size:14px">' + title + '</b></div>'
+      + '<div style="font-size:12px;margin-bottom:10px;line-height:1.9">' + infoHtml + '</div>'
+      + '<table style="width:100%;border-collapse:collapse;font-size:11px" border="1" cellpadding="6">'
+      + '<thead><tr style="background:#6c5ce7;color:#fff"><th>رقم الطلب</th><th>التاريخ والوقت</th><th>الخدمة / الباقة</th><th>ID</th><th>المبلغ</th><th>طريقة الدفع</th><th>الحالة</th></tr></thead>'
+      + '<tbody>' + rowsHtml + '</tbody></table>'
+      + '<p style="margin-top:12px;font-size:10px;color:#888">أُصدر هذا التقرير آلياً من منصة DevStore — ' + new Date().toLocaleString('ar-EG') + '</p></div>';
+  }
+  function savePdf(html, filename) {
+    var d = document.createElement('div'); d.innerHTML = html; document.body.appendChild(d);
+    html2pdf().set({ margin: 8, filename: filename, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } })
+      .from(d).save().then(function () { d.remove(); });
+  }
+  async function exportOrdersPdf(preset, title) {
+    try {
+      var list = preset;
+      if (!list) {
+        var res = await API.req('/orders/my-orders');
+        list = (Array.isArray(res) ? res : (res && res.orders) || []);
+        var f = (document.getElementById('repFrom') || {}).value, t = (document.getElementById('repTo') || {}).value;
+        if (f) list = list.filter(function (o) { return new Date(o.createdAt) >= new Date(f); });
+        if (t) list = list.filter(function (o) { return new Date(o.createdAt) <= new Date(t + 'T23:59:59'); });
+      }
+      if (!list.length) { showToast('⚠️ لا توجد طلبات في هذا النطاق'); return; }
+      var u = profileInfo();
+      var info = '👤 العميل: <b>' + (u.name || '—') + '</b> &nbsp;|&nbsp; 📱 الهاتف: <b dir="ltr">' + (u.phone || '—') + '</b>';
+      savePdf(pdfShell(title || 'كشف حساب / تقرير الطلبات', info, orderRows(list)), 'DevStore-report.pdf');
+    } catch (e) { showToast('❌ ' + e.message); }
+  }
+  function injectPdfUi() {
+    if (document.getElementById('v14PdfBox')) return;
+    var host = document.getElementById('profileModal') || document.querySelector('[id*="rofile"]');
+    if (!host) return;
+    var box = document.createElement('div');
+    box.id = 'v14PdfBox';
+    box.style.cssText = 'margin-top:14px;padding:12px;border:1px dashed rgba(108,92,231,.5);border-radius:12px';
+    box.innerHTML = '<b style="font-size:.9rem">📄 تصدير كشف حساب / تقرير طلباتي (PDF)</b>'
+      + '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">'
+      + '<input type="date" id="repFrom" style="flex:1;min-width:120px;padding:7px;border-radius:8px;border:1px solid #ccc" title="من تاريخ" />'
+      + '<input type="date" id="repTo" style="flex:1;min-width:120px;padding:7px;border-radius:8px;border:1px solid #ccc" title="إلى تاريخ" />'
+      + '<button type="button" class="btn btn-primary" id="v14PdfBtn" style="padding:8px 14px">تصدير PDF ⬇️</button></div>'
+      + '<small style="color:#888">اترك التواريخ فارغة لتصدير كل الطلبات — ولتحميل فاتورة طلب محدد استخدم زر 🧾 بجانبه في جدول الطلبات.</small>';
+    host.appendChild(box);
+    document.getElementById('v14PdfBtn').onclick = function () { exportOrdersPdf(null); };
+  }
+  function tick() { arrange(); injectPdfUi(); enhanceOrders(); }
+  new MutationObserver(tick).observe(document.body, { childList: true, subtree: true });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tick); else tick();
+})();

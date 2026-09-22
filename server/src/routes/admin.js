@@ -65,4 +65,25 @@ router.delete('/admins/:id', authRequired, adminOnly, superOnly, async (req, res
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
+
+/* ═══ v14: تقرير PDF شامل لمستخدم (للأدمن) ═══ */
+router.get('/users/:id/report', authRequired, adminOnly, async (req, res) => {
+  try {
+    const u = await User.findById(req.params.id).lean();
+    if (!u) return res.status(404).json({ message: 'المستخدم غير موجود' });
+    const orders = await Order.find({ user: u._id }).sort('-createdAt').lean();
+    const done = orders.filter(o => o.status === 'مكتمل');
+    res.json({
+      user: { name: u.name, phone: u.phone, createdAt: u.createdAt },
+      orders,
+      stats: {
+        total: orders.length,
+        completed: done.length,
+        cancelled: orders.filter(o => o.status === 'ملغي').length,
+        paidTotal: +done.reduce((s2, o) => s2 + (o.total || 0), 0).toFixed(2),
+      },
+    });
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
 module.exports = router;

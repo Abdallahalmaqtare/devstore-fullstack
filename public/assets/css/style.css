@@ -449,3 +449,10 @@ input, select, textarea { font-family: inherit; }
 .v-sale-badge{display:inline-block;background:linear-gradient(135deg,#ff4757,#ff6b81);color:#fff;font-size:.68rem;font-weight:800;padding:2px 8px;border-radius:999px;margin-inline-end:4px;vertical-align:middle}
 .variant-price .price-old{font-size:.8rem}
 .variant-price .price-new{font-size:1.05rem}
+
+/* v14 */
+.btn-cancel-order{background:#ff4757;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:.78rem;font-weight:800;cursor:pointer;margin-inline-start:6px}
+.btn-cancel-order:hover{background:#e84141}
+.cancel-expired{color:var(--muted,#888);font-size:.72rem;display:inline-block;margin-inline-start:6px}
+.btn-invoice{background:transparent;border:1px solid rgba(108,92,231,.5);border-radius:8px;padding:4px 8px;cursor:pointer;font-size:.85rem}
+#v14PdfBox input[type="date"]{background:var(--card,#fff);color:inherit}

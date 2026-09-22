@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const multer = require('multer');
-const { Order, Product, PaymentMethod } = require('../models');
+const { SiteSettings, Order, Product, PaymentMethod } = require('../models');
 const { authRequired, adminOnly } = require('../middleware/auth');
 
 /* السعر المعتمد للطلب: المخفّض إن وُجد خصم نشط — يُحسب من قاعدة البيانات فقط */
@@ -9,6 +9,32 @@ function salePrice(prod, base) {
     return +(base - base * prod.discountPercent / 100).toFixed(2);
   return base;
 }
+
+/* ═══ v14: مهلة إلغاء الطلب من العميل ═══ */
+router.get('/cancel-window', async (req, res) => {
+  const st = await SiteSettings.findOne({ key: 'cancelWindowMinutes' });
+  res.json({ minutes: st ? (parseInt(st.value) || 30) : 30 });
+});
+router.put('/cancel-window', authRequired, adminOnly, async (req, res) => {
+  const m = Math.max(0, parseInt(req.body && req.body.minutes) || 0);
+  await SiteSettings.findOneAndUpdate({ key: 'cancelWindowMinutes' }, { key: 'cancelWindowMinutes', value: String(m) }, { upsert: true });
+  res.json({ ok: true, minutes: m });
+});
+router.post('/:id/cancel', authRequired, async (req, res) => {
+  try {
+    const o = await Order.findById(req.params.id);
+    if (!o || String(o.user) !== String(req.user._id)) return res.status(404).json({ message: 'الطلب غير موجود' });
+    if (o.status !== 'قيد المراجعة') return res.status(400).json({ message: 'لا يمكن إلغاء طلب بهذه الحالة' });
+    const st = await SiteSettings.findOne({ key: 'cancelWindowMinutes' });
+    const win = (st ? (parseInt(st.value) || 30) : 30) * 60000;
+    if (Date.now() - o.createdAt.getTime() > win)
+      return res.status(400).json({ message: 'انتهت مهلة الإلغاء التلقائي — يرجى التواصل مع الدعم' });
+    o.status = 'ملغي';
+    await o.save();
+    await sendTelegram('🚫 <b>العميل ألغى طلبه بنفسه</b>\n🔢 الطلب: <code>' + o.code + '</code>\n👤 ' + (o.customerName || '') + ' (<code>' + (o.customerPhone || '') + '</code>)\n💰 الإجمالي: $' + o.total);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
 const { uploadImage, sendTelegram } = require('../utils/notify');
 
 const upload = multer({

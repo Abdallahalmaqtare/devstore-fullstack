@@ -639,3 +639,75 @@ document.getElementById('adminPassForm').addEventListener('submit', async e => {
   ['input', 'change'].forEach(function (ev) { sale.addEventListener(ev, calc); pct.addEventListener(ev, calc); price.addEventListener(ev, calc); });
   calc();
 })();
+
+/* ════════════ v14: مهلة الإلغاء + تقارير المستخدمين PDF ════════════ */
+(function () {
+  /* ── حقل مهلة الإلغاء في الإعدادات ── */
+  async function injectCancelWin() {
+    if (document.getElementById('cancelWinBox')) return;
+    var pm = document.getElementById('payMethods');
+    var host = pm ? pm.closest('.panel') || pm.parentElement : null;
+    if (!host) { var panels = document.querySelectorAll('.panel'); host = panels[panels.length - 1]; }
+    if (!host) return;
+    var box = document.createElement('div');
+    box.id = 'cancelWinBox'; box.className = 'panel';
+    box.innerHTML = '<h3>⏱️ مهلة إلغاء الطلبات</h3>'
+      + '<label>المهلة الزمنية المسموحة للعميل لإلغاء الطلب (بالدقائق)'
+      + '<input type="number" id="cancelWinMin" min="0" step="1" value="30" /></label>'
+      + '<button class="btn btn-primary" id="cancelWinSave" style="margin-top:8px">حفظ المهلة</button>';
+    host.parentElement.appendChild(box);
+    try { var r = await API.req('/orders/cancel-window'); if (r && r.minutes != null) document.getElementById('cancelWinMin').value = r.minutes; } catch (e) {}
+    document.getElementById('cancelWinSave').onclick = async function () {
+      try {
+        var m = parseInt(document.getElementById('cancelWinMin').value) || 0;
+        await API.req('/orders/cancel-window', { method: 'PUT', body: { minutes: m } });
+        showToast('✅ تم حفظ مهلة الإلغاء: ' + m + ' دقيقة');
+      } catch (e) { showToast('❌ ' + e.message); }
+    };
+  }
+
+  /* ── زر تقرير PDF لكل مستخدم ── */
+  function enhanceUsers() {
+    document.querySelectorAll('#usersTable tr').forEach(function (tr) {
+      if (tr.dataset.v14rep) return;
+      var del = tr.querySelector('[data-del]');
+      if (!del) return;
+      tr.dataset.v14rep = '1';
+      var b = document.createElement('button');
+      b.className = 'row-btn'; b.textContent = '📄'; b.title = 'تقرير PDF شامل';
+      b.onclick = function () { exportUserReport(del.dataset.del); };
+      del.parentElement.appendChild(b);
+    });
+  }
+  function savePdf(html, filename) {
+    var d = document.createElement('div'); d.innerHTML = html; document.body.appendChild(d);
+    html2pdf().set({ margin: 8, filename: filename, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } })
+      .from(d).save().then(function () { d.remove(); });
+  }
+  async function exportUserReport(uid) {
+    try {
+      showToast('⏳ جاري توليد التقرير...');
+      var r = await API.req('/admin/users/' + uid + '/report');
+      var u = r.user, st = r.stats;
+      var rows = (r.orders || []).map(function (o) {
+        var items = (o.items || []).map(function (i) { return i.name; }).join(' + ');
+        var ids = (o.items || []).map(function (i) { return i.accountId; }).filter(Boolean).join(' ، ') || '—';
+        var rc = o.receiptUrl ? '<a href="' + o.receiptUrl + '">سند</a>' : '—';
+        return '<tr><td>' + o.code + '</td><td>' + new Date(o.createdAt).toLocaleString('ar-EG') + '</td><td>' + items + '</td><td>' + ids + '</td><td>$' + o.total + '</td><td>' + ((o.paymentMethod && o.paymentMethod.name) || '—') + '</td><td>' + o.status + '</td><td>' + rc + '</td></tr>';
+      }).join('');
+      var info = '👤 الاسم: <b>' + u.name + '</b> &nbsp;|&nbsp; 📱 الهاتف: <b dir="ltr">' + u.phone + '</b> &nbsp;|&nbsp; 📅 الانضمام: ' + new Date(u.createdAt).toLocaleDateString('ar-EG')
+        + '<br>📦 إجمالي الطلبات: <b>' + st.total + '</b> &nbsp;|&nbsp; ✅ مكتملة: <b>' + st.completed + '</b> &nbsp;|&nbsp; 🚫 ملغاة: <b>' + st.cancelled + '</b> &nbsp;|&nbsp; 💰 إجمالي المدفوع: <b>$' + st.paidTotal + '</b>';
+      var html = '<div dir="rtl" style="font-family:Tahoma,Arial;padding:16px;color:#111;background:#fff">'
+        + '<div style="display:flex;justify-content:space-between;border-bottom:3px solid #6c5ce7;padding-bottom:8px;margin-bottom:10px"><h2 style="margin:0;color:#6c5ce7">⚡ DevStore</h2><b>تقرير عميل رسمي</b></div>'
+        + '<div style="font-size:12px;margin-bottom:10px;line-height:1.9">' + info + '</div>'
+        + '<table style="width:100%;border-collapse:collapse;font-size:11px" border="1" cellpadding="6">'
+        + '<thead><tr style="background:#6c5ce7;color:#fff"><th>رقم الطلب</th><th>التاريخ</th><th>الخدمة</th><th>ID</th><th>المبلغ</th><th>الدفع</th><th>الحالة</th><th>السند</th></tr></thead>'
+        + '<tbody>' + (rows || '<tr><td colspan="8">لا توجد طلبات</td></tr>') + '</tbody></table>'
+        + '<p style="margin-top:12px;font-size:10px;color:#888">تقرير إداري — DevStore — ' + new Date().toLocaleString('ar-EG') + '</p></div>';
+      savePdf(html, 'DevStore-user-' + (u.phone || uid) + '.pdf');
+    } catch (e) { showToast('❌ ' + e.message); }
+  }
+  function tick() { injectCancelWin(); enhanceUsers(); }
+  new MutationObserver(tick).observe(document.body, { childList: true, subtree: true });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tick); else tick();
+})();
