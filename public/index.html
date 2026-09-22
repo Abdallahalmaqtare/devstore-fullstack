@@ -16,6 +16,7 @@
     })();
   </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>/*drawer jump-start*/</style>
 </head>
 <body>
   <header class="navbar" id="navbar">
@@ -49,20 +50,53 @@
 
   <!-- القائمة الجانبية العصرية -->
   <div class="drawer-overlay" id="drawerOverlay"></div>
-  <aside class="side-drawer" id="sideDrawer" aria-hidden="true">
+  <aside class="side-drawer" id="sideDrawer" aria-hidden="true" role="dialog" aria-label="لوحة الحساب والقائمة">
     <div class="drawer-head">
       <a href="#home" class="brand"><span class="brand-icon">⚡</span><span class="brand-name"><b>Dev</b>Store</span></a>
       <button class="icon-btn drawer-close" id="drawerClose" aria-label="إغلاق القائمة">✕</button>
     </div>
-    <nav class="drawer-links">
-      <a href="#home" class="drawer-link">🏠 الرئيسية</a>
-      <a href="#store" class="drawer-link">🛍️ المتجر الرقمي</a>
-      <a href="#courses" class="drawer-link">🎓 الدورات والخدمات</a>
-      <a href="#footer" class="drawer-link">📞 اتصل بنا</a>
-    </nav>
-    <div class="drawer-tools">
-      <div class="drawer-tool-row"><span class="drawer-tool-label">💱 العملة:</span> <span id="drawerCurrencySlot" class="drawer-currency-slot"></span></div>
-      <button class="drawer-tool-btn" id="drawerThemeBtn">🌙 تبديل الوضع الليلي / النهاري</button>
+    <div class="drawer-user">
+      <span class="drawer-avatar" id="drawerAvatar">👤</span>
+      <div class="drawer-user-meta">
+        <b id="drawerUserName">زائر</b>
+        <small id="drawerUserPhone" dir="ltr">—</small>
+      </div>
+    </div>
+    <div class="drawer-scroll">
+      <section class="drawer-section">
+        <h4 class="drawer-section-title">👤 الملف الشخصي</h4>
+        <button type="button" class="drawer-action" id="drawerProfileBtn">عرض وتعديل بياناتي</button>
+      </section>
+      <section class="drawer-section">
+        <h4 class="drawer-section-title">🔒 الأمن والخصوصية</h4>
+        <input type="password" id="drawerCurPw" class="drawer-input" placeholder="كلمة المرور الحالية" autocomplete="current-password" />
+        <input type="password" id="drawerNewPw" class="drawer-input" placeholder="كلمة المرور الجديدة" autocomplete="new-password" />
+        <button type="button" class="drawer-action" id="drawerPwBtn">تغيير كلمة المرور</button>
+        <button type="button" class="drawer-action ghost" id="drawerSessionBtn">إدارة الجلسة وحالة الدخول</button>
+        <small class="drawer-note" id="drawerSessionInfo"></small>
+      </section>
+      <section class="drawer-section">
+        <h4 class="drawer-section-title">📄 التقارير وسجل الطلبات</h4>
+        <button type="button" class="drawer-action" id="drawerOrdersBtn">استعراض سجل الطلبات وحالاتها</button>
+        <div class="drawer-dates">
+          <input type="date" id="drawerRepFrom" class="drawer-input" title="من تاريخ" />
+          <input type="date" id="drawerRepTo" class="drawer-input" title="إلى تاريخ" />
+        </div>
+        <button type="button" class="drawer-action" id="drawerPdfBtn">تصدير كشف الحساب والفواتير PDF ⬇️</button>
+      </section>
+      <nav class="drawer-links">
+        <a href="#store" class="drawer-link">🛍️ المتجر الرقمي</a>
+        <a href="#store" data-nav-cat="الألعاب" class="drawer-link">🎮 الألعاب وشحن الحسابات</a>
+        <a href="#store" data-nav-cat="التطبيقات" class="drawer-link">📱 التطبيقات</a>
+        <a href="#store" data-nav-cat="أدوات المبرمجين" class="drawer-link">🛠️ أدوات المبرمجين</a>
+        <a href="#courses" class="drawer-link">🎓 الدورات والخدمات</a>
+        <a href="#footer" class="drawer-link">📞 اتصل بنا</a>
+      </nav>
+    </div>
+    <div class="drawer-tools" id="drawerTools">
+      <a class="drawer-tool-btn" id="drawerWa" target="_blank" rel="noopener" href="#">💬 واتساب الدعم</a>
+      <a class="drawer-tool-btn" id="drawerTg" target="_blank" rel="noopener" href="#">✈️ دعم تليجرام</a>
+      <button type="button" class="drawer-tool-btn danger" id="drawerLogout">🚪 تسجيل الخروج</button>
     </div>
   </aside>
 
