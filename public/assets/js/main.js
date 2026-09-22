@@ -421,7 +421,7 @@ function showAuthForm(which) {
   document.querySelectorAll('#authTabs .auth-tab').forEach(function (t) { t.classList.toggle('active', t.dataset.tab === which); });
 }
 
-(function(){ var _lb=document.getElementById('loginBtn'); if(_lb) _lb.addEventListener('click', function () {
+document.getElementById('loginBtn').addEventListener('click', function () {
   if (API.user()) openProfile(); else openAuth('login');
 });
 authModal.addEventListener('click', function (e) { if (e.target === authModal) authModal.classList.remove('open'); });
@@ -569,7 +569,6 @@ document.getElementById('loginForm').addEventListener('submit', async function (
       body: { phone: phone, password: document.getElementById('loginPass').value, remember: remember },
     });
     API.setSession(r.token, r.user, remember);
-    setTimeout(function(){ try{ location.reload(); }catch(e){} }, 700);
     authModal.classList.remove('open');
     updateUserChip();
     showToast(r.user.role === 'admin' ? '⚙️ أهلاً بالمدير — اللوحة من admin.html' : '👋 أهلاً ' + r.user.name);
@@ -963,7 +962,7 @@ loadAll();
   function openDrawer() { var d=$('sideDrawer'), o=$('drawerOverlay'); if(!d) return; d.classList.add('open'); d.setAttribute('aria-hidden','false'); if(o) o.classList.add('show'); document.body.style.overflow='hidden'; }
   function closeDrawer() { var d=$('sideDrawer'), o=$('drawerOverlay'); if(!d) return; d.classList.remove('open'); d.setAttribute('aria-hidden','true'); if(o) o.classList.remove('show'); document.body.style.overflow=''; }
   window.DS_openDrawer = openDrawer;
-  function hitLogin() { var lb=$('loginBtn'); if(lb){ lb.click(); return; } var am=$('authModal'); if(am){ am.classList.add('show'); am.classList.add('open'); am.style.display='flex'; } }
+  function hitLogin() { var lb=$('loginBtn'); if(lb) lb.click(); }
   function needAuth() { if (!tk()) { toast('⚠️ سجّل الدخول أولاً'); hitLogin(); return true; } return false; }
 
   var mb = $('menuBtn'); if (mb) mb.addEventListener('click', function (e) { e.preventDefault(); openDrawer(); });
@@ -980,15 +979,16 @@ loadAll();
       var u = (me && (me.user || me)) || null;
       if (u && u.name) { name = u.name; phone = u.phone || '—'; }
       else {
-        var cached = (window.API && API.user) ? API.user() : null;
-        if(!cached) ['ds-user','ds_user','devstore_user','user'].forEach(function (k) { try { var v = localStorage.getItem(k) || sessionStorage.getItem(k); if (v) cached = JSON.parse(v); } catch (e) {} });
+        var cached = null;
+        ['ds_user','devstore_user','user'].forEach(function (k) { try { var v = localStorage.getItem(k) || sessionStorage.getItem(k); if (v) cached = JSON.parse(v); } catch (e) {} });
         if (cached) { name = cached.name || name; phone = cached.phone || phone; }
       }
     } catch (e) {}
     if ($('drawerUserName')) $('drawerUserName').textContent = name;
     if ($('drawerUserPhone')) $('drawerUserPhone').textContent = phone;
     var logged = !!tk();
-    if ($('drawerTools')) $('drawerTools').style.display = logged ? '' : 'none';
+    if ($('drawerTools')) $('drawerTools').style.display = '';
+    var _lo = $('drawerLogout'); if (_lo) _lo.style.display = logged ? '' : 'none';
     if ($('drawerSessionInfo')) $('drawerSessionInfo').textContent = logged
       ? '🟢 أنت مسجل الدخول بجلسة نشطة على هذا الجهاز.' : '🔴 لا توجد جلسة دخول حالياً.';
   }
@@ -1299,24 +1299,3 @@ loadAll();
   var rpb=$('reportsPdfBtn'); if(rpb) rpb.addEventListener('click', exportPdf);
 })();
 
-/* ═══ v17: إصلاح زر اللغة (ربط مباشر مضمون) ═══ */
-(function(){
-  var btn = document.getElementById('langToggle');
-  if (!btn) return;
-  if (!btn.dataset.v17bound) {
-    btn.dataset.v17bound = '1';
-    btn.addEventListener('click', function(){
-      var cur = localStorage.getItem('lang') || 'ar';
-      var nxt = (cur === 'en') ? 'ar' : 'en';
-      localStorage.setItem('lang', nxt);
-      document.documentElement.lang = nxt;
-      document.documentElement.dir = (nxt === 'en') ? 'ltr' : 'rtl';
-      btn.textContent = (nxt === 'en') ? '🌐 العربية' : '🌐 English';
-      location.reload();
-    });
-  }
-  var cur = localStorage.getItem('lang') || 'ar';
-  btn.textContent = (cur === 'en') ? '🌐 العربية' : '🌐 English';
-})();
-
-})();
