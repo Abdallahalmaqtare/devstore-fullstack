@@ -824,7 +824,11 @@ loadAll();
       var list = await API.req('/products');
       (list || []).forEach(function (p) { if (p.isOnSale && p.discountPercent > 0) saleMap[p.name] = p; });
       decorate();
-      new MutationObserver(function () { decorate(); }).observe(document.body, { childList: true, subtree: true });
+      var decoLock = false;
+      new MutationObserver(function () {
+        if (decoLock) return; decoLock = true;
+        setTimeout(function () { decoLock = false; decorate(); }, 300);
+      }).observe(document.body, { childList: true, subtree: true });
     } catch (e) {}
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
@@ -979,8 +983,12 @@ loadAll();
     host.appendChild(box);
     document.getElementById('v14PdfBtn').onclick = function () { exportOrdersPdf(null); };
   }
-  function tick() { arrange(); injectPdfUi(); enhanceOrders(); }
-  new MutationObserver(tick).observe(document.body, { childList: true, subtree: true });
+  var tickLock = false;
+  function tick() {
+    if (tickLock) return; tickLock = true;
+    setTimeout(function () { tickLock = false; }, 300);
+    arrange(); injectPdfUi(); enhanceOrders();
+  }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tick); else tick();
 })();
 
@@ -1009,10 +1017,11 @@ loadAll();
     var u = user() || {};
     var s = function (id, v) { var el = document.getElementById(id); if (el) el.value = v || ''; if (el && el.tagName !== 'INPUT') el.textContent = v || ''; };
     s('fvName', u.name); s('fvPhone', u.phone);
-    var n1 = document.getElementById('fvProfileName'); if (n1) n1.textContent = u.name || 'زائر';
-    var p1 = document.getElementById('fvProfilePhone'); if (p1) p1.textContent = u.phone || '';
-    var dn = document.getElementById('drawerUserName'); if (dn) dn.textContent = u.name || 'زائر';
-    var dp = document.getElementById('drawerUserPhone'); if (dp) dp.textContent = u.phone || '';
+    var setT = function (el, v) { if (el && el.textContent !== v) el.textContent = v; };
+    setT(document.getElementById('fvProfileName'), u.name || 'زائر');
+    setT(document.getElementById('fvProfilePhone'), u.phone || '');
+    setT(document.getElementById('drawerUserName'), u.name || 'زائر');
+    setT(document.getElementById('drawerUserPhone'), u.phone || '');
   }
   var CANCEL_WIN = 30;
   try { API.req('/orders/cancel-window').then(function (r) { if (r && r.minutes != null) CANCEL_WIN = r.minutes; }); } catch (e) {}
@@ -1095,6 +1104,7 @@ loadAll();
     if (dtb && tt && !dtb.dataset.w) { dtb.dataset.w = '1'; dtb.addEventListener('click', function () { tt.click(); }); }
     fillProfile();
   }
-  new MutationObserver(wire).observe(document.body, { childList: true, subtree: true });
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
+  /* v16 fix: بدون MutationObserver — wire() يُستدعى مرة واحدة فقط (العناصر ثابتة) */
+  function wireOnce() { wire(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireOnce); else wireOnce();
 })();
