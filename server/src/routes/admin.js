@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
-const { Category, User, Order } = require('../models');
+const {  Product, Category, User, Order } = require('../models');
 const { authRequired, adminOnly } = require('../middleware/auth');
 const { sendTelegram } = require('../utils/notify');
 
