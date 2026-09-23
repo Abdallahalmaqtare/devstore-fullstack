@@ -494,28 +494,3 @@ input, select, textarea { font-family: inherit; }
   .drawer-tool-btn{padding:10px 12px;font-size:.87rem}
   .drawer-input{font-size:.84rem;padding:8px 10px}
 }
-
-/* ═══ v16: إصلاح زر القائمة والمنطقة الآمنة على الهواتف ═══ */
-.navbar{z-index:1000;padding-top:env(safe-area-inset-top,.75rem)}
-.nav-inner{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
-.nav-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:nowrap}
-#menuBtn{min-width:44px;min-height:44px;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center}
-.brand{flex-shrink:1;min-width:0;overflow:hidden}
-@media (max-width:480px){.user-chip-name{display:none}.currency-select{max-width:96px;font-size:.8rem}}
-
-/* ═══ v16: القوائم القابلة للطي (Accordion) ═══ */
-.acc-item{border:1px solid rgba(255,255,255,.09);border-radius:14px;overflow:hidden;background:rgba(255,255,255,.03)}
-[data-theme="light"] .acc-item{border-color:rgba(0,0,0,.08);background:rgba(0,0,0,.02)}
-.acc-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 13px;background:transparent;border:none;color:inherit;font-weight:800;font-size:.92rem;cursor:pointer;text-align:start}
-.acc-btn:hover{background:rgba(255,255,255,.05)}
-.acc-chevron{transition:transform .3s ease;font-size:.85rem;opacity:.65;flex:0 0 auto}
-.acc-item.open .acc-chevron{transform:rotate(180deg)}
-.acc-panel{max-height:0;overflow:hidden;transition:max-height .35s ease,padding .3s ease;display:flex;flex-direction:column;gap:7px;padding:0 10px}
-.acc-item.open .acc-panel{max-height:640px;padding:2px 10px 12px}
-
-/* ═══ v16: انعكاس القائمة عند الإنجليزية (LTR) ═══ */
-[dir="ltr"] .side-drawer{right:auto;left:0;transform:translateX(-105%);border-left:none;border-right:1px solid rgba(255,255,255,.12);box-shadow:8px 0 32px rgba(0,0,0,.35)}
-[dir="ltr"] .side-drawer.open{right:auto;left:0;transform:translateX(0)}
-[dir="ltr"] .drawer-tool-btn{text-align:left}
-[dir="ltr"] .acc-btn{text-align:left}
-[dir="ltr"] .drawer-user{flex-direction:row}
