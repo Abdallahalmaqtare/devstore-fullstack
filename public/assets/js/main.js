@@ -48,8 +48,10 @@ function initDialPickers() {
 /* دمج رمز الدولة مع الرقم المحلي: إزالة الصفر الأول ثم الدمج — ناتج صافٍ بلا + ولا مسافات */
 function fullPhone(dialId, phoneId) {
   var dial = document.getElementById(dialId) ? document.getElementById(dialId).value : '967';
-  var local = normalizePhone(document.getElementById(phoneId).value).replace(/^0+/, '');
-  return dial + local;
+  var raw = normalizePhone(document.getElementById(phoneId).value);
+  raw = raw.replace(/^00/, '');                 /* صيغة 00967… تصبح 967… */
+  if (raw.indexOf(dial) === 0) return raw;      /* المستخدم لصق الرقم كاملاً بالرمز الدولي — لا دمج مزدوج */
+  return dial + raw.replace(/^0+/, '');         /* حذف الصفر الأول من الرقم المحلي ثم الدمج */
 }
 
 /* تنسيق السعر المزدوج: $2 / 1080 YER */
@@ -824,13 +826,7 @@ loadAll();
     if (nav && cur && login && cur.parentElement !== nav) nav.insertBefore(cur, login);
     var slot = document.getElementById('drawerCurrencySlot');
     if (slot) { var row = slot.closest('.drawer-tool-row'); if (row) row.remove(); }
-    var dtb = document.getElementById('drawerThemeBtn'); if (dtb) dtb.remove();
-    var theme = document.getElementById('themeToggle'), tools = document.querySelector('.drawer-tools');
-    if (theme && tools && theme.parentElement !== tools) {
-      theme.className = 'drawer-tool-btn'; theme.style.cssText = 'width:100%;text-align:right;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:inherit;font-weight:700;cursor:pointer';
-      if (!theme.querySelector('.th-label')) { var l = document.createElement('b'); l.className = 'th-label'; l.textContent = ' تبديل الثيم'; theme.appendChild(l); }
-      tools.appendChild(theme);
-    }
+    /* v18: زر الثيم يبقى في الشريط العلوي، والقائمة الجانبية لها زرها الثابت drawerThemeBtn — لا نقل ولا حذف */
   }
 
   /* ── 2) مهلة إلغاء الطلبات في "طلباتي" ── */
@@ -1191,6 +1187,16 @@ loadAll();
   function needAuth(){ if(!tk()){ toast('⚠️ سجّل الدخول أولاً'); var lb=$('loginBtn'); if(lb) lb.click(); return true; } return false; }
   document.querySelectorAll('.modal-close').forEach(function(b){ b.addEventListener('click', function(){ closeM(b.dataset.close); }); });
   document.querySelectorAll('.ds-modal').forEach(function(m){ m.addEventListener('click', function(e){ if(e.target===m) closeM(m.id); }); });
+  /* v18: زر الرجوع — يغلق النافذة ويعيد فتح القائمة الجانبية */
+  document.querySelectorAll('[data-back]').forEach(function(b){
+    b.addEventListener('click', function(){
+      closeM(b.dataset.back);
+      var d=$('sideDrawer'), o=$('drawerOverlay');
+      if(d){ d.classList.add('open'); d.setAttribute('aria-hidden','false'); }
+      if(o){ o.classList.add('show'); }
+      document.body.style.overflow='hidden';
+    });
+  });
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') document.querySelectorAll('.ds-modal.show').forEach(function(m){ closeM(m.id); }); });
 
   /* الملف الشخصي */
@@ -1205,7 +1211,9 @@ loadAll();
   var mns=$('modalNameSave');
   if (mns) mns.addEventListener('click', async function(){
     var v=($('modalNameInput').value||'').trim(); if(v.length<2) return toast('⚠️ أدخل اسماً صحيحاً');
-    try{ await API.req('/users/profile',{method:'PUT',body:{name:v}}); var un=$('drawerUserName'); if(un)un.textContent=v; toast('✅ تم حفظ الاسم'); }
+    try{ var rr = await API.req('/users/profile',{method:'PUT',body:{name:v}}); var un=$('drawerUserName'); if(un)un.textContent=v;
+      var cu=API.user()||{}; cu.name=(rr&&rr.user&&rr.user.name)||v; try{ API.setSession(API.token(), cu, !!localStorage.getItem('ds-token')); updateUserChip(); }catch(_){ }
+      toast('✅ تم حفظ الاسم'); }
     catch(e){ toast('❌ '+e.message); }
   });
 
@@ -1221,7 +1229,7 @@ loadAll();
     var c=$('secCurPw'),n=$('secNewPw'),n2=$('secNewPw2');
     if(!c.value||n.value.length<6) return toast('⚠️ أدخل كلمة المرور الحالية وجديدة (6 أحرف+)');
     if(n.value!==n2.value) return toast('⚠️ تأكيد كلمة المرور غير متطابق');
-    try{ await API.req('/users/change-password',{method:'PUT',body:{currentPassword:c.value,newPassword:n.value,oldPassword:c.value}});
+    try{ await API.req('/users/change-password',{method:'PUT',body:{current:c.value,next:n.value}});
       c.value='';n.value='';n2.value=''; toast('✅ تم تغيير كلمة المرور بنجاح'); }
     catch(e){ toast('❌ '+e.message); }
   });
