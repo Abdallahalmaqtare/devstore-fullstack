@@ -422,9 +422,11 @@ function showAuthForm(which) {
 }
 
 document.getElementById('loginBtn').addEventListener('click', function () {
-  /* v18: أيقونة المستخدم تفتح القائمة الجانبية (لوحة الحساب) — الواجهات تُعرض منفصلة من هناك */
-  if (API.user()) { if (window.DS_openDrawer) window.DS_openDrawer(); }
-  else openAuth('login');
+  /* v19: فحص جلسة صارم (مستخدم + توكن معًا) —
+     غير مسجل → نافذة تسجيل الدخول/إنشاء حساب مباشرة | مسجل → القائمة الجانبية (الملف/الأمان/التقارير) */
+  var loggedIn = !!(API.user() && API.token && API.token());
+  if (loggedIn) { if (window.DS_openDrawer) window.DS_openDrawer(); }
+  else { try { API.clearSession(); } catch (e) {} openAuth('login'); }
 });
 authModal.addEventListener('click', function (e) { if (e.target === authModal) authModal.classList.remove('open'); });
 document.querySelector('[data-close="authModal"]').addEventListener('click', function () { authModal.classList.remove('open'); });
@@ -780,7 +782,7 @@ loadAll();
   function closeDrawer() { var d=$('sideDrawer'), o=$('drawerOverlay'); if(!d) return; d.classList.remove('open'); d.setAttribute('aria-hidden','true'); if(o) o.classList.remove('show'); document.body.style.overflow=''; }
   window.DS_openDrawer = openDrawer;
   function hitLogin() { var lb=$('loginBtn'); if(lb) lb.click(); }
-  function needAuth() { if (!tk()) { toast('⚠️ سجّل الدخول أولاً'); hitLogin(); return true; } return false; }
+  function needAuth() { if (!tk()) { toast('⚠️ سجّل الدخول أولاً'); closeDrawer(); openAuth('login'); return true; } return false; }
 
   var mb = $('menuBtn'); if (mb) mb.addEventListener('click', function (e) { e.preventDefault(); openDrawer(); });
   var xb = $('drawerClose'); if (xb) xb.addEventListener('click', closeDrawer);
@@ -1005,7 +1007,7 @@ loadAll();
   function openM(id){ var m=$(id); if(!m) return; m.classList.add('show'); m.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden'; }
   function closeM(id){ var m=$(id); if(!m) return; m.classList.remove('show'); m.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
   function closeDrawer(){ var d=$('sideDrawer'),o=$('drawerOverlay'); if(d){d.classList.remove('open');} if(o){o.classList.remove('show');} }
-  function needAuth(){ if(!tk()){ toast('⚠️ سجّل الدخول أولاً'); var lb=$('loginBtn'); if(lb) lb.click(); return true; } return false; }
+  function needAuth(){ if(!tk()){ toast('⚠️ سجّل الدخول أولاً'); closeDrawer(); openAuth('login'); return true; } return false; }
   document.querySelectorAll('.modal-close').forEach(function(b){ b.addEventListener('click', function(){ closeM(b.dataset.close); }); });
   document.querySelectorAll('.ds-modal').forEach(function(m){ m.addEventListener('click', function(e){ if(e.target===m) closeM(m.id); }); });
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') document.querySelectorAll('.ds-modal.show').forEach(function(m){ closeM(m.id); }); });
