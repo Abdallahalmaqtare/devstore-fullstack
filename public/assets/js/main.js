@@ -208,7 +208,7 @@ function openGroupModal(id) {
         (v.isOnSale && v.discountPercent > 0
           ? '<span class="v-sale-badge">خصم ' + v.discountPercent + '%</span> <span class="price-old">' + fmtPrice(v.price) + '</span> <span class="price-new">' + fmtPrice(effPrice(v)) + '</span>'
           : fmtPrice(effPrice(v))) + '</span>' +
-      '<button class="buy-btn" data-variant="' + i + '">أضف للسلة 🛒</button>' +
+      '<button class="buy-btn" data-variant="' + i + '" title="أضف للسلة">🛒</button>' +
       '</div>';
   }).join('');
   groupModal.classList.add('open');
@@ -1012,7 +1012,7 @@ loadAll();
     document.querySelectorAll('.full-view').forEach(function (v) { v.classList.remove('show'); });
     document.body.style.overflow = '';
   }
-  function user() { try { return JSON.parse(localStorage.getItem('ds_user') || sessionStorage.getItem('ds_user') || 'null'); } catch (e) { return null; } }
+  function user() { try { return JSON.parse(localStorage.getItem('ds-user') || sessionStorage.getItem('ds-user') || 'null'); } catch (e) { return null; } }
   function fillProfile() {
     var u = user() || {};
     var s = function (id, v) { var el = document.getElementById(id); if (el) el.value = v || ''; if (el && el.tagName !== 'INPUT') el.textContent = v || ''; };
@@ -1067,8 +1067,8 @@ loadAll();
     } catch (e) { box.innerHTML = '<p class="fv-muted">⚠️ ' + e.message + '</p>'; }
   }
   function doLogout() {
-    localStorage.removeItem('ds_token'); localStorage.removeItem('ds_user');
-    sessionStorage.removeItem('ds_token'); sessionStorage.removeItem('ds_user');
+    localStorage.removeItem('ds-token'); localStorage.removeItem('ds-user');
+    sessionStorage.removeItem('ds-token'); sessionStorage.removeItem('ds-user');
     showToast('👋 تم تسجيل الخروج'); setTimeout(function () { location.reload(); }, 700);
   }
   function wire() {
@@ -1087,8 +1087,8 @@ loadAll();
       try {
         var r = await API.req('/users/profile', { method: 'PUT', body: { name: document.getElementById('fvName').value.trim() } });
         var u = user() || {}; u.name = (r.user && r.user.name) || u.name;
-        var store = localStorage.getItem('ds_user') ? localStorage : sessionStorage;
-        store.setItem('ds_user', JSON.stringify(u));
+        var store = localStorage.getItem('ds-user') ? localStorage : sessionStorage;
+        store.setItem('ds-user', JSON.stringify(u));
         fillProfile(); showToast('✅ تم حفظ الاسم');
       } catch (e) { showToast('❌ ' + e.message); }
     }); }
@@ -1112,7 +1112,7 @@ loadAll();
 
 /* ════════════ v17: ترتيب ذيل القائمة + حماية الزوار + الجلسات + تحديث صامت ════════════ */
 (function () {
-  function cu() { try { return JSON.parse(localStorage.getItem('ds_user') || sessionStorage.getItem('ds_user') || 'null'); } catch (e) { return null; } }
+  function cu() { try { return JSON.parse(localStorage.getItem('ds-user') || sessionStorage.getItem('ds-user') || 'null'); } catch (e) { return null; } }
   function closeDrawer17() {
     var d = document.getElementById('sideDrawer'), o = document.getElementById('drawerOverlay');
     if (d) d.classList.remove('open'); if (o) o.classList.remove('show');
@@ -1173,8 +1173,8 @@ loadAll();
       + '<button class="btn btn-outline btn-block" id="fvLogout">🚪 تسجيل الخروج من هذا الجهاز</button>'
       + '<button class="btn btn-primary btn-block" id="fvLogoutAll" style="margin-top:8px;background:#ff4757;border-color:#ff4757">⛔ تسجيل الخروج من كافة الأجهزة</button>';
     document.getElementById('fvLogout').onclick = function () {
-      localStorage.removeItem('ds_token'); localStorage.removeItem('ds_user');
-      sessionStorage.removeItem('ds_token'); sessionStorage.removeItem('ds_user');
+      localStorage.removeItem('ds-token'); localStorage.removeItem('ds-user');
+      sessionStorage.removeItem('ds-token'); sessionStorage.removeItem('ds-user');
       showToast('👋 تم تسجيل الخروج'); setTimeout(function () { location.reload(); }, 700);
     };
     document.getElementById('fvLogoutAll').onclick = async function () {

@@ -537,3 +537,24 @@ input, select, textarea { font-family: inherit; }
 /* ═══ v17: ذيل القائمة الجانبية ═══ */
 .drawer-tools #drawerLogout{background:rgba(255,71,87,.12);border-color:rgba(255,71,87,.35);color:#ff6b81}
 .drawer-tools #drawerLogout:hover{background:rgba(255,71,87,.22)}
+
+/* ═══ v18: إعادة تنسيق صف الباقة بالكامل ═══ */
+.variant-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;margin-bottom:8px;border-radius:10px;background:rgba(255,255,255,.05);direction:rtl}
+[data-theme="light"] .variant-row{background:rgba(0,0,0,.04)}
+/* يمين: الأيقونة + الاسم + شارة الخصم المدمجة */
+.variant-icon{font-size:1.05rem;flex:0 0 auto}
+.variant-name{flex:1;min-width:0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:.88rem;font-weight:700}
+.v-sale-badge{position:static!important;display:inline-flex;align-items:center;background:#ff4757;color:#fff;font-size:.72rem;font-weight:800;padding:2px 6px;border-radius:4px;box-shadow:none;margin:0;flex:0 0 auto}
+/* وسط: السعر القديم مشطوباً + الجديد بارزاً */
+.variant-price{display:flex;align-items:center;gap:6px;white-space:nowrap;font-size:.82rem;flex:0 0 auto}
+.variant-price .price-old{font-size:.75rem;opacity:.75}
+.variant-price .price-new{font-size:.95rem;font-weight:800}
+/* يسار: زر سلة مربع ثابت الأبعاد — بلا تمدد */
+.variant-row .buy-btn{width:36px;height:36px;min-width:36px;padding:0;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;line-height:1;flex:0 0 auto}
+@media (max-width:480px){
+  .variant-row{gap:7px;padding:8px 10px}
+  .variant-name{font-size:.8rem}
+  .variant-price{font-size:.74rem;gap:4px}
+  .variant-price .price-new{font-size:.85rem}
+  .v-sale-badge{font-size:.62rem}
+}
