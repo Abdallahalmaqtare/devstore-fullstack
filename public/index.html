@@ -76,12 +76,9 @@
       </nav>
     </div>
     <div class="drawer-tools" id="drawerTools">
+      <button type="button" class="drawer-tool-btn" id="langToggle">🌐 English</button>
       <a class="drawer-tool-btn" id="drawerWa" target="_blank" rel="noopener" href="#">💬 واتساب الدعم</a>
       <a class="drawer-tool-btn" id="drawerTg" target="_blank" rel="noopener" href="#">✈️ دعم تليجرام</a>
-      <div class="drawer-tool-row">
-        <button type="button" class="drawer-tool-btn" id="drawerThemeBtn" title="تبديل الوضع الليلي / النهاري">☀️/🌙 الثيم</button>
-        <button type="button" class="drawer-tool-btn" id="langToggle">🌐 English</button>
-      </div>
       <button type="button" class="drawer-tool-btn danger" id="drawerLogout">🚪 تسجيل الخروج</button>
     </div>
   </aside>
@@ -276,45 +273,6 @@
     </div>
   </div>
 
-  <!-- الملف الشخصي -->
-  <div class="modal-overlay" id="profileModal">
-    <div class="modal modal-lg">
-      <button class="modal-close" data-close="profileModal">✕</button>
-      <div class="auth-tabs">
-        <button class="auth-tab active" data-ptab="info">📝 بياناتي</button>
-        <button class="auth-tab" data-ptab="pass">🔒 كلمة المرور</button>
-        <button class="auth-tab" data-ptab="orders">📦 طلباتي</button>
-      </div>
-
-      <form class="profile-form active" id="profileInfoForm" data-ppage="info">
-        <label>الاسم الكامل<input type="text" id="pfName" required /></label>
-        <label>رقم الهاتف
-          <input type="tel" id="pfPhone" readonly disabled title="🔒 رقم الهاتف هو معرّف الحساب الموثق ولا يمكن تعديله إلا عبر التواصل مع الدعم" required inputmode="numeric" dir="ltr" />
-          <small class="field-hint">بالصيغة الدولية بدون علامة +</small>
-        </label>
-        <button type="submit" class="btn btn-primary btn-block">💾 حفظ التعديلات</button>
-      </form>
-
-      <form class="profile-form" id="profilePassForm" data-ppage="pass">
-        <label>كلمة المرور الحالية<input type="password" id="pfCur" required /></label>
-        <label>كلمة المرور الجديدة<input type="password" id="pfNew" required minlength="6" /></label>
-        <label>تأكيد كلمة المرور<input type="password" id="pfNew2" required minlength="6" /></label>
-        <button type="submit" class="btn btn-primary btn-block">🔒 تحديث كلمة المرور</button>
-      </form>
-
-      <div class="profile-form" data-ppage="orders">
-        <div class="table-wrap">
-          <table class="admin-table" id="myOrdersTable">
-            <thead><tr><th>رقم الطلب</th><th>الخدمة</th><th>التاريخ</th><th>الحالة</th></tr></thead>
-            <tbody></tbody>
-          </table>
-        </div>
-      </div>
-
-      <button type="button" class="btn btn-outline btn-block" id="logoutBtn" style="margin-top:14px">🚪 تسجيل الخروج</button>
-    </div>
-  </div>
-
   <!-- نافذة تواصل للاتفاق -->
   <div class="modal-overlay" id="inquireModal">
     <div class="modal">
@@ -366,7 +324,7 @@
   <!-- v17: نوافذ لوحة الحساب المستقلة -->
   <div class="modal-overlay ds-modal" id="modalProfile" aria-hidden="true">
     <div class="modal-card">
-      <div class="modal-head"><button type="button" class="modal-back" data-back="modalProfile">→ رجوع</button><h3 id="mp_title">👤 الملف الشخصي</h3><button class="icon-btn modal-close" data-close="modalProfile">✕</button></div>
+      <div class="modal-head"><h3 id="mp_title">👤 الملف الشخصي</h3><button class="icon-btn modal-close" data-close="modalProfile">✕</button></div>
       <label class="drawer-note" id="mp_namelbl">الاسم المعروض</label>
       <input type="text" id="modalNameInput" class="drawer-input" autocomplete="name" />
       <label class="drawer-note" id="mp_phonelbl">رقم الهاتف (معرّف موثق 🔒)</label>
@@ -376,7 +334,7 @@
   </div>
   <div class="modal-overlay ds-modal" id="modalSecurity" aria-hidden="true">
     <div class="modal-card">
-      <div class="modal-head"><button type="button" class="modal-back" data-back="modalSecurity">→ رجوع</button><h3 id="ms_title">🔒 الأمان والخصوصية</h3><button class="icon-btn modal-close" data-close="modalSecurity">✕</button></div>
+      <div class="modal-head"><h3 id="ms_title">🔒 الأمان والخصوصية</h3><button class="icon-btn modal-close" data-close="modalSecurity">✕</button></div>
       <input type="password" id="secCurPw" class="drawer-input" placeholder="كلمة المرور الحالية" autocomplete="current-password" />
       <input type="password" id="secNewPw" class="drawer-input" placeholder="كلمة المرور الجديدة" autocomplete="new-password" />
       <input type="password" id="secNewPw2" class="drawer-input" placeholder="تأكيد كلمة المرور الجديدة" autocomplete="new-password" />
@@ -387,7 +345,7 @@
   </div>
   <div class="modal-overlay ds-modal" id="modalReports" aria-hidden="true">
     <div class="modal-card wide">
-      <div class="modal-head"><button type="button" class="modal-back" data-back="modalReports">→ رجوع</button><h3 id="mr_title">📄 التقارير وسجل الطلبات</h3><button class="icon-btn modal-close" data-close="modalReports">✕</button></div>
+      <div class="modal-head"><h3 id="mr_title">📄 التقارير وسجل الطلبات</h3><button class="icon-btn modal-close" data-close="modalReports">✕</button></div>
       <div id="reportsList" class="reports-list"><p class="drawer-note">جاري التحميل…</p></div>
       <div class="drawer-dates" style="margin-top:10px">
         <input type="date" id="repFromM" class="drawer-input" />

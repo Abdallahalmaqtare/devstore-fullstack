@@ -48,10 +48,8 @@ function initDialPickers() {
 /* دمج رمز الدولة مع الرقم المحلي: إزالة الصفر الأول ثم الدمج — ناتج صافٍ بلا + ولا مسافات */
 function fullPhone(dialId, phoneId) {
   var dial = document.getElementById(dialId) ? document.getElementById(dialId).value : '967';
-  var raw = normalizePhone(document.getElementById(phoneId).value);
-  raw = raw.replace(/^00/, '');                 /* صيغة 00967… تصبح 967… */
-  if (raw.indexOf(dial) === 0) return raw;      /* المستخدم لصق الرقم كاملاً بالرمز الدولي — لا دمج مزدوج */
-  return dial + raw.replace(/^0+/, '');         /* حذف الصفر الأول من الرقم المحلي ثم الدمج */
+  var local = normalizePhone(document.getElementById(phoneId).value).replace(/^0+/, '');
+  return dial + local;
 }
 
 /* تنسيق السعر المزدوج: $2 / 1080 YER */
@@ -424,7 +422,9 @@ function showAuthForm(which) {
 }
 
 document.getElementById('loginBtn').addEventListener('click', function () {
-  if (API.user()) openProfile(); else openAuth('login');
+  /* v18: أيقونة المستخدم تفتح القائمة الجانبية (لوحة الحساب) — الواجهات تُعرض منفصلة من هناك */
+  if (API.user()) { if (window.DS_openDrawer) window.DS_openDrawer(); }
+  else openAuth('login');
 });
 authModal.addEventListener('click', function (e) { if (e.target === authModal) authModal.classList.remove('open'); });
 document.querySelector('[data-close="authModal"]').addEventListener('click', function () { authModal.classList.remove('open'); });
@@ -593,75 +593,6 @@ function updateUserChip() {
 }
 updateUserChip();
 
-/* ---------------- الملف الشخصي ---------------- */
-var profileModal = document.getElementById('profileModal');
-function openProfile() {
-  var u = API.user();
-  if (!u) return openAuth('login');
-  document.getElementById('pfName').value = u.name;
-  document.getElementById('pfPhone').value = u.phone;
-  profileModal.classList.add('open');
-  showPPage('info');
-  loadMyOrders();
-}
-function showPPage(page) {
-  document.querySelectorAll('#profileModal .auth-tab').forEach(function (t) { t.classList.toggle('active', t.dataset.ptab === page); });
-  document.querySelectorAll('.profile-form').forEach(function (f) { f.classList.toggle('active', f.dataset.ppage === page); });
-}
-profileModal.addEventListener('click', function (e) {
-  if (e.target === profileModal) profileModal.classList.remove('open');
-  var tab = e.target.closest('[data-ptab]');
-  if (tab) showPPage(tab.dataset.ptab);
-});
-document.querySelector('[data-close="profileModal"]').addEventListener('click', function () { profileModal.classList.remove('open'); });
-
-document.getElementById('profileInfoForm').addEventListener('submit', async function (e) {
-  e.preventDefault();
-  try {
-    var r = await API.req('/users/profile', {
-      method: 'PUT',
-      body: { name: document.getElementById('pfName').value, phone: normalizePhone(document.getElementById('pfPhone').value) },
-    });
-    API.setSession(API.token(), r.user, !!localStorage.getItem('ds-token'));
-    updateUserChip();
-    showToast('✅ تم تحديث البيانات');
-  } catch (err) { showToast('❌ ' + err.message); }
-});
-
-document.getElementById('profilePassForm').addEventListener('submit', async function (e) {
-  e.preventDefault();
-  var n1 = document.getElementById('pfNew').value;
-  var n2 = document.getElementById('pfNew2').value;
-  if (n1 !== n2) return showToast('⚠️ كلمتا المرور غير متطابقتين');
-  try {
-    await API.req('/users/change-password', {
-      method: 'PUT', body: { current: document.getElementById('pfCur').value, next: n1 },
-    });
-    e.target.reset();
-    showToast('✅ تم تحديث كلمة المرور');
-  } catch (err) { showToast('❌ ' + err.message); }
-});
-
-document.getElementById('logoutBtn').addEventListener('click', function () {
-  API.clearSession(); profileModal.classList.remove('open');
-  updateUserChip(); showToast('👋 تم تسجيل الخروج');
-});
-
-async function loadMyOrders() {
-  var tbody = document.querySelector('#myOrdersTable tbody');
-  var STATUS_CLASS = { 'قيد المراجعة': 'status-review', 'مكتمل': 'status-done', 'ملغي': 'status-cancel' };
-  try {
-    var orders = await API.req('/orders/my-orders');
-    tbody.innerHTML = orders.length ? orders.map(function (o) {
-      return '<tr><td><b>' + o.code + '</b></td>' +
-        '<td>' + o.items.map(function (i) { return i.name + ' ×' + i.qty; }).join('، ') + '</td>' +
-        '<td>' + new Date(o.createdAt).toLocaleDateString('ar') + '</td>' +
-        '<td><span class="status-badge ' + STATUS_CLASS[o.status] + '">' + o.status + '</span></td></tr>';
-    }).join('')
-    : '<tr><td colspan="4" class="empty-row">لا توجد طلبات بعد</td></tr>';
-  } catch (e2) { tbody.innerHTML = '<tr><td colspan="4" class="empty-row">تعذر جلب الطلبات</td></tr>'; }
-}
-
 /* ================================================================ */
 /* === تواصل للاتفاق — توجيه مباشر لمنسق الخدمة برسالة جاهزة ======= */
 /* ================================================================ */
@@ -826,126 +757,16 @@ loadAll();
     if (nav && cur && login && cur.parentElement !== nav) nav.insertBefore(cur, login);
     var slot = document.getElementById('drawerCurrencySlot');
     if (slot) { var row = slot.closest('.drawer-tool-row'); if (row) row.remove(); }
-    /* v18: زر الثيم يبقى في الشريط العلوي، والقائمة الجانبية لها زرها الثابت drawerThemeBtn — لا نقل ولا حذف */
+    var dtb = document.getElementById('drawerThemeBtn'); if (dtb) dtb.remove();
+    var theme = document.getElementById('themeToggle'), tools = document.querySelector('.drawer-tools');
+    if (theme && tools && theme.parentElement !== tools) {
+      theme.className = 'drawer-tool-btn'; theme.style.cssText = 'width:100%;text-align:right;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:inherit;font-weight:700;cursor:pointer';
+      if (!theme.querySelector('.th-label')) { var l = document.createElement('b'); l.className = 'th-label'; l.textContent = ' تبديل الثيم'; theme.appendChild(l); }
+      tools.appendChild(theme);
+    }
   }
 
-  /* ── 2) مهلة إلغاء الطلبات في "طلباتي" ── */
-  var CANCEL_WIN_MIN = 30;
-  try { API.req('/orders/cancel-window').then(function (r) { if (r && r.minutes != null) CANCEL_WIN_MIN = r.minutes; }); } catch (e) {}
-  var enhancing = false;
-  async function enhanceOrders() {
-    if (enhancing) return; enhancing = true;
-    try {
-      var res = await API.req('/orders/my-orders');
-      var list = Array.isArray(res) ? res : (res && res.orders) || [];
-      if (!list.length) { enhancing = false; return; }
-      var map = {}; list.forEach(function (o) { if (o.code) map[o.code] = o; });
-      document.querySelectorAll('tr').forEach(function (tr) {
-        if (tr.dataset.v14done) return;
-        var code = Object.keys(map).find(function (c) { return tr.textContent.indexOf(c) !== -1; });
-        if (!code) return;
-        tr.dataset.v14done = '1';
-        var o = map[code];
-        var td = document.createElement('td');
-        var inv = document.createElement('button');
-        inv.className = 'btn-invoice'; inv.textContent = '🧾'; inv.title = 'فاتورة PDF';
-        inv.onclick = function () { exportOrdersPdf([o], 'فاتورة طلب ' + o.code); };
-        td.appendChild(inv);
-        if (o.status === 'قيد المراجعة') {
-          var left = CANCEL_WIN_MIN * 60000 - (Date.now() - new Date(o.createdAt).getTime());
-          if (left > 0) {
-            var b = document.createElement('button');
-            b.className = 'btn-cancel-order';
-            b.textContent = '🚫 إلغاء (' + Math.ceil(left / 60000) + 'د)';
-            b.onclick = async function () {
-              if (!confirm('تأكيد إلغاء الطلب ' + o.code + '؟')) return;
-              try { await API.req('/orders/' + o._id + '/cancel', { method: 'POST' }); showToast('✅ تم إلغاء الطلب'); setTimeout(function(){ location.reload(); }, 800); }
-              catch (e) { showToast('❌ ' + e.message); }
-            };
-            td.appendChild(b);
-          } else {
-            var sp = document.createElement('small'); sp.className = 'cancel-expired';
-            sp.textContent = 'انتهت مهلة الإلغاء التلقائي، يرجى التواصل مع الدعم';
-            td.appendChild(sp);
-          }
-        }
-        tr.appendChild(td);
-      });
-    } catch (e) {}
-    enhancing = false;
-  }
-
-  /* ── 3) تصدير PDF (كشف حساب / فاتورة) ── */
-  var CUR_LIST = [];
-  try { API.req('/currencies').then(function (r) { CUR_LIST = Array.isArray(r) ? r : (r && r.currencies) || []; }); } catch (e) {}
-  function localAmount(usd) {
-    var sel = document.getElementById('currencySelect');
-    var code = sel && sel.value;
-    var c = CUR_LIST.find(function (x) { return x.code === code; });
-    if (c && c.rate && code !== 'USD') return ' / ' + Math.round(usd * c.rate) + ' ' + code;
-    return '';
-  }
-  function profileInfo() {
-    var phone = (document.getElementById('pfPhone') || {}).value || '';
-    var nameEl = document.querySelector('#profileModal input[type="text"], [id*="rofile"] input[type="text"]');
-    return { name: nameEl ? nameEl.value : '', phone: phone };
-  }
-  function orderRows(list) {
-    return list.map(function (o) {
-      var items = (o.items || []).map(function (i) { return i.name; }).join(' + ');
-      var ids = (o.items || []).map(function (i) { return i.accountId; }).filter(Boolean).join(' ، ') || '—';
-      var dt = new Date(o.createdAt).toLocaleString('ar-EG');
-      return '<tr><td>' + o.code + '</td><td>' + dt + '</td><td>' + items + '</td><td>' + ids + '</td><td>$' + o.total + localAmount(o.total) + '</td><td>' + ((o.paymentMethod && o.paymentMethod.name) || '—') + '</td><td>' + o.status + '</td></tr>';
-    }).join('');
-  }
-  function pdfShell(title, infoHtml, rowsHtml) {
-    return '<div dir="rtl" style="font-family:Tahoma,Arial,sans-serif;padding:16px;color:#111;background:#fff">'
-      + '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #6c5ce7;padding-bottom:8px;margin-bottom:10px">'
-      + '<h2 style="margin:0;color:#6c5ce7">⚡ DevStore</h2><b style="font-size:14px">' + title + '</b></div>'
-      + '<div style="font-size:12px;margin-bottom:10px;line-height:1.9">' + infoHtml + '</div>'
-      + '<table style="width:100%;border-collapse:collapse;font-size:11px" border="1" cellpadding="6">'
-      + '<thead><tr style="background:#6c5ce7;color:#fff"><th>رقم الطلب</th><th>التاريخ والوقت</th><th>الخدمة / الباقة</th><th>ID</th><th>المبلغ</th><th>طريقة الدفع</th><th>الحالة</th></tr></thead>'
-      + '<tbody>' + rowsHtml + '</tbody></table>'
-      + '<p style="margin-top:12px;font-size:10px;color:#888">أُصدر هذا التقرير آلياً من منصة DevStore — ' + new Date().toLocaleString('ar-EG') + '</p></div>';
-  }
-  function savePdf(html, filename) {
-    var d = document.createElement('div'); d.innerHTML = html; document.body.appendChild(d);
-    html2pdf().set({ margin: 8, filename: filename, html2canvas: { scale: 2 }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' } })
-      .from(d).save().then(function () { d.remove(); });
-  }
-  async function exportOrdersPdf(preset, title) {
-    try {
-      var list = preset;
-      if (!list) {
-        var res = await API.req('/orders/my-orders');
-        list = (Array.isArray(res) ? res : (res && res.orders) || []);
-        var f = (document.getElementById('repFrom') || {}).value, t = (document.getElementById('repTo') || {}).value;
-        if (f) list = list.filter(function (o) { return new Date(o.createdAt) >= new Date(f); });
-        if (t) list = list.filter(function (o) { return new Date(o.createdAt) <= new Date(t + 'T23:59:59'); });
-      }
-      if (!list.length) { showToast('⚠️ لا توجد طلبات في هذا النطاق'); return; }
-      var u = profileInfo();
-      var info = '👤 العميل: <b>' + (u.name || '—') + '</b> &nbsp;|&nbsp; 📱 الهاتف: <b dir="ltr">' + (u.phone || '—') + '</b>';
-      savePdf(pdfShell(title || 'كشف حساب / تقرير الطلبات', info, orderRows(list)), 'DevStore-report.pdf');
-    } catch (e) { showToast('❌ ' + e.message); }
-  }
-  function injectPdfUi() {
-    if (document.getElementById('v14PdfBox')) return;
-    var host = document.getElementById('profileModal') || document.querySelector('[id*="rofile"]');
-    if (!host) return;
-    var box = document.createElement('div');
-    box.id = 'v14PdfBox';
-    box.style.cssText = 'margin-top:14px;padding:12px;border:1px dashed rgba(108,92,231,.5);border-radius:12px';
-    box.innerHTML = '<b style="font-size:.9rem">📄 تصدير كشف حساب / تقرير طلباتي (PDF)</b>'
-      + '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center">'
-      + '<input type="date" id="repFrom" style="flex:1;min-width:120px;padding:7px;border-radius:8px;border:1px solid #ccc" title="من تاريخ" />'
-      + '<input type="date" id="repTo" style="flex:1;min-width:120px;padding:7px;border-radius:8px;border:1px solid #ccc" title="إلى تاريخ" />'
-      + '<button type="button" class="btn btn-primary" id="v14PdfBtn" style="padding:8px 14px">تصدير PDF ⬇️</button></div>'
-      + '<small style="color:#888">اترك التواريخ فارغة لتصدير كل الطلبات — ولتحميل فاتورة طلب محدد استخدم زر 🧾 بجانبه في جدول الطلبات.</small>';
-    host.appendChild(box);
-    document.getElementById('v14PdfBtn').onclick = function () { exportOrdersPdf(null); };
-  }
-  function tick() { arrange(); injectPdfUi(); enhanceOrders(); }
+  function tick() { arrange(); }
   new MutationObserver(tick).observe(document.body, { childList: true, subtree: true });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tick); else tick();
 })();
@@ -1187,16 +1008,6 @@ loadAll();
   function needAuth(){ if(!tk()){ toast('⚠️ سجّل الدخول أولاً'); var lb=$('loginBtn'); if(lb) lb.click(); return true; } return false; }
   document.querySelectorAll('.modal-close').forEach(function(b){ b.addEventListener('click', function(){ closeM(b.dataset.close); }); });
   document.querySelectorAll('.ds-modal').forEach(function(m){ m.addEventListener('click', function(e){ if(e.target===m) closeM(m.id); }); });
-  /* v18: زر الرجوع — يغلق النافذة ويعيد فتح القائمة الجانبية */
-  document.querySelectorAll('[data-back]').forEach(function(b){
-    b.addEventListener('click', function(){
-      closeM(b.dataset.back);
-      var d=$('sideDrawer'), o=$('drawerOverlay');
-      if(d){ d.classList.add('open'); d.setAttribute('aria-hidden','false'); }
-      if(o){ o.classList.add('show'); }
-      document.body.style.overflow='hidden';
-    });
-  });
   document.addEventListener('keydown', function(e){ if(e.key==='Escape') document.querySelectorAll('.ds-modal.show').forEach(function(m){ closeM(m.id); }); });
 
   /* الملف الشخصي */
@@ -1211,9 +1022,7 @@ loadAll();
   var mns=$('modalNameSave');
   if (mns) mns.addEventListener('click', async function(){
     var v=($('modalNameInput').value||'').trim(); if(v.length<2) return toast('⚠️ أدخل اسماً صحيحاً');
-    try{ var rr = await API.req('/users/profile',{method:'PUT',body:{name:v}}); var un=$('drawerUserName'); if(un)un.textContent=v;
-      var cu=API.user()||{}; cu.name=(rr&&rr.user&&rr.user.name)||v; try{ API.setSession(API.token(), cu, !!localStorage.getItem('ds-token')); updateUserChip(); }catch(_){ }
-      toast('✅ تم حفظ الاسم'); }
+    try{ await API.req('/users/profile',{method:'PUT',body:{name:v}}); var un=$('drawerUserName'); if(un)un.textContent=v; toast('✅ تم حفظ الاسم'); }
     catch(e){ toast('❌ '+e.message); }
   });
 
@@ -1229,7 +1038,7 @@ loadAll();
     var c=$('secCurPw'),n=$('secNewPw'),n2=$('secNewPw2');
     if(!c.value||n.value.length<6) return toast('⚠️ أدخل كلمة المرور الحالية وجديدة (6 أحرف+)');
     if(n.value!==n2.value) return toast('⚠️ تأكيد كلمة المرور غير متطابق');
-    try{ await API.req('/users/change-password',{method:'PUT',body:{current:c.value,next:n.value}});
+    try{ await API.req('/users/change-password',{method:'PUT',body:{currentPassword:c.value,newPassword:n.value,oldPassword:c.value}});
       c.value='';n.value='';n2.value=''; toast('✅ تم تغيير كلمة المرور بنجاح'); }
     catch(e){ toast('❌ '+e.message); }
   });
