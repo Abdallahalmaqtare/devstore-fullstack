@@ -422,7 +422,7 @@ function showAuthForm(which) {
 }
 
 document.getElementById('loginBtn').addEventListener('click', function () {
-  /* v19: فحص جلسة صارم (مستخدم + توكن معًا) —
+  /* v20: فحص جلسة صارم (مستخدم + توكن معًا) —
      غير مسجل → نافذة تسجيل الدخول/إنشاء حساب مباشرة | مسجل → القائمة الجانبية (الملف/الأمان/التقارير) */
   var loggedIn = !!(API.user() && API.token && API.token());
   if (loggedIn) { if (window.DS_openDrawer) window.DS_openDrawer(); }
@@ -753,19 +753,14 @@ loadAll();
 
 /* ════════════ v14: توزيع الأزرار + إلغاء الطلبات + تصدير PDF ════════════ */
 (function () {
-  /* ── 1) العملة في الشريط العلوي، الثيم في القائمة الجانبية فقط ── */
+  /* ── 1) العملة في الشريط العلوي ── */
   function arrange() {
     var nav = document.querySelector('.nav-actions'), cur = document.getElementById('currencySelect'), login = document.getElementById('loginBtn');
     if (nav && cur && login && cur.parentElement !== nav) nav.insertBefore(cur, login);
     var slot = document.getElementById('drawerCurrencySlot');
     if (slot) { var row = slot.closest('.drawer-tool-row'); if (row) row.remove(); }
     var dtb = document.getElementById('drawerThemeBtn'); if (dtb) dtb.remove();
-    var theme = document.getElementById('themeToggle'), tools = document.querySelector('.drawer-tools');
-    if (theme && tools && theme.parentElement !== tools) {
-      theme.className = 'drawer-tool-btn'; theme.style.cssText = 'width:100%;text-align:right;padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:inherit;font-weight:700;cursor:pointer';
-      if (!theme.querySelector('.th-label')) { var l = document.createElement('b'); l.className = 'th-label'; l.textContent = ' تبديل الثيم'; theme.appendChild(l); }
-      tools.appendChild(theme);
-    }
+    /* v20: زر الثيم يبقى ثابتًا ومرئيًا في الشريط العلوي للجميع (ديسكتوب وجوال) — لم يعد يُنقل إلى القائمة الجانبية */
   }
 
   function tick() { arrange(); }
@@ -806,7 +801,7 @@ loadAll();
     if ($('drawerUserName')) $('drawerUserName').textContent = name;
     if ($('drawerUserPhone')) $('drawerUserPhone').textContent = phone;
     var logged = !!tk();
-    if ($('drawerTools')) $('drawerTools').style.display = logged ? '' : 'none';
+    if ($('drawerTools')) $('drawerTools').style.display = ''; /* v20: تظهر للجميع */
     if ($('drawerSessionInfo')) $('drawerSessionInfo').textContent = logged
       ? '🟢 أنت مسجل الدخول بجلسة نشطة على هذا الجهاز.' : '🔴 لا توجد جلسة دخول حالياً.';
   }
@@ -1135,4 +1130,16 @@ loadAll();
   }
   var cur = localStorage.getItem('lang') || 'ar';
   btn.textContent = (cur === 'en') ? '🌐 العربية' : '🌐 English';
+})();
+
+/* ═══ v20: روابط تنقل سريعة بين نوافذ الحساب (الملف الشخصي / الأمان والخصوصية / التقارير والسجلات) ═══ */
+(function(){
+  var map = { modalProfile:'drawerOpenProfile', modalSecurity:'drawerOpenSecurity', modalReports:'drawerOpenReports' };
+  document.addEventListener('click', function(e){
+    var b = e.target.closest('[data-acct-goto]');
+    if (!b) return;
+    document.querySelectorAll('.ds-modal.show').forEach(function(m){ m.classList.remove('show'); m.setAttribute('aria-hidden','true'); });
+    var t = document.getElementById(map[b.getAttribute('data-acct-goto')]);
+    if (t) t.click(); /* يعيد استخدام معالجات القائمة: تعبئة البيانات + تحميل الطلبات */
+  });
 })();

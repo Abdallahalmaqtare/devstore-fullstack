@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/style.css?v=19" />
+  <link rel="stylesheet" href="assets/css/style.css?v=20" />
   <script>
     (function () {
       var saved = localStorage.getItem('tg-theme');
@@ -318,13 +318,18 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="assets/js/api.js?v=19"></script>
-  <script src="assets/js/main.js?v=19"></script>
+  <script src="assets/js/api.js?v=20"></script>
+  <script src="assets/js/main.js?v=20"></script>
 
   <!-- v17: نوافذ لوحة الحساب المستقلة -->
   <div class="modal-overlay ds-modal" id="modalProfile" aria-hidden="true">
     <div class="modal-card">
       <div class="modal-head"><h3 id="mp_title">👤 الملف الشخصي</h3><button class="icon-btn modal-close" data-close="modalProfile">✕</button></div>
+      <div class="acct-quick-nav">
+        <button type="button" class="aqn-btn active" data-acct-goto="modalProfile">👤 الملف الشخصي</button>
+        <button type="button" class="aqn-btn" data-acct-goto="modalSecurity">🔒 الأمان والخصوصية</button>
+        <button type="button" class="aqn-btn" data-acct-goto="modalReports">📄 التقارير والسجلات</button>
+      </div>
       <label class="drawer-note" id="mp_namelbl">الاسم المعروض</label>
       <input type="text" id="modalNameInput" class="drawer-input" autocomplete="name" />
       <label class="drawer-note" id="mp_phonelbl">رقم الهاتف (معرّف موثق 🔒)</label>
@@ -335,6 +340,11 @@
   <div class="modal-overlay ds-modal" id="modalSecurity" aria-hidden="true">
     <div class="modal-card">
       <div class="modal-head"><h3 id="ms_title">🔒 الأمان والخصوصية</h3><button class="icon-btn modal-close" data-close="modalSecurity">✕</button></div>
+      <div class="acct-quick-nav">
+        <button type="button" class="aqn-btn" data-acct-goto="modalProfile">👤 الملف الشخصي</button>
+        <button type="button" class="aqn-btn active" data-acct-goto="modalSecurity">🔒 الأمان والخصوصية</button>
+        <button type="button" class="aqn-btn" data-acct-goto="modalReports">📄 التقارير والسجلات</button>
+      </div>
       <input type="password" id="secCurPw" class="drawer-input" placeholder="كلمة المرور الحالية" autocomplete="current-password" />
       <input type="password" id="secNewPw" class="drawer-input" placeholder="كلمة المرور الجديدة" autocomplete="new-password" />
       <input type="password" id="secNewPw2" class="drawer-input" placeholder="تأكيد كلمة المرور الجديدة" autocomplete="new-password" />
@@ -346,6 +356,11 @@
   <div class="modal-overlay ds-modal" id="modalReports" aria-hidden="true">
     <div class="modal-card wide">
       <div class="modal-head"><h3 id="mr_title">📄 التقارير وسجل الطلبات</h3><button class="icon-btn modal-close" data-close="modalReports">✕</button></div>
+      <div class="acct-quick-nav">
+        <button type="button" class="aqn-btn" data-acct-goto="modalProfile">👤 الملف الشخصي</button>
+        <button type="button" class="aqn-btn" data-acct-goto="modalSecurity">🔒 الأمان والخصوصية</button>
+        <button type="button" class="aqn-btn active" data-acct-goto="modalReports">📄 التقارير والسجلات</button>
+      </div>
       <div id="reportsList" class="reports-list"><p class="drawer-note">جاري التحميل…</p></div>
       <div class="drawer-dates" style="margin-top:10px">
         <input type="date" id="repFromM" class="drawer-input" />
