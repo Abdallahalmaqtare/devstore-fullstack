@@ -519,33 +519,3 @@ input, select, textarea { font-family: inherit; }
 [dir="ltr"] .drawer-tool-btn{text-align:left}
 [dir="ltr"] .acc-btn{text-align:left}
 [dir="ltr"] .drawer-user{flex-direction:row}
-
-/* ═══ v17: النوافذ المستقلة ═══ */
-.ds-modal{position:fixed;inset:0;z-index:1100;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);backdrop-filter:blur(6px);padding:16px}
-.ds-modal.show{display:flex}
-.modal-card{width:100%;max-width:430px;max-height:86vh;overflow-y:auto;background:var(--card,#1a1a2e);border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:10px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
-[data-theme="light"] .modal-card{background:#fff;border-color:rgba(0,0,0,.08)}
-.modal-card.wide{max-width:640px}
-.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
-.modal-head h3{margin:0;font-size:1.05rem}
-.modal-close{background:transparent;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:4px 9px;color:inherit;cursor:pointer}
-.reports-list{display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow-y:auto}
-.order-card{border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 12px;font-size:.85rem}
-.order-card .oc-head{display:flex;justify-content:space-between;font-weight:800}
-.order-card .oc-row{color:var(--muted,#9aa);margin-top:4px;line-height:1.6}
-.oc-cancel{background:#ff4757;color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:.76rem;font-weight:800;cursor:pointer;margin-top:6px}
-.oc-expired{color:var(--muted,#9aa);font-size:.72rem}
-.drawer-nav-btn{display:block;width:100%;text-align:start;padding:12px 13px;border-radius:12px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:inherit;font-weight:700;font-size:.92rem;cursor:pointer;margin-bottom:6px}
-/* ═══ v17: تصغير أيقونات الشريط العلوي ═══ */
-.icon-btn{width:38px;height:38px;min-width:38px;min-height:38px;padding:0;font-size:1rem;display:inline-flex;align-items:center;justify-content:center}
-#menuBtn{min-width:38px;min-height:38px;width:38px;height:38px}
-.currency-select{max-width:104px;font-size:.82rem;padding:5px 6px}
-@media (max-width:480px){.icon-btn{width:36px;height:36px;min-width:36px;min-height:36px;font-size:.95rem}#menuBtn{width:36px;height:36px;min-width:36px;min-height:36px}}
-
-/* ═══ v20: شريط الروابط السريعة داخل نوافذ الحساب ═══ */
-.acct-quick-nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px}
-.aqn-btn{flex:1;min-width:96px;padding:8px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:inherit;font-weight:700;font-size:.82rem;cursor:pointer;transition:.2s;text-align:center;font-family:inherit}
-.aqn-btn:hover{border-color:var(--primary);transform:translateY(-1px)}
-.aqn-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);pointer-events:none;opacity:.9}
-[data-theme="light"] .aqn-btn{border-color:rgba(0,0,0,.12);background:rgba(0,0,0,.04)}
-[data-theme="light"] .aqn-btn.active{background:var(--primary);color:#fff}

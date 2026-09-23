@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="assets/css/style.css?v=20" />
+  <link rel="stylesheet" href="assets/css/style.css" />
   <script>
     (function () {
       var saved = localStorage.getItem('tg-theme');
@@ -63,9 +63,36 @@
       </div>
     </div>
     <div class="drawer-scroll">
-      <button type="button" class="drawer-link drawer-nav-btn" id="drawerOpenProfile" data-i18n-key>👤 الملف الشخصي</button>
-      <button type="button" class="drawer-link drawer-nav-btn" id="drawerOpenSecurity" data-i18n-key>🔒 الأمان والخصوصية</button>
-      <button type="button" class="drawer-link drawer-nav-btn" id="drawerOpenReports" data-i18n-key>📄 التقارير وسجل الطلبات</button>
+      <div class="acc-item">
+        <button type="button" class="acc-btn" data-acc="accProfile"><span data-i18n="profile">👤 الملف الشخصي</span><span class="acc-chevron">⌄</span></button>
+        <div class="acc-panel" id="accProfile">
+          <label class="drawer-note" data-i18n="name_lbl">الاسم المعروض</label>
+          <input type="text" id="drawerNameInput" class="drawer-input" data-i18n-ph="name_ph" placeholder="اسمك" autocomplete="name" />
+          <button type="button" class="drawer-action" id="drawerNameSave" data-i18n="save_name">حفظ الاسم</button>
+          <button type="button" class="drawer-action ghost" id="drawerProfileBtn" data-i18n="full_profile">فتح الملف الشخصي الكامل</button>
+        </div>
+      </div>
+      <div class="acc-item">
+        <button type="button" class="acc-btn" data-acc="accSecurity"><span data-i18n="security">🔒 الأمان والخصوصية</span><span class="acc-chevron">⌄</span></button>
+        <div class="acc-panel" id="accSecurity">
+        <input type="password" id="drawerCurPw" class="drawer-input" placeholder="كلمة المرور الحالية" autocomplete="current-password" />
+        <input type="password" id="drawerNewPw" class="drawer-input" placeholder="كلمة المرور الجديدة" autocomplete="new-password" />
+        <button type="button" class="drawer-action" id="drawerPwBtn">تغيير كلمة المرور</button>
+        <button type="button" class="drawer-action ghost" id="drawerSessionBtn">إدارة الجلسة وحالة الدخول</button>
+        <small class="drawer-note" id="drawerSessionInfo"></small>
+        </div>
+      </div>
+      <div class="acc-item">
+        <button type="button" class="acc-btn" data-acc="accReports"><span data-i18n="reports">📄 التقارير وسجل الطلبات</span><span class="acc-chevron">⌄</span></button>
+        <div class="acc-panel" id="accReports">
+        <button type="button" class="drawer-action" id="drawerOrdersBtn">استعراض سجل الطلبات وحالاتها</button>
+        <div class="drawer-dates">
+          <input type="date" id="drawerRepFrom" class="drawer-input" title="من تاريخ" />
+          <input type="date" id="drawerRepTo" class="drawer-input" title="إلى تاريخ" />
+        </div>
+        <button type="button" class="drawer-action" id="drawerPdfBtn" data-i18n="pdf_btn">تصدير كشف الحساب والفواتير PDF ⬇️</button>
+        </div>
+      </div>
       <nav class="drawer-links">
         <a href="#store" class="drawer-link" data-i18n="nav_store">🛍️ المتجر الرقمي</a>
         <a href="#store" data-nav-cat="الألعاب" class="drawer-link" data-i18n="nav_games">🎮 الألعاب وشحن الحسابات</a>
@@ -273,6 +300,45 @@
     </div>
   </div>
 
+  <!-- الملف الشخصي -->
+  <div class="modal-overlay" id="profileModal">
+    <div class="modal modal-lg">
+      <button class="modal-close" data-close="profileModal">✕</button>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-ptab="info">📝 بياناتي</button>
+        <button class="auth-tab" data-ptab="pass">🔒 كلمة المرور</button>
+        <button class="auth-tab" data-ptab="orders">📦 طلباتي</button>
+      </div>
+
+      <form class="profile-form active" id="profileInfoForm" data-ppage="info">
+        <label>الاسم الكامل<input type="text" id="pfName" required /></label>
+        <label>رقم الهاتف
+          <input type="tel" id="pfPhone" readonly disabled title="🔒 رقم الهاتف هو معرّف الحساب الموثق ولا يمكن تعديله إلا عبر التواصل مع الدعم" required inputmode="numeric" dir="ltr" />
+          <small class="field-hint">بالصيغة الدولية بدون علامة +</small>
+        </label>
+        <button type="submit" class="btn btn-primary btn-block">💾 حفظ التعديلات</button>
+      </form>
+
+      <form class="profile-form" id="profilePassForm" data-ppage="pass">
+        <label>كلمة المرور الحالية<input type="password" id="pfCur" required /></label>
+        <label>كلمة المرور الجديدة<input type="password" id="pfNew" required minlength="6" /></label>
+        <label>تأكيد كلمة المرور<input type="password" id="pfNew2" required minlength="6" /></label>
+        <button type="submit" class="btn btn-primary btn-block">🔒 تحديث كلمة المرور</button>
+      </form>
+
+      <div class="profile-form" data-ppage="orders">
+        <div class="table-wrap">
+          <table class="admin-table" id="myOrdersTable">
+            <thead><tr><th>رقم الطلب</th><th>الخدمة</th><th>التاريخ</th><th>الحالة</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <button type="button" class="btn btn-outline btn-block" id="logoutBtn" style="margin-top:14px">🚪 تسجيل الخروج</button>
+    </div>
+  </div>
+
   <!-- نافذة تواصل للاتفاق -->
   <div class="modal-overlay" id="inquireModal">
     <div class="modal">
@@ -318,56 +384,7 @@
 
   <div class="toast" id="toast"></div>
 
-  <script src="assets/js/api.js?v=20"></script>
-  <script src="assets/js/main.js?v=20"></script>
-
-  <!-- v17: نوافذ لوحة الحساب المستقلة -->
-  <div class="modal-overlay ds-modal" id="modalProfile" aria-hidden="true">
-    <div class="modal-card">
-      <div class="modal-head"><h3 id="mp_title">👤 الملف الشخصي</h3><button class="icon-btn modal-close" data-close="modalProfile">✕</button></div>
-      <div class="acct-quick-nav">
-        <button type="button" class="aqn-btn active" data-acct-goto="modalProfile">👤 الملف الشخصي</button>
-        <button type="button" class="aqn-btn" data-acct-goto="modalSecurity">🔒 الأمان والخصوصية</button>
-        <button type="button" class="aqn-btn" data-acct-goto="modalReports">📄 التقارير والسجلات</button>
-      </div>
-      <label class="drawer-note" id="mp_namelbl">الاسم المعروض</label>
-      <input type="text" id="modalNameInput" class="drawer-input" autocomplete="name" />
-      <label class="drawer-note" id="mp_phonelbl">رقم الهاتف (معرّف موثق 🔒)</label>
-      <input type="text" id="modalPhoneInput" class="drawer-input" readonly disabled />
-      <button type="button" class="drawer-action" id="modalNameSave" style="margin-top:10px">حفظ الاسم</button>
-    </div>
-  </div>
-  <div class="modal-overlay ds-modal" id="modalSecurity" aria-hidden="true">
-    <div class="modal-card">
-      <div class="modal-head"><h3 id="ms_title">🔒 الأمان والخصوصية</h3><button class="icon-btn modal-close" data-close="modalSecurity">✕</button></div>
-      <div class="acct-quick-nav">
-        <button type="button" class="aqn-btn" data-acct-goto="modalProfile">👤 الملف الشخصي</button>
-        <button type="button" class="aqn-btn active" data-acct-goto="modalSecurity">🔒 الأمان والخصوصية</button>
-        <button type="button" class="aqn-btn" data-acct-goto="modalReports">📄 التقارير والسجلات</button>
-      </div>
-      <input type="password" id="secCurPw" class="drawer-input" placeholder="كلمة المرور الحالية" autocomplete="current-password" />
-      <input type="password" id="secNewPw" class="drawer-input" placeholder="كلمة المرور الجديدة" autocomplete="new-password" />
-      <input type="password" id="secNewPw2" class="drawer-input" placeholder="تأكيد كلمة المرور الجديدة" autocomplete="new-password" />
-      <button type="button" class="drawer-action" id="secPwSave" style="margin-top:8px">تغيير كلمة المرور</button>
-      <small class="drawer-note" id="secSessionInfo" style="margin-top:10px"></small>
-      <button type="button" class="drawer-action ghost" id="secLogoutAll" style="margin-top:8px">تسجيل الخروج من كافة الأجهزة</button>
-    </div>
-  </div>
-  <div class="modal-overlay ds-modal" id="modalReports" aria-hidden="true">
-    <div class="modal-card wide">
-      <div class="modal-head"><h3 id="mr_title">📄 التقارير وسجل الطلبات</h3><button class="icon-btn modal-close" data-close="modalReports">✕</button></div>
-      <div class="acct-quick-nav">
-        <button type="button" class="aqn-btn" data-acct-goto="modalProfile">👤 الملف الشخصي</button>
-        <button type="button" class="aqn-btn" data-acct-goto="modalSecurity">🔒 الأمان والخصوصية</button>
-        <button type="button" class="aqn-btn active" data-acct-goto="modalReports">📄 التقارير والسجلات</button>
-      </div>
-      <div id="reportsList" class="reports-list"><p class="drawer-note">جاري التحميل…</p></div>
-      <div class="drawer-dates" style="margin-top:10px">
-        <input type="date" id="repFromM" class="drawer-input" />
-        <input type="date" id="repToM" class="drawer-input" />
-      </div>
-      <button type="button" class="drawer-action" id="reportsPdfBtn" style="margin-top:10px">تصدير كشف الحساب والفواتير PDF ⬇️</button>
-    </div>
-  </div>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/main.js"></script>
 </body>
 </html>
