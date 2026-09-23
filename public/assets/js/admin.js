@@ -711,3 +711,58 @@ document.getElementById('adminPassForm').addEventListener('submit', async e => {
   new MutationObserver(tick).observe(document.body, { childList: true, subtree: true });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tick); else tick();
 })();
+
+
+/* ════════════ v20: استيراد ومزامنة JSON (Upsert) ════════════ */
+(function () {
+  function injectImport() {
+    if (document.getElementById('importJsonBtn')) return;
+    var form = document.getElementById('productForm');
+    var host = form ? form.parentElement : null;
+    if (!host) return;
+    var box = document.createElement('div');
+    box.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap';
+    box.innerHTML = '<button type="button" class="btn btn-primary" id="importJsonBtn">📥 استيراد ومزامنة البيانات (JSON)</button>'
+      + '<input type="file" id="importJsonFile" accept=".json,application/json" style="display:none" />'
+      + '<span id="importJsonStatus" style="font-size:.82rem;color:var(--muted,#999)"></span>';
+    host.insertBefore(box, host.firstChild);
+    var fileInp = document.getElementById('importJsonFile');
+    var status = document.getElementById('importJsonStatus');
+    document.getElementById('importJsonBtn').onclick = function () { fileInp.click(); };
+    fileInp.addEventListener('change', function () {
+      var f = fileInp.files[0];
+      if (!f) return;
+      var reader = new FileReader();
+      reader.onload = function () {
+        var data;
+        try { data = JSON.parse(reader.result); }
+        catch (e) { status.textContent = '❌ ملف JSON غير صالح'; return; }
+        var cats = Array.isArray(data.categories) ? data.categories.length : 0;
+        var prods = Array.isArray(data.products) ? data.products.length : 0;
+        if (!cats && !prods) { status.textContent = '⚠️ الملف لا يحتوي categories أو products'; return; }
+        if (!confirm('📥 تم العثور على (' + cats + ') قسم و(' + prods + ') منتج.\nهل تريد بدء المزامنة؟ (لن تُمسح البيانات القديمة)')) { fileInp.value = ''; return; }
+        status.innerHTML = '⏳ <span class="imp-spin"></span> جاري المزامنة...';
+        document.getElementById('importJsonBtn').disabled = true;
+        API.req('/admin/products/import-json', { method: 'POST', body: data })
+          .then(function (r) {
+            status.textContent = '✅ تمت المزامنة: ' + (r.categories || 0) + ' قسم / ' + (r.products || 0) + ' منتج';
+            try { renderProducts(); } catch (e) {}
+            try { renderCategories(); } catch (e) {}
+            try { renderDashboard(); } catch (e) {}
+          })
+          .catch(function (e) { status.textContent = '❌ ' + e.message; })
+          .finally(function () {
+            document.getElementById('importJsonBtn').disabled = false;
+            fileInp.value = '';
+          });
+      };
+      reader.readAsText(f);
+    });
+  }
+  var l20 = false;
+  new MutationObserver(function () {
+    if (l20) return; l20 = true;
+    setTimeout(function () { l20 = false; injectImport(); }, 300);
+  }).observe(document.body, { childList: true, subtree: true });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', injectImport); else injectImport();
+})();

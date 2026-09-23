@@ -1,0 +1,41 @@
+{
+  "categories": [
+    {
+      "id": "games",
+      "nameAr": "شحن ألعاب",
+      "nameEn": "Games Recharge",
+      "icon": "🎮"
+    }
+  ],
+  "products": [
+    {
+      "name": "ببجي موبايل (PUBG Mobile)",
+      "category": "games",
+      "description": "شحن شدات ببجي الرسمي عبر الأيدي فوراً.",
+      "image": "https://example.com/images/pubg.png",
+      "requiresPlayerId": true,
+      "playerIdLabel": "معرّف اللاعب (Player ID)",
+      "variants": [
+        {
+          "name": "60 شدة UC",
+          "originalPrice": 1.0,
+          "discountPercent": 10,
+          "isOnSale": true
+        },
+        {
+          "name": "325 شدة UC",
+          "originalPrice": 5.0,
+          "discountPercent": 10,
+          "isOnSale": true
+        },
+        {
+          "name": "660 شدة UC",
+          "originalPrice": 10.0,
+          "discountPercent": 0,
+          "isOnSale": false
+        }
+      ],
+      "isActive": true
+    }
+  ]
+}

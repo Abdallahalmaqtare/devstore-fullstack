@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
-const { User, Order } = require('../models');
+const { Category, User, Order } = require('../models');
 const { authRequired, adminOnly } = require('../middleware/auth');
 const { sendTelegram } = require('../utils/notify');
 
@@ -84,6 +84,73 @@ router.get('/users/:id/report', authRequired, adminOnly, async (req, res) => {
       },
     });
   } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
+
+/* ═══ v20: استيراد ومزامنة JSON (Upsert بدون مسح) ═══ */
+router.post('/products/import-json', authRequired, adminOnly, async (req, res) => {
+  try {
+    const cats = Array.isArray(req.body && req.body.categories) ? req.body.categories : [];
+    const prods = Array.isArray(req.body && req.body.products) ? req.body.products : [];
+    if (!cats.length && !prods.length)
+      return res.status(400).json({ message: 'الملف لا يحتوي أقساماً أو منتجات' });
+
+    /* مزامنة الأقسام بالـ slug */
+    const catOps = cats.filter(c => c && (c.id || c.slug)).map(c => ({
+      updateOne: {
+        filter: { slug: String(c.id || c.slug).toLowerCase().trim() },
+        update: { $set: {
+          slug: String(c.id || c.slug).toLowerCase().trim(),
+          nameAr: String(c.nameAr || c.id || '').trim(),
+          nameEn: String(c.nameEn || ''),
+          icon: String(c.icon || '🗂️'),
+          kind: c.kind === 'services' ? 'services' : 'shop',
+          active: c.isActive !== false,
+        } },
+        upsert: true,
+      },
+    }));
+    if (catOps.length) await Category.bulkWrite(catOps);
+
+    /* مزامنة المنتجات بـ (name + cat) مع الحفاظ على _id والطلبات المرتبطة */
+    const prodOps = prods.filter(p => p && p.name && (p.category || p.cat)).map(p => {
+      const variants = (Array.isArray(p.variants) ? p.variants : [])
+        .filter(v => v && v.name && !isNaN(parseFloat(v.originalPrice != null ? v.originalPrice : v.price)))
+        .map(v => {
+          const base = parseFloat(v.originalPrice != null ? v.originalPrice : v.price);
+          const on = v.isOnSale === true && (parseFloat(v.discountPercent) || 0) > 0;
+          const d = on ? Math.min(100, Math.max(0, parseFloat(v.discountPercent))) : 0;
+          return { name: String(v.name).trim(), price: base, icon: String(v.icon || ''),
+                   isOnSale: on, discountPercent: d,
+                   finalPrice: on ? +(base - base * d / 100).toFixed(2) : base };
+        });
+      const isService = p.type === 'service';
+      const basePrice = parseFloat(p.price) || 0;
+      const pOn = !isService && p.isOnSale === true && (parseFloat(p.discountPercent) || 0) > 0;
+      const pD = pOn ? Math.min(100, Math.max(0, parseFloat(p.discountPercent))) : 0;
+      const set = {
+        name: String(p.name).trim(),
+        cat: String(p.category || p.cat).toLowerCase().trim(),
+        desc: String(p.description || p.desc || ''),
+        type: isService ? 'service' : 'product',
+        price: isService ? 0 : basePrice,
+        image: String(p.image || ''),
+        requiresAccountId: !!(p.requiresPlayerId || p.requiresAccountId),
+        variants: isService ? [] : variants,
+        isOnSale: pOn, discountPercent: pD,
+        finalPrice: pOn ? +(basePrice - basePrice * pD / 100).toFixed(2) : basePrice,
+        active: p.isActive !== false,
+      };
+      if (p.playerIdLabel) set.unit = String(p.playerIdLabel);
+      if (p.contactWhatsapp) set.contactWhatsapp = String(p.contactWhatsapp).replace(/\D/g, '');
+      if (p.contactTelegram) set.contactTelegram = String(p.contactTelegram).replace(/^@/, '');
+      if (Array.isArray(p.modes)) set.modes = p.modes.filter(x => ['online', 'onsite'].includes(x));
+      return { updateOne: { filter: { name: set.name, cat: set.cat }, update: { $set: set }, upsert: true } };
+    });
+    if (prodOps.length) await Product.bulkWrite(prodOps);
+
+    res.json({ ok: true, categories: catOps.length, products: prodOps.length });
+  } catch (e) { res.status(500).json({ message: 'فشل الاستيراد: ' + e.message }); }
 });
 
 module.exports = router;

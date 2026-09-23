@@ -115,3 +115,6 @@
 
 /* v13: خلية خصم الباقة في المحرر */
 .v-sale-cell{display:inline-flex;align-items:center;gap:3px;font-size:.85rem;cursor:pointer;white-space:nowrap}
+
+.imp-spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(108,92,231,.3);border-top-color:#6c5ce7;border-radius:50%;animation:impspin .7s linear infinite;vertical-align:middle}
+@keyframes impspin{to{transform:rotate(360deg)}}
