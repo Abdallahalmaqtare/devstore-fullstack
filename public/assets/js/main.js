@@ -1,4 +1,24 @@
 
+/* ═══ v23: جلب أيقونة التطبيق تلقائياً عبر محرك DuckDuckGo ═══ */
+function getAppIcon(product) {
+  if (product.image && product.image.startsWith('http') && !product.image.includes('googleusercontent')) {
+    return product.image;
+  }
+  var match = String(product.name || '').match(/\(([^)]+)\)/);
+  var cleanName = (match ? match[1] : String(product.name || 'app'))
+    .toLowerCase()
+    .replace(/\s+/g, '')
+    .replace(/[^a-z0-9]/g, '');
+  return 'https://icons.duckduckgo.com/ip3/' + cleanName + '.com.ico';
+}
+function appIconFallback(name) {
+  return 'https://ui-avatars.com/api/?name=' + encodeURIComponent(String(name || 'App')) + '&background=2563eb&color=fff&size=128';
+}
+function appIconImg(p, cls) {
+  return '<img src="' + getAppIcon(p) + '" alt="' + String(p.name || '').replace(/"/g, '') + '" class="' + cls + '" '
+    + 'onerror="this.onerror=null;this.src=appIconFallback(\'' + String(p.name || 'App').replace(/'/g, '') + '\');" />';
+}
+
 /* v12: السعر الفعلي بعد الخصم */
 function effPrice(p) {
   return (p && p.isOnSale && p.discountPercent > 0)
@@ -202,7 +222,7 @@ function openGroupModal(id) {
   document.getElementById('groupDesc').textContent = (g.desc || '') + (g.requiresAccountId ? ' — 🆔 سيطلب معرّف الحساب في السلة' : '');
   document.getElementById('variantsList').innerHTML = g.variants.map(function (v, i) {
     return '<div class="variant-row">' +
-      (g.image ? '<img class="variant-icon-img" src="' + g.image + '" alt="" onerror="this.style.display=\'none\'" />' : '<span class="variant-icon">' + (v.icon || g.icon || '🎁') + '</span>') +
+      appIconImg(g, 'variant-icon-img') +
       '<span class="variant-name">' + v.name +
         (v.isOnSale && v.discountPercent > 0 ? ' <span class="v-sale-badge">خصم ' + v.discountPercent + '% 🔥</span>' : '') + '</span>' +
       '<span class="variant-price">' +
@@ -1251,4 +1271,45 @@ loadAll();
     setTimeout(function () { l17 = false; tick17(); }, 300);
   }).observe(document.body, { childList: true, subtree: true });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tick17); else tick17();
+})();
+
+/* v23b: استبدال أيقونات بطاقات المتجر بصور getAppIcon (تغطية شاملة عبر المراقب) */
+(function () {
+  var prodCache = {};
+  async function ensureCache() {
+    try {
+      var list = await API.req('/products');
+      (list || []).forEach(function (p) { prodCache[p.name] = p; });
+    } catch (e) {}
+  }
+  function upgradeIcons() {
+    /* كل عنصر أيقونة داخل بطاقة: إن كان يحمل إيموجي فقط نستبدله بصورة التطبيق */
+    document.querySelectorAll('.group-icon, .card-icon, .product-icon, [class*="icon"]').forEach(function (el) {
+      if (el.dataset.v23img || el.closest('#sideDrawer') || el.closest('.navbar') || el.closest('.drawer-tools')) return;
+      var card = el.closest('[class*="card"], [class*="group"], [class*="product"]');
+      if (!card) return;
+      var name = '';
+      Object.keys(prodCache).forEach(function (n) { if (card.textContent.indexOf(n) !== -1 && n.length > name.length) name = n; });
+      if (!name) return;
+      var prod = prodCache[name];
+      /* فقط إذا كان العنصر يحتوي إيموجي/نص قصير وليس صورة */
+      var txt = (el.textContent || '').trim();
+      if (el.querySelector('img') || txt.length > 4) return;
+      el.dataset.v23img = '1';
+      el.innerHTML = '';
+      var img = document.createElement('img');
+      img.src = getAppIcon(prod);
+      img.alt = prod.name;
+      img.className = 'group-icon-img';
+      img.onerror = function () { this.onerror = null; this.src = appIconFallback(prod.name); };
+      el.appendChild(img);
+    });
+  }
+  var l23 = false;
+  new MutationObserver(function () {
+    if (l23) return; l23 = true;
+    setTimeout(function () { l23 = false; upgradeIcons(); }, 400);
+  }).observe(document.body, { childList: true, subtree: true });
+  function init() { ensureCache().then(upgradeIcons); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
