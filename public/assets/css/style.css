@@ -558,3 +558,18 @@ input, select, textarea { font-family: inherit; }
   .variant-price .price-new{font-size:.85rem}
   .v-sale-badge{font-size:.62rem}
 }
+
+/* ═══ v19: سعر الباقة المكدّس (المخفّض فوق / الأصلي مشطوب أسفل) ═══ */
+.v-price-stack{display:flex;flex-direction:column;align-items:flex-start;line-height:1.25;gap:1px}
+.v-price-stack .price-new{font-size:1rem;font-weight:800;color:#2ed573;order:1}
+.v-price-stack .price-old{font-size:.72rem;text-decoration:line-through;opacity:.6;order:2}
+/* شارة الخصم بجانب اسم الباقة — مدمجة أنيقة */
+.variant-name .v-sale-badge{position:static;display:inline-flex;background:linear-gradient(135deg,#ff4757,#ff6b81);color:#fff;font-size:.68rem;font-weight:800;padding:2px 8px;border-radius:999px;white-space:nowrap}
+/* تجميل زر السلة في صف الباقة */
+.variant-row .buy-btn{background:linear-gradient(135deg,#2ed573,#26af63);color:#fff;border:none;box-shadow:0 3px 10px rgba(46,213,115,.35);transition:transform .15s}
+.variant-row .buy-btn:hover{transform:scale(1.08)}
+.variant-row .buy-btn:active{transform:scale(.95)}
+@media (max-width:480px){
+  .v-price-stack .price-new{font-size:.9rem}
+  .variant-name{font-size:.8rem}
+}

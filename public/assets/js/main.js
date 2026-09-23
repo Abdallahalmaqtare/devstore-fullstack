@@ -203,10 +203,11 @@ function openGroupModal(id) {
   document.getElementById('variantsList').innerHTML = g.variants.map(function (v, i) {
     return '<div class="variant-row">' +
       '<span class="variant-icon">' + (v.icon || g.icon || '🎁') + '</span>' +
-      '<span class="variant-name">' + v.name + '</span>' +
+      '<span class="variant-name">' + v.name +
+        (v.isOnSale && v.discountPercent > 0 ? ' <span class="v-sale-badge">خصم ' + v.discountPercent + '% 🔥</span>' : '') + '</span>' +
       '<span class="variant-price">' +
         (v.isOnSale && v.discountPercent > 0
-          ? '<span class="v-sale-badge">خصم ' + v.discountPercent + '%</span> <span class="price-old">' + fmtPrice(v.price) + '</span> <span class="price-new">' + fmtPrice(effPrice(v)) + '</span>'
+          ? '<span class="v-price-stack"><span class="price-new">' + fmtPrice(effPrice(v)) + '</span><span class="price-old">' + fmtPrice(v.price) + '</span></span>'
           : fmtPrice(effPrice(v))) + '</span>' +
       '<button class="buy-btn" data-variant="' + i + '" title="أضف للسلة">🛒</button>' +
       '</div>';
@@ -1067,6 +1068,7 @@ loadAll();
     } catch (e) { box.innerHTML = '<p class="fv-muted">⚠️ ' + e.message + '</p>'; }
   }
   function doLogout() {
+    if (!confirm('🚪 هل أنت متأكد من تسجيل الخروج؟\n\nاضغط OK للتأكيد أو Cancel للإلغاء')) return;
     localStorage.removeItem('ds-token'); localStorage.removeItem('ds-user');
     sessionStorage.removeItem('ds-token'); sessionStorage.removeItem('ds-user');
     showToast('👋 تم تسجيل الخروج'); setTimeout(function () { location.reload(); }, 700);
@@ -1093,6 +1095,28 @@ loadAll();
       } catch (e) { showToast('❌ ' + e.message); }
     }); }
     var cp = document.getElementById('fvChangePass');
+    /* v19: إعادة ربط قوية مباشرة بالزر (تتجاوز أي تعارض سابق) */
+    (function () {
+      var btn = document.getElementById('fvChangePass');
+      if (!btn || btn.dataset.v19) return; btn.dataset.v19 = '1';
+      btn.onclick = async function (ev) {
+        ev.preventDefault();
+        var cur = (document.getElementById('fvCurPass') || {}).value || '';
+        var nw = (document.getElementById('fvNewPass') || {}).value || '';
+        if (!cur) { showToast('⚠️ أدخل كلمة المرور الحالية'); return; }
+        if (!nw || nw.length < 6) { showToast('⚠️ كلمة المرور الجديدة 6 أحرف على الأقل'); return; }
+        var orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳ جاري التحديث...';
+        try {
+          await API.req('/users/change-password', { method: 'PUT', body: { currentPassword: cur, newPassword: nw } });
+          document.getElementById('fvCurPass').value = ''; document.getElementById('fvNewPass').value = '';
+          showToast('✅ تم تغيير كلمة المرور بنجاح');
+        } catch (e) {
+          showToast('❌ ' + (e.message || 'فشل تغيير كلمة المرور'));
+        }
+        btn.disabled = false; btn.textContent = orig;
+      };
+    })();
+
     if (cp && !cp.dataset.w) { cp.dataset.w = '1'; cp.addEventListener('click', async function () {
       try {
         await API.req('/users/change-password', { method: 'PUT', body: { currentPassword: document.getElementById('fvCurPass').value, newPassword: document.getElementById('fvNewPass').value } });
@@ -1173,6 +1197,7 @@ loadAll();
       + '<button class="btn btn-outline btn-block" id="fvLogout">🚪 تسجيل الخروج من هذا الجهاز</button>'
       + '<button class="btn btn-primary btn-block" id="fvLogoutAll" style="margin-top:8px;background:#ff4757;border-color:#ff4757">⛔ تسجيل الخروج من كافة الأجهزة</button>';
     document.getElementById('fvLogout').onclick = function () {
+      if (!confirm('🚪 هل أنت متأكد من تسجيل الخروج؟\n\nاضغط OK للتأكيد أو Cancel للإلغاء')) return;
       localStorage.removeItem('ds-token'); localStorage.removeItem('ds-user');
       sessionStorage.removeItem('ds-token'); sessionStorage.removeItem('ds-user');
       showToast('👋 تم تسجيل الخروج'); setTimeout(function () { location.reload(); }, 700);
