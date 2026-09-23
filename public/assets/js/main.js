@@ -1,14 +1,4 @@
 
-/* v15: قالب سعر موحّد — شارة واحدة + سعر نهائي + سعر أصلي مشطوب (يُبنى مرة واحدة فقط) */
-function priceMarkup(p) {
-  if (p && p.isOnSale && p.discountPercent > 0) {
-    return '<span class="discount-badge">خصم ' + p.discountPercent + '%</span> ' +
-           '<span class="current-price">' + fmtPrice(effPrice(p)) + '</span> ' +
-           '<del class="old-price">' + fmtPrice(p.price) + '</del>';
-  }
-  return fmtPrice(effPrice(p));
-}
-
 /* v12: السعر الفعلي بعد الخصم */
 function effPrice(p) {
   return (p && p.isOnSale && p.discountPercent > 0)
@@ -140,7 +130,7 @@ function renderProducts() {
     var footer = isGroup
       ? '<div class="product-price">' + fmtPrice(minPrice) + ' <small>يبدأ من</small></div>' +
         '<button class="buy-btn group-btn" data-group="' + p._id + '">📦 عرض الباقات (' + p.variants.length + ')</button>'
-      : '<div class="product-price">' + priceMarkup(p) + ' <small>' + (p.unit || '') + '</small></div>' +
+      : '<div class="product-price">' + fmtPrice(effPrice(p)) + ' <small>' + (p.unit || '') + '</small></div>' +
         '<button class="buy-btn" data-buy="' + p._id + '">أضف للسلة 🛒</button>';
     var countrySel = p.countrySelect
       ? '<div class="product-extra"><select id="country-' + p._id + '"><option value="">اختر الدولة 🌍</option>' +
@@ -800,6 +790,46 @@ initDialPickers();
 loadAll();
 
 
+/* v12: شارة الخصم + عرض السعر القديم مشطوباً (مزيّن تجميلي — يعتمد /api/products) */
+(function () {
+  var saleMap = {};
+  function eff(p) { return p.isOnSale && p.discountPercent > 0 ? +(p.price - p.price * p.discountPercent / 100).toFixed(2) : p.price; }
+  function decorate() {
+    document.querySelectorAll('[class*="card"], [class*="group"], [data-pid]').forEach(function (card) {
+      if (card.dataset.saleDone) return;
+      var name = '';
+      Object.keys(saleMap).forEach(function (n) { if (card.textContent.indexOf(n) !== -1 && (!name || n.length > name.length)) name = n; });
+      if (!name) return;
+      var p = saleMap[name];
+      card.dataset.saleDone = '1';
+      card.style.position = card.style.position || 'relative';
+      var b = document.createElement('span');
+      b.className = 'sale-badge';
+      b.textContent = 'خصم ' + p.discountPercent + '% 🔥';
+      card.appendChild(b);
+      /* استبدال أول عنصر يحمل سعراً دولارياً صرفاً بصيغة العرض */
+      var els = card.querySelectorAll('*'), k;
+      for (k = 0; k < els.length; k++) {
+        var el = els[k], t = (el.textContent || '').trim();
+        var mch = t.match(/^\$\s*(\d+(?:\.\d+)?)\s*$/);
+        if (mch && el.children.length === 0) {
+          el.innerHTML = '<span class="price-old">$' + mch[1] + '</span> <span class="price-new">$' + eff(p) + '</span>';
+          break;
+        }
+      }
+    });
+  }
+  async function load() {
+    try {
+      var list = await API.req('/products');
+      (list || []).forEach(function (p) { if (p.isOnSale && p.discountPercent > 0) saleMap[p.name] = p; });
+      decorate();
+      new MutationObserver(function () { decorate(); }).observe(document.body, { childList: true, subtree: true });
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
+})();
+
 /* v12: القائمة الجانبية (Off-canvas Drawer) */
 (function () {
   var d = document.getElementById('sideDrawer'), o = document.getElementById('drawerOverlay'), m = document.getElementById('menuBtn');
@@ -952,135 +982,4 @@ loadAll();
   function tick() { arrange(); injectPdfUi(); enhanceOrders(); }
   new MutationObserver(tick).observe(document.body, { childList: true, subtree: true });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tick); else tick();
-})();
-
-/* ════════════ v15: ربط لوحة الحساب في القائمة الجانبية ════════════ */
-(function () {
-  var $ = function (id) { return document.getElementById(id); };
-  function toast(m) { try { showToast(m); } catch (e) {} }
-  function tk() { return (window.API && API.token) ? API.token() : null; }
-  function openDrawer() { var d=$('sideDrawer'), o=$('drawerOverlay'); if(!d) return; d.classList.add('open'); d.setAttribute('aria-hidden','false'); if(o) o.classList.add('show'); document.body.style.overflow='hidden'; }
-  function closeDrawer() { var d=$('sideDrawer'), o=$('drawerOverlay'); if(!d) return; d.classList.remove('open'); d.setAttribute('aria-hidden','true'); if(o) o.classList.remove('show'); document.body.style.overflow=''; }
-  window.DS_openDrawer = openDrawer;
-  function hitLogin() { var lb=$('loginBtn'); if(lb) lb.click(); }
-  function needAuth() { if (!tk()) { toast('⚠️ سجّل الدخول أولاً'); hitLogin(); return true; } return false; }
-
-  var mb = $('menuBtn'); if (mb) mb.addEventListener('click', function (e) { e.preventDefault(); openDrawer(); });
-  var xb = $('drawerClose'); if (xb) xb.addEventListener('click', closeDrawer);
-  var ov = $('drawerOverlay'); if (ov) ov.addEventListener('click', closeDrawer);
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeDrawer(); });
-  if (location.search.indexOf('drawer=1') !== -1) setTimeout(openDrawer, 350);
-
-  async function syncUser() {
-    var name = 'زائر', phone = '—';
-    try {
-      var me = null;
-      try { me = await API.req('/auth/me'); } catch (e) { try { me = await API.req('/users/me'); } catch (e2) {} }
-      var u = (me && (me.user || me)) || null;
-      if (u && u.name) { name = u.name; phone = u.phone || '—'; }
-      else {
-        var cached = null;
-        ['ds_user','devstore_user','user'].forEach(function (k) { try { var v = localStorage.getItem(k) || sessionStorage.getItem(k); if (v) cached = JSON.parse(v); } catch (e) {} });
-        if (cached) { name = cached.name || name; phone = cached.phone || phone; }
-      }
-    } catch (e) {}
-    if ($('drawerUserName')) $('drawerUserName').textContent = name;
-    if ($('drawerUserPhone')) $('drawerUserPhone').textContent = phone;
-    var logged = !!tk();
-    if ($('drawerTools')) $('drawerTools').style.display = logged ? '' : 'none';
-    if ($('drawerSessionInfo')) $('drawerSessionInfo').textContent = logged
-      ? '🟢 أنت مسجل الدخول بجلسة نشطة على هذا الجهاز.' : '🔴 لا توجد جلسة دخول حالياً.';
-  }
-
-  var pb = $('drawerProfileBtn');
-  if (pb) pb.addEventListener('click', function () { if (needAuth()) return; hitLogin(); closeDrawer(); });
-
-  var pwb = $('drawerPwBtn');
-  if (pwb) pwb.addEventListener('click', async function () {
-    if (needAuth()) return;
-    var c=$('drawerCurPw'), n=$('drawerNewPw');
-    if (!c.value || n.value.length < 6) return toast('⚠️ أدخل كلمة المرور الحالية وجديدة (6 أحرف+)');
-    try {
-      await API.req('/users/change-password', { method: 'PUT', body: { currentPassword: c.value, newPassword: n.value, oldPassword: c.value } });
-      c.value=''; n.value=''; toast('✅ تم تغيير كلمة المرور بنجاح');
-    } catch (e) { toast('❌ ' + e.message); }
-  });
-  var sb = $('drawerSessionBtn');
-  if (sb) sb.addEventListener('click', function () {
-    var i=$('drawerSessionInfo');
-    if (i) i.textContent = tk() ? ('🟢 جلسة نشطة على هذا الجهاز — ' + new Date().toLocaleString('ar-EG')) : '🔴 لا توجد جلسة دخول';
-    toast(tk() ? '🟢 جلسة الدخول نشطة' : '🔴 غير مسجل الدخول');
-  });
-
-  var ob = $('drawerOrdersBtn');
-  if (ob) ob.addEventListener('click', function () {
-    if (needAuth()) return;
-    hitLogin(); closeDrawer();
-    setTimeout(function () {
-      var t=[].slice.call(document.querySelectorAll('button,a,[role="tab"]')).find(function(el){ return /طلباتي|سجل الطلبات/.test(el.textContent||''); });
-      if (t) t.click();
-    }, 500);
-  });
-
-  async function exportPdf() {
-    if (needAuth()) return;
-    try {
-      var res = await API.req('/orders/my-orders');
-      var list = Array.isArray(res) ? res : (res && res.orders) || [];
-      var f=$('drawerRepFrom').value, tt=$('drawerRepTo').value;
-      if (f) list = list.filter(function(o){ return new Date(o.createdAt) >= new Date(f); });
-      if (tt) list = list.filter(function(o){ return new Date(o.createdAt) <= new Date(tt+'T23:59:59'); });
-      if (!list.length) return toast('⚠️ لا توجد طلبات في هذا النطاق');
-      var rates = {}, sel = document.getElementById('currencySelect');
-      try { var cs = await API.req('/currencies'); (Array.isArray(cs)?cs:(cs.currencies||[])).forEach(function(c){ rates[c.code]=c.rate; }); } catch (e) {}
-      function loc(usd){ var code = sel && sel.value; return (code && code!=='USD' && rates[code]) ? ' / ' + Math.round(usd*rates[code]) + ' ' + code : ''; }
-      var rows = list.map(function(o){
-        var items = (o.items||[]).map(function(i){return i.name;}).join(' + ');
-        var ids = (o.items||[]).map(function(i){return i.accountId;}).filter(Boolean).join(' ، ') || '—';
-        return '<tr><td>'+o.code+'</td><td>'+new Date(o.createdAt).toLocaleString('ar-EG')+'</td><td>'+items+'</td><td>'+ids+'</td><td>$'+o.total+loc(o.total)+'</td><td>'+((o.paymentMethod&&o.paymentMethod.name)||'—')+'</td><td>'+o.status+'</td></tr>';
-      }).join('');
-      var html = '<div dir="rtl" style="font-family:Tahoma,Arial;padding:16px;background:#fff;color:#111">'
-        + '<div style="display:flex;justify-content:space-between;border-bottom:3px solid #6c5ce7;padding-bottom:8px;margin-bottom:10px"><h2 style="margin:0;color:#6c5ce7">⚡ DevStore</h2><b>كشف حساب / تقرير الطلبات</b></div>'
-        + '<div style="font-size:12px;margin-bottom:10px">👤 العميل: <b>'+$('drawerUserName').textContent+'</b> | 📱 <b dir="ltr">'+$('drawerUserPhone').textContent+'</b><br>🕒 أُصدر في: '+new Date().toLocaleString('ar-EG')+'</div>'
-        + '<table style="width:100%;border-collapse:collapse;font-size:11px" border="1" cellpadding="6"><thead><tr style="background:#6c5ce7;color:#fff"><th>رقم الطلب</th><th>التاريخ والوقت</th><th>الخدمة / الباقة</th><th>ID</th><th>المبلغ</th><th>طريقة الدفع</th><th>الحالة</th></tr></thead><tbody>'+rows+'</tbody></table>'
-        + '<p style="margin-top:12px;font-size:10px;color:#888">صادر آلياً من منصة DevStore</p></div>';
-      var host=document.createElement('div'); host.innerHTML=html; document.body.appendChild(host);
-      if (window.html2pdf) html2pdf().set({ margin:8, filename:'DevStore-report.pdf', html2canvas:{scale:2}, jsPDF:{unit:'mm',format:'a4',orientation:'landscape'} }).from(host).save().then(function(){ host.remove(); });
-      else { toast('❌ مكتبة PDF غير محمّلة'); host.remove(); }
-    } catch (e) { toast('❌ ' + e.message); }
-  }
-  var pdfb = $('drawerPdfBtn'); if (pdfb) pdfb.addEventListener('click', exportPdf);
-
-  (async function () {
-    try {
-      var s = await API.req('/settings/site'); var st = s && (s.settings || s);
-      var wa = (st && (st.whatsapp || st.supportWhatsapp || st.phone || '')) + '';
-      var tg = (st && (st.telegram || st.supportTelegram || '')) + '';
-      if ($('drawerWa')) $('drawerWa').href = wa ? ('https://wa.me/' + wa.replace(/\D/g,'')) : '#';
-      if ($('drawerTg')) $('drawerTg').href = tg ? ('https://t.me/' + tg.replace(/^@/,'')) : '#';
-      if (wa && $('drawerWa')) $('drawerWa').textContent = '💬 واتساب الدعم (' + wa + ')';
-    } catch (e) {}
-  })();
-
-  var lo = $('drawerLogout');
-  if (lo) lo.addEventListener('click', function () {
-    if (!confirm('تسجيل الخروج من حسابك؟')) return;
-    try { Object.keys(localStorage).forEach(function (k) { if (/token|ds_|devstore|user/i.test(k)) localStorage.removeItem(k); }); } catch (e) {}
-    try { Object.keys(sessionStorage).forEach(function (k) { if (/token|ds_|devstore|user/i.test(k)) sessionStorage.removeItem(k); }); } catch (e) {}
-    if (window.API && API.logout) { try { API.logout(); } catch (e) {} }
-    location.reload();
-  });
-
-  document.querySelectorAll('.drawer-link[data-nav-cat]').forEach(function (a) {
-    a.addEventListener('click', function () {
-      var cat = a.dataset.navCat;
-      setTimeout(function () {
-        var t = [].slice.call(document.querySelectorAll('button,[class*="chip"],[class*="filter"]')).find(function (el) { return (el.textContent||'').indexOf(cat) !== -1; });
-        if (t) t.click();
-      }, 250);
-      closeDrawer();
-    });
-  });
-
-  var n = 0; (function loop(){ syncUser(); if (++n < 10) setTimeout(loop, 1200); })();
 })();
