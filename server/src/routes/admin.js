@@ -1,3 +1,4 @@
+const { fetchPlayIcon, avatarFallback } = require('../utils/fetchIcon');
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 const {  Product, Category, User, Order } = require('../models');
@@ -147,6 +148,14 @@ router.post('/products/import-json', authRequired, adminOnly, async (req, res) =
       if (Array.isArray(p.modes)) set.modes = p.modes.filter(x => ['online', 'onsite'].includes(x));
       return { updateOne: { filter: { name: set.name, cat: set.cat }, update: { $set: set }, upsert: true } };
     });
+    /* v22: جلب أيقونة تلقائياً لأي منتج بلا صورة */
+    for (const op of prodOps) {
+      const st = op.updateOne.update.$set;
+      if (!st.image) {
+        const icon = await fetchPlayIcon(st.name);
+        st.image = icon || avatarFallback(st.name);
+      }
+    }
     if (prodOps.length) await Product.bulkWrite(prodOps);
 
     res.json({ ok: true, categories: catOps.length, products: prodOps.length });

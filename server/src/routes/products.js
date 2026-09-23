@@ -3,6 +3,7 @@ const multer = require('multer');
 const { Product } = require('../models');
 const { authRequired, adminOnly } = require('../middleware/auth');
 const { uploadImage } = require('../utils/notify');
+const { fetchPlayIcon, avatarFallback } = require('../utils/fetchIcon');
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -41,6 +42,18 @@ function sanitizeProduct(body) {
   b.contactTelegram = String(b.contactTelegram || '').replace(/^@/, '').trim();
   return b;
 }
+
+
+/* ═══ v22: جلب أيقونة تطبيق من Google Play بالاسم ═══ */
+router.get('/fetch-icon', async (req, res) => {
+  try {
+    const { term } = req.query;
+    if (!term) return res.status(400).json({ error: 'Term is required' });
+    const icon = await fetchPlayIcon(term);
+    if (icon) return res.json({ iconUrl: icon });
+    return res.status(404).json({ error: 'App not found', fallback: avatarFallback(term) });
+  } catch (err) { return res.status(500).json({ error: err.message, fallback: avatarFallback(req.query.term) }); }
+});
 
 router.get('/', async (req, res) => {
   const q = { active: true };

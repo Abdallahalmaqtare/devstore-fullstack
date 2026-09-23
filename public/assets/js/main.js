@@ -202,7 +202,7 @@ function openGroupModal(id) {
   document.getElementById('groupDesc').textContent = (g.desc || '') + (g.requiresAccountId ? ' — 🆔 سيطلب معرّف الحساب في السلة' : '');
   document.getElementById('variantsList').innerHTML = g.variants.map(function (v, i) {
     return '<div class="variant-row">' +
-      '<span class="variant-icon">' + (v.icon || g.icon || '🎁') + '</span>' +
+      (g.image ? '<img class="variant-icon-img" src="' + g.image + '" alt="" onerror="this.style.display=\'none\'" />' : '<span class="variant-icon">' + (v.icon || g.icon || '🎁') + '</span>') +
       '<span class="variant-name">' + v.name +
         (v.isOnSale && v.discountPercent > 0 ? ' <span class="v-sale-badge">خصم ' + v.discountPercent + '% 🔥</span>' : '') + '</span>' +
       '<span class="variant-price">' +
