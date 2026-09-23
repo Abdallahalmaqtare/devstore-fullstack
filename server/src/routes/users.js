@@ -1,3 +1,4 @@
+const jwt = require('jsonwebtoken');
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 const { User } = require('../models');
@@ -27,6 +28,28 @@ router.put('/change-password', authRequired, async (req, res) => {
   user.password = await bcrypt.hash(next, 10);
   await user.save();
   res.json({ ok: true, message: 'تم تحديث كلمة المرور' });
+});
+
+
+/* ═══ v17: تفاصيل الجلسة الحقيقية ═══ */
+router.get('/session-info', authRequired, (req, res) => {
+  try {
+    const token = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+    const dec = jwt.decode(token) || {};
+    res.json({
+      loginAt: dec.iat ? new Date(dec.iat * 1000) : null,
+      ip: String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim(),
+      ua: String(req.headers['user-agent'] || ''),
+    });
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
+
+/* ═══ v17: تسجيل الخروج من كافة الأجهزة (إبطال كل التوكنات) ═══ */
+router.post('/logout-all', authRequired, async (req, res) => {
+  try {
+    await User.findByIdAndUpdate(req.user._id, { sessionResetAt: new Date() });
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
 module.exports = router;

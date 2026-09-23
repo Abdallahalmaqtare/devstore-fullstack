@@ -519,3 +519,21 @@ input, select, textarea { font-family: inherit; }
 .fv-order-meta{display:flex;gap:14px;font-size:.8rem;color:var(--muted,#999)}
 .fv-order-actions{margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .fv-mini{padding:6px 12px;font-size:.78rem}
+
+/* ═══ v17: تنسيق كروت الباقات والخصم ═══ */
+.variant-row{display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:.85rem}
+.variant-name{flex:1;min-width:0;font-size:.85rem;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.variant-icon{font-size:1rem;width:22px;text-align:center;flex:0 0 auto}
+.variant-price{white-space:nowrap;font-size:.82rem;display:flex;align-items:center;gap:5px;flex:0 0 auto}
+.v-sale-badge{font-size:.6rem;padding:1px 7px;font-weight:800;position:static;display:inline-flex;box-shadow:none}
+.variant-price .price-old{font-size:.72rem}
+.variant-price .price-new{font-size:.92rem}
+.variant-row .buy-btn{padding:5px 12px;font-size:.74rem;border-radius:9px;white-space:nowrap;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center}
+@media (max-width:480px){
+  .variant-row{gap:6px;padding:8px 10px;font-size:.8rem}
+  .variant-row .buy-btn{padding:4px 10px;font-size:.7rem}
+  .variant-price .price-new{font-size:.85rem}
+}
+/* ═══ v17: ذيل القائمة الجانبية ═══ */
+.drawer-tools #drawerLogout{background:rgba(255,71,87,.12);border-color:rgba(255,71,87,.35);color:#ff6b81}
+.drawer-tools #drawerLogout:hover{background:rgba(255,71,87,.22)}

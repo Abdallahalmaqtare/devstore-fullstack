@@ -10,6 +10,7 @@ const userSchema = new Schema({
   isSuper: { type: Boolean, default: false }, // المدير العام — محمي من الحذف/التخفيض
   telegramChatId: { type: String, default: '' }, // محادثة العميل مع البوت — للإشعارات المستقبلية
   active: { type: Boolean, default: true },
+  sessionResetAt: { type: Date, default: null },  // إبطال كل التوكنات الصادرة قبله
 }, { timestamps: true });
 
 /* ===== OTP — TTL 10 دقائق على createdAt ===== */

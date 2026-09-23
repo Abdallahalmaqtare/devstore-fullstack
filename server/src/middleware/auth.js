@@ -9,6 +9,8 @@ async function authRequired(req, res, next) {
 
     const payload = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(payload.id).select('-password');
+  if (user && user.sessionResetAt && payload.iat && payload.iat * 1000 < user.sessionResetAt.getTime())
+    return res.status(401).json({ message: 'انتهت الجلسة — سجّل الدخول من جديد' });
     if (!user || !user.active) return res.status(401).json({ message: 'الحساب غير صالح أو موقوف' });
 
     req.user = user;

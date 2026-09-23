@@ -1108,3 +1108,122 @@ loadAll();
   function wireOnce() { wire(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireOnce); else wireOnce();
 })();
+
+
+/* ════════════ v17: ترتيب ذيل القائمة + حماية الزوار + الجلسات + تحديث صامت ════════════ */
+(function () {
+  function cu() { try { return JSON.parse(localStorage.getItem('ds_user') || sessionStorage.getItem('ds_user') || 'null'); } catch (e) { return null; } }
+  function closeDrawer17() {
+    var d = document.getElementById('sideDrawer'), o = document.getElementById('drawerOverlay');
+    if (d) d.classList.remove('open'); if (o) o.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+  /* ── 1) ترتيب ذيل القائمة: اللغة ← الثيم ← تسجيل الخروج (في الأخير) ── */
+  function arrangeFooter() {
+    var tools = document.querySelector('.drawer-tools');
+    var lang = document.querySelector('.drawer-lang');
+    var theme = document.getElementById('drawerThemeBtn');
+    var lo = document.getElementById('drawerLogout');
+    if (!tools || !lang || !theme || !lo) return;
+    if (!lo.classList.contains('drawer-tool-btn')) {
+      lo.classList.add('drawer-tool-btn'); lo.classList.remove('drawer-link');
+      lo.style.cssText = 'width:100%;display:flex;align-items:center;justify-content:center;gap:6px';
+      lo.innerHTML = '🚪 تسجيل الخروج';
+    }
+    if (tools.lastElementChild !== lo) { tools.innerHTML = ''; tools.appendChild(lang); tools.appendChild(theme); tools.appendChild(lo); }
+    lo.style.display = cu() ? 'flex' : 'none'; /* يظهر للمسجلين فقط */
+  }
+  /* ── 2) حارس الزوار: منع فتح صفحات الحساب دون تسجيل ── */
+  function guard() {
+    document.querySelectorAll('.drawer-link[data-view], .drawer-tool-btn[data-view]').forEach(function (b) {
+      if (b.dataset.g17) return; b.dataset.g17 = '1';
+      b.addEventListener('click', function (e) {
+        if (cu()) return; /* مسجّل ← يمر للمعالج الأصلي */
+        e.stopImmediatePropagation(); e.preventDefault();
+        closeDrawer17();
+        showToast('🔐 يرجى تسجيل الدخول أولاً للوصول إلى هذه الصفحة');
+        var lb = document.getElementById('loginBtn'); if (lb) lb.click();
+      }, true); /* capture: يسبق معالج v15 */
+    });
+  }
+  /* ── 3) كرت الجلسة الحقيقي + الخروج من كل الأجهزة ── */
+  function parseUA(ua) {
+    var os = /Windows/i.test(ua) ? 'Windows' : /Android/i.test(ua) ? 'Android' : /iPhone|iPad/i.test(ua) ? 'iOS' : /Mac/i.test(ua) ? 'macOS' : /Linux/i.test(ua) ? 'Linux' : 'غير معروف';
+    var br = /Edg/i.test(ua) ? 'Edge' : /Chrome/i.test(ua) ? 'Chrome' : /Safari/i.test(ua) ? 'Safari' : /Firefox/i.test(ua) ? 'Firefox' : 'متصفح';
+    return br + ' على ' + os;
+  }
+  async function loadSession() {
+    var box = document.getElementById('fvSessionInfo');
+    if (!box || !cu()) return;
+    try {
+      var r = await API.req('/users/session-info');
+      box.innerHTML = '🖥️ الجهاز: <b>' + parseUA(r.ua || '') + '</b><br>'
+        + '🕒 وقت تسجيل الدخول: <b>' + (r.loginAt ? new Date(r.loginAt).toLocaleString('ar-EG') : '—') + '</b><br>'
+        + '🌐 عنوان IP: <b dir="ltr">' + (r.ip || '—') + '</b>';
+    } catch (e) { box.innerHTML = '<span class="fv-muted">تعذر جلب بيانات الجلسة</span>'; }
+  }
+  function injectSession() {
+    var sv = document.getElementById('view-security');
+    if (!sv || document.getElementById('fvSessionInfo')) return;
+    var cards = sv.querySelectorAll('.fv-card');
+    if (cards.length < 2) return;
+    var c = cards[1];
+    c.innerHTML = '<h4>🟢 حالة الجلسة</h4>'
+      + '<p class="fv-muted" id="fvSessionInfo" style="line-height:2">جاري جلب بيانات الجلسة...</p>'
+      + '<button class="btn btn-outline btn-block" id="fvLogout">🚪 تسجيل الخروج من هذا الجهاز</button>'
+      + '<button class="btn btn-primary btn-block" id="fvLogoutAll" style="margin-top:8px;background:#ff4757;border-color:#ff4757">⛔ تسجيل الخروج من كافة الأجهزة</button>';
+    document.getElementById('fvLogout').onclick = function () {
+      localStorage.removeItem('ds_token'); localStorage.removeItem('ds_user');
+      sessionStorage.removeItem('ds_token'); sessionStorage.removeItem('ds_user');
+      showToast('👋 تم تسجيل الخروج'); setTimeout(function () { location.reload(); }, 700);
+    };
+    document.getElementById('fvLogoutAll').onclick = async function () {
+      if (!confirm('سيتم إنهاء جلستك على جميع الأجهزة فوراً — متابعة؟')) return;
+      try {
+        await API.req('/users/logout-all', { method: 'POST' });
+        localStorage.clear(); sessionStorage.clear();
+        showToast('✅ تم إنهاء جميع الجلسات — سجّل الدخول من جديد');
+        setTimeout(function () { location.reload(); }, 900);
+      } catch (e) { showToast('❌ ' + e.message); }
+    };
+    loadSession();
+  }
+  /* تحميل بيانات الجلسة عند فتح واجهة الأمان */
+  document.querySelectorAll('[data-view="security"]').forEach(function (b) {
+    if (b.dataset.s17) return; b.dataset.s17 = '1';
+    b.addEventListener('click', function () { setTimeout(loadSession, 350); });
+  });
+  /* ── 4) تحديث صامت بعد العمليات (دون أن يلاحظ العميل) ── */
+  var _fetch = window.fetch;
+  window.fetch = function () {
+    return _fetch.apply(this, arguments).then(function (r) {
+      try {
+        var m = (arguments[1] && arguments[1].method || 'GET').toUpperCase();
+        if (r.ok && m !== 'GET' && String(arguments[0]).indexOf('/auth/') === -1)
+          document.dispatchEvent(new CustomEvent('ds:silent-refresh'));
+      } catch (e) {}
+      return r;
+    });
+  };
+  var srLock = false;
+  document.addEventListener('ds:silent-refresh', function () {
+    if (srLock) return; srLock = true;
+    setTimeout(function () { srLock = false; }, 600);
+    ['loadProducts', 'renderProducts', 'loadStore', 'loadCategories', 'renderCart'].forEach(function (fn) {
+      try { if (typeof window[fn] === 'function') window[fn](); } catch (e) {}
+    });
+    var ov = document.getElementById('view-orders');
+    if (ov && ov.classList.contains('show')) {
+      var b = document.querySelector('[data-view="orders]') || document.querySelector('[data-view="orders"]');
+      if (b) b.click(), b.click(); /* إعادة فتح = إعادة جلب */
+    }
+  });
+  /* تشغيل */
+  function tick17() { arrangeFooter(); guard(); injectSession(); }
+  var l17 = false;
+  new MutationObserver(function () {
+    if (l17) return; l17 = true;
+    setTimeout(function () { l17 = false; tick17(); }, 300);
+  }).observe(document.body, { childList: true, subtree: true });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tick17); else tick17();
+})();
