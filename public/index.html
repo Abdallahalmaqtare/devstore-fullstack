@@ -51,20 +51,78 @@
   <div class="drawer-overlay" id="drawerOverlay"></div>
   <aside class="side-drawer" id="sideDrawer" aria-hidden="true">
     <div class="drawer-head">
-      <a href="#home" class="brand"><span class="brand-icon">⚡</span><span class="brand-name"><b>Dev</b>Store</span></a>
-      <button class="icon-btn drawer-close" id="drawerClose" aria-label="إغلاق القائمة">✕</button>
+      <div class="drawer-user">
+        <span class="drawer-avatar">👤</span>
+        <div class="drawer-user-info">
+          <b id="drawerUserName">زائر</b>
+          <small id="drawerUserPhone" dir="ltr"></small>
+        </div>
+      </div>
+      <button class="drawer-close" id="drawerClose" aria-label="إغلاق">✕</button>
     </div>
     <nav class="drawer-links">
-      <a href="#home" class="drawer-link">🏠 الرئيسية</a>
-      <a href="#store" class="drawer-link">🛍️ المتجر الرقمي</a>
-      <a href="#courses" class="drawer-link">🎓 الدورات والخدمات</a>
-      <a href="#footer" class="drawer-link">📞 اتصل بنا</a>
+      <button class="drawer-link" data-view="profile"><span class="dl-icon">👤</span><span class="dl-text">الملف الشخصي</span><span class="dl-arrow">‹</span></button>
+      <button class="drawer-link" data-view="security"><span class="dl-icon">🔒</span><span class="dl-text">الحساب والأمان</span><span class="dl-arrow">‹</span></button>
+      <button class="drawer-link" data-view="orders"><span class="dl-icon">📦</span><span class="dl-text">مركز الطلبات والسجلات</span><span class="dl-arrow">‹</span></button>
+      <button class="drawer-link dl-logout" id="drawerLogout"><span class="dl-icon">🚪</span><span class="dl-text">تسجيل الخروج</span><span class="dl-arrow">‹</span></button>
     </nav>
     <div class="drawer-tools">
-      <div class="drawer-tool-row"><span class="drawer-tool-label">💱 العملة:</span> <span id="drawerCurrencySlot" class="drawer-currency-slot"></span></div>
-      <button class="drawer-tool-btn" id="drawerThemeBtn">🌙 تبديل الوضع الليلي / النهاري</button>
+      <button class="drawer-tool-btn" id="drawerThemeBtn">🌙 / ☀️ تبديل الثيم</button>
+      <div class="drawer-lang">
+        <button class="lang-btn active" data-lang="ar">عربي</button>
+        <button class="lang-btn" data-lang="en">English</button>
+      </div>
     </div>
   </aside>
+
+  <!-- الواجهات المستقلة (Full-View) بنمط Midasbuy -->
+  <section class="full-view" id="view-profile">
+    <div class="fv-bar"><button class="fv-back" data-back>→ رجوع</button><h3>👤 الملف الشخصي</h3></div>
+    <div class="fv-body">
+      <div class="fv-card fv-user-card">
+        <span class="fv-avatar">👤</span>
+        <div><b id="fvProfileName">—</b><small id="fvProfilePhone" dir="ltr"></small></div>
+      </div>
+      <div class="fv-card">
+        <label>الاسم الكامل<input type="text" id="fvName" placeholder="اسمك" /></label>
+        <label>رقم الهاتف <small class="lock-note">🔒 معرّف الحساب الموثق — لا يمكن تعديله إلا عبر الدعم</small>
+          <input type="tel" id="fvPhone" readonly disabled /></label>
+        <button class="btn btn-primary btn-block" id="fvSaveName">💾 حفظ الاسم</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="full-view" id="view-security">
+    <div class="fv-bar"><button class="fv-back" data-back>→ رجوع</button><h3>🔒 الحساب والأمان</h3></div>
+    <div class="fv-body">
+      <div class="fv-card">
+        <h4>🔑 تغيير كلمة المرور</h4>
+        <label>كلمة المرور الحالية<input type="password" id="fvCurPass" /></label>
+        <label>كلمة المرور الجديدة (6 أحرف+)<input type="password" id="fvNewPass" /></label>
+        <button class="btn btn-primary btn-block" id="fvChangePass">تحديث كلمة المرور</button>
+      </div>
+      <div class="fv-card">
+        <h4>🟢 حالة الجلسة</h4>
+        <p class="fv-muted">أنت مسجّل الدخول حالياً بهذا الجهاز. لتأمين حسابك يمكنك إنهاء الجلسة من هنا.</p>
+        <button class="btn btn-outline btn-block" id="fvLogout">🚪 تسجيل الخروج من هذا الجهاز</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="full-view" id="view-orders">
+    <div class="fv-bar"><button class="fv-back" data-back>→ رجوع</button><h3>📦 مركز الطلبات والسجلات</h3></div>
+    <div class="fv-body">
+      <div class="fv-card fv-pdf-box">
+        <h4>📄 تصدير كشف حساب (PDF)</h4>
+        <div class="fv-dates">
+          <input type="date" id="repFrom" title="من تاريخ" /><input type="date" id="repTo" title="إلى تاريخ" />
+          <button class="btn btn-primary" id="v14PdfBtn">تصدير ⬇️</button>
+        </div>
+        <small class="fv-muted">اترك التواريخ فارغة لتصدير كل الطلبات.</small>
+      </div>
+      <div id="fvOrdersList" class="fv-orders"><p class="fv-muted">جاري تحميل طلباتك...</p></div>
+    </div>
+  </section>
 
   <main>
     <section class="hero" id="home">

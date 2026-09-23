@@ -983,3 +983,118 @@ loadAll();
   new MutationObserver(tick).observe(document.body, { childList: true, subtree: true });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', tick); else tick();
 })();
+
+
+/* ════════════ v15: قائمة جانبية + واجهات مستقلة بنمط Midasbuy ════════════ */
+(function () {
+  function closeDrawer() {
+    var d = document.getElementById('sideDrawer'), o = document.getElementById('drawerOverlay');
+    if (d) d.classList.remove('open'); if (o) o.classList.remove('show');
+    document.body.style.overflow = '';
+  }
+  function openView(name) {
+    closeDrawer();
+    document.querySelectorAll('.full-view').forEach(function (v) { v.classList.remove('show'); });
+    var el = document.getElementById('view-' + name);
+    if (el) { el.classList.add('show'); document.body.style.overflow = 'hidden'; window.scrollTo(0, 0); }
+    if (name === 'profile') fillProfile();
+    if (name === 'orders') renderFvOrders();
+  }
+  function closeViews() {
+    document.querySelectorAll('.full-view').forEach(function (v) { v.classList.remove('show'); });
+    document.body.style.overflow = '';
+  }
+  function user() { try { return JSON.parse(localStorage.getItem('ds_user') || sessionStorage.getItem('ds_user') || 'null'); } catch (e) { return null; } }
+  function fillProfile() {
+    var u = user() || {};
+    var s = function (id, v) { var el = document.getElementById(id); if (el) el.value = v || ''; if (el && el.tagName !== 'INPUT') el.textContent = v || ''; };
+    s('fvName', u.name); s('fvPhone', u.phone);
+    var n1 = document.getElementById('fvProfileName'); if (n1) n1.textContent = u.name || 'زائر';
+    var p1 = document.getElementById('fvProfilePhone'); if (p1) p1.textContent = u.phone || '';
+    var dn = document.getElementById('drawerUserName'); if (dn) dn.textContent = u.name || 'زائر';
+    var dp = document.getElementById('drawerUserPhone'); if (dp) dp.textContent = u.phone || '';
+  }
+  var CANCEL_WIN = 30;
+  try { API.req('/orders/cancel-window').then(function (r) { if (r && r.minutes != null) CANCEL_WIN = r.minutes; }); } catch (e) {}
+  async function renderFvOrders() {
+    var box = document.getElementById('fvOrdersList'); if (!box) return;
+    box.innerHTML = '<p class="fv-muted">جاري تحميل طلباتك...</p>';
+    try {
+      var res = await API.req('/orders/my-orders');
+      var list = Array.isArray(res) ? res : (res && res.orders) || [];
+      if (!list.length) { box.innerHTML = '<p class="fv-muted">لا توجد طلبات بعد.</p>'; return; }
+      box.innerHTML = '';
+      list.forEach(function (o) {
+        var items = (o.items || []).map(function (i) { return i.name; }).join(' + ');
+        var card = document.createElement('div'); card.className = 'fv-card fv-order';
+        var statusCls = o.status === 'مكتمل' ? 'st-done' : (o.status === 'ملغي' ? 'st-cancel' : 'st-pending');
+        card.innerHTML = '<div class="fv-order-head"><b>' + (o.code || '') + '</b><span class="fv-status ' + statusCls + '">' + o.status + '</span></div>'
+          + '<p class="fv-order-items">' + items + '</p>'
+          + '<div class="fv-order-meta"><span>💰 $' + o.total + '</span><span>🕒 ' + new Date(o.createdAt).toLocaleString('ar-EG') + '</span></div>'
+          + '<div class="fv-order-actions"></div>';
+        var act = card.querySelector('.fv-order-actions');
+        var inv = document.createElement('button'); inv.className = 'btn btn-outline fv-mini'; inv.textContent = '🧾 فاتورة PDF';
+        inv.onclick = function () { exportOrdersPdf([o], 'فاتورة طلب ' + o.code); };
+        act.appendChild(inv);
+        if (o.status === 'قيد المراجعة') {
+          var left = CANCEL_WIN * 60000 - (Date.now() - new Date(o.createdAt).getTime());
+          if (left > 0) {
+            var c = document.createElement('button'); c.className = 'btn-cancel-order fv-mini';
+            c.textContent = '🚫 إلغاء (' + Math.ceil(left / 60000) + 'د)';
+            c.onclick = async function () {
+              if (!confirm('تأكيد إلغاء الطلب ' + o.code + '؟')) return;
+              try { await API.req('/orders/' + o._id + '/cancel', { method: 'POST' }); showToast('✅ تم إلغاء الطلب'); renderFvOrders(); }
+              catch (e) { showToast('❌ ' + e.message); }
+            };
+            act.appendChild(c);
+          } else {
+            var sp = document.createElement('small'); sp.className = 'cancel-expired';
+            sp.textContent = 'انتهت مهلة الإلغاء التلقائي، يرجى التواصل مع الدعم';
+            act.appendChild(sp);
+          }
+        }
+        box.appendChild(card);
+      });
+    } catch (e) { box.innerHTML = '<p class="fv-muted">⚠️ ' + e.message + '</p>'; }
+  }
+  function doLogout() {
+    localStorage.removeItem('ds_token'); localStorage.removeItem('ds_user');
+    sessionStorage.removeItem('ds_token'); sessionStorage.removeItem('ds_user');
+    showToast('👋 تم تسجيل الخروج'); setTimeout(function () { location.reload(); }, 700);
+  }
+  function wire() {
+    document.querySelectorAll('.drawer-link[data-view]').forEach(function (b) {
+      if (b.dataset.w) return; b.dataset.w = '1';
+      b.addEventListener('click', function () { openView(b.dataset.view); });
+    });
+    document.querySelectorAll('[data-back]').forEach(function (b) {
+      if (b.dataset.w) return; b.dataset.w = '1';
+      b.addEventListener('click', closeViews);
+    });
+    var dl = document.getElementById('drawerLogout'); if (dl && !dl.dataset.w) { dl.dataset.w = '1'; dl.addEventListener('click', doLogout); }
+    var fl = document.getElementById('fvLogout'); if (fl && !fl.dataset.w) { fl.dataset.w = '1'; fl.addEventListener('click', doLogout); }
+    var sn = document.getElementById('fvSaveName');
+    if (sn && !sn.dataset.w) { sn.dataset.w = '1'; sn.addEventListener('click', async function () {
+      try {
+        var r = await API.req('/users/profile', { method: 'PUT', body: { name: document.getElementById('fvName').value.trim() } });
+        var u = user() || {}; u.name = (r.user && r.user.name) || u.name;
+        var store = localStorage.getItem('ds_user') ? localStorage : sessionStorage;
+        store.setItem('ds_user', JSON.stringify(u));
+        fillProfile(); showToast('✅ تم حفظ الاسم');
+      } catch (e) { showToast('❌ ' + e.message); }
+    }); }
+    var cp = document.getElementById('fvChangePass');
+    if (cp && !cp.dataset.w) { cp.dataset.w = '1'; cp.addEventListener('click', async function () {
+      try {
+        await API.req('/users/change-password', { method: 'PUT', body: { currentPassword: document.getElementById('fvCurPass').value, newPassword: document.getElementById('fvNewPass').value } });
+        document.getElementById('fvCurPass').value = ''; document.getElementById('fvNewPass').value = '';
+        showToast('✅ تم تحديث كلمة المرور');
+      } catch (e) { showToast('❌ ' + e.message); }
+    }); }
+    var dtb = document.getElementById('drawerThemeBtn'), tt = document.getElementById('themeToggle');
+    if (dtb && tt && !dtb.dataset.w) { dtb.dataset.w = '1'; dtb.addEventListener('click', function () { tt.click(); }); }
+    fillProfile();
+  }
+  new MutationObserver(wire).observe(document.body, { childList: true, subtree: true });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
+})();
