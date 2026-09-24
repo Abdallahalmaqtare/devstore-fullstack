@@ -624,3 +624,6 @@ input, select, textarea { font-family: inherit; }
 [data-theme="light"] .cqm-input{border-color:#ddd}
 .cqm-hint{display:block;color:var(--muted,#999);font-size:.74rem;margin-bottom:12px}
 .cqm-buy:disabled{opacity:.45;cursor:not-allowed}
+
+/* v31: ملخص بيانات الشحن المعبأة في السلة */
+.cart-auth-summary{font-size:.78rem;color:#a29bfe;background:rgba(108,92,231,.1);border:1px dashed rgba(108,92,231,.4);border-radius:8px;padding:5px 10px;margin-top:5px;word-break:break-all;direction:ltr;text-align:left}

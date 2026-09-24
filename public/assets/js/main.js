@@ -316,7 +316,10 @@ function renderCart() {
     cartTotal.textContent = '$0.00'; return;
   }
   cartItemsEl.innerHTML = cart.map(function (i) {
-    var acct = i.requiresAccountId
+    var isCustomItem = i.variant === 'custom' || /^custom_/.test(String(i.variant || ''));
+    var acct = isCustomItem
+      ? (i.accountId ? '<div class="cart-auth-summary">🔐 ' + i.accountId + '</div>' : '')
+      : i.requiresAccountId
       ? '<input type="text" class="cart-acct" data-acct="' + i.key + '" value="' + (i.accountId || '') + '" dir="ltr" placeholder="🆔 معرّف الحساب / Player ID (إلزامي)" />'
       : '';
     return '<div class="cart-item">' +
@@ -391,7 +394,7 @@ document.getElementById('payGrid').addEventListener('click', function (e) {
 /* ---------------- إتمام الطلب ---------------- */
 document.getElementById('checkoutBtn').addEventListener('click', async function () {
   if (!cart.length) return showToast('⚠️ السلة فارغة');
-  var missing = cart.find(function (i) { return i.requiresAccountId && !i.accountId; });
+  var missing = cart.find(function (i) { return i.requiresAccountId && !i.accountId && !(i.variant === 'custom' || /^custom_/.test(String(i.variant || ''))); });
   if (missing) {
     var inp = cartItemsEl.querySelector('[data-acct="' + missing.key + '"]');
     showToast('⚠️ أدخل معرّف الحساب لـ «' + missing.name + '»');
@@ -1542,7 +1545,24 @@ window.addEventListener('load', loadSiteSettings);
         g.variants = g.variants || [];
         g.variants.push({ name: 'custom_' + Date.now(), price: unit, finalPrice: unit, icon: '' });
         addVariantToCart(g.variants.length - 1);
-
+        try {
+          var _c = (typeof cart !== 'undefined' && Array.isArray(cart)) ? cart : null;
+          var _fromLS = false;
+          if (!_c) { try { _c = JSON.parse(localStorage.getItem('ds-cart') || '[]'); _fromLS = true; } catch (e2) {} }
+          if (_c && _c.length) {
+            for (var _i = _c.length - 1; _i >= 0; _i--) {
+              if (/^custom_/.test(String(_c[_i].variant || ''))) {
+                _c[_i].qty = qty; _c[_i].accountId = accountId; _c[_i].extra = accountId;
+                _c[_i].price = unit; _c[_i].name = g.name + ' — ' + qty + ' ' + (g.unit || 'وحدة');
+                _c[_i].requiresAccountId = false;
+                break;
+              }
+            }
+            if (_fromLS) { try { localStorage.setItem('ds-cart', JSON.stringify(_c)); } catch (e3) {} }
+          }
+          try { if (typeof saveCart === 'function') saveCart(); } catch (e5) {}
+          try { if (typeof renderCart === 'function') renderCart(); } catch (e6) {}
+        } catch (e4) {}
         g.variants.pop();
         showToast('✅ أُضيف إلى السلة: ' + g.name + ' × ' + qty);
         return;
@@ -1574,3 +1594,6 @@ window.addEventListener('load', loadSiteSettings);
     openCustomModal(g);
   }, true);
 })();
+
+
+
