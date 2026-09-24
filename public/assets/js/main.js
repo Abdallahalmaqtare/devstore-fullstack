@@ -1342,6 +1342,7 @@ loadAll();
     }
   }
   function addPayLogos() {
+    return; /* v27: معطّلة — الشعار يُبنى مرة واحدة داخل زر الدفع مباشرة */
     if (!pmCache.length) return;
     document.querySelectorAll('[class*="pay"], [class*="Pay"]').forEach(function (el) {
       if (el.dataset.v24logo || el.closest('#sideDrawer')) return;
@@ -1373,18 +1374,19 @@ loadAll();
     try {
       var b = await (await fetch('/api/settings/branding?t=' + Date.now(), { cache: 'no-store' })).json();
       if (b && b.siteName) {
-        var nameEl = document.querySelector('.brand-name');
-        if (nameEl) {
-          var parts = b.siteName.split(/\s+/);
-          nameEl.innerHTML = parts.length > 1 ? '<b>' + parts[0] + '</b>' + parts.slice(1).join(' ') : '<b>' + b.siteName + '</b>';
-        }
+        ['siteBrandName', 'siteBrandNameDrawer'].forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el) { var parts = b.siteName.split(/\s+/);
+            el.innerHTML = parts.length > 1 ? '<b>' + parts[0] + '</b>' + parts.slice(1).join(' ') : '<b>' + b.siteName + '</b>'; }
+        });
         document.title = b.siteName;
       }
       if (b && b.logoUrl) {
-        var iconEl = document.querySelector('.brand-icon');
-        if (iconEl) iconEl.innerHTML = '<img src="' + b.logoUrl + '" alt="logo" style="width:30px;height:30px;border-radius:9px;object-fit:cover;vertical-align:middle" />';
-        var drawerIcon = document.querySelector('.drawer-head .brand-icon');
-        if (drawerIcon) drawerIcon.innerHTML = '<img src="' + b.logoUrl + '" alt="logo" style="width:26px;height:26px;border-radius:8px;object-fit:cover;vertical-align:middle" />';
+        [['siteBrandLogo', 'siteBrandEmoji'], ['siteBrandLogoDrawer', 'siteBrandEmojiDrawer']].forEach(function (pair) {
+          var img = document.getElementById(pair[0]), emo = document.getElementById(pair[1]);
+          if (img) { img.src = b.logoUrl; img.style.display = 'inline-block'; }
+          if (emo) emo.style.display = 'none';
+        });
       }
     } catch (e) {}
   }

@@ -592,3 +592,8 @@ input, select, textarea { font-family: inherit; }
 .variant-row .buy-btn:active{transform:scale(.88);transition:transform .08s}
 /* ═══ v24: شعار بوابة الدفع في السلة (32×32 بزوايا ناعمة) ═══ */
 .pay-logo{width:32px;height:32px;border-radius:8px;object-fit:cover;flex:0 0 auto;margin-inline-end:8px;vertical-align:middle;border:1px solid rgba(255,255,255,.14);box-shadow:0 2px 6px rgba(0,0,0,.2);display:inline-block}
+
+/* ═══ v27: شعار بوابة الدفع — عنصر واحد، بلا تمطيط، بلا تكرار ═══ */
+.pay-btn{display:flex;align-items:center;justify-content:flex-start;gap:10px;direction:rtl}
+.pay-btn .pay-logo{width:40px;height:40px;max-width:40px;max-height:40px;min-width:40px;object-fit:contain;border-radius:8px;background:#fff;padding:3px;display:block;flex:0 0 auto;margin:0;border:1px solid rgba(0,0,0,.08);box-shadow:none;background-repeat:no-repeat}
+.pay-btn img:not(.pay-logo){display:none!important} /* إزالة أي صورة طافية زائدة داخل زر الدفع */
