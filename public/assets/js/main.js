@@ -394,7 +394,7 @@ document.getElementById('payGrid').addEventListener('click', function (e) {
 /* ---------------- إتمام الطلب ---------------- */
 document.getElementById('checkoutBtn').addEventListener('click', async function () {
   if (!cart.length) return showToast('⚠️ السلة فارغة');
-  var missing = cart.find(function (i) { return i.requiresAccountId && !i.accountId && i.variant !== 'custom'; });
+  var missing = cart.find(function (i) { return i.requiresAccountId && !i.accountId && !(i.variant === 'custom' || /^custom/.test(String(i.variant || ''))); });
   if (missing) {
     var inp = cartItemsEl.querySelector('[data-acct="' + missing.key + '"]');
     showToast('⚠️ أدخل معرّف الحساب لـ «' + missing.name + '»');
@@ -1537,70 +1537,42 @@ window.addEventListener('load', loadSiteSettings);
   }
 
   function addCustomToCart(g, qty, accountId) {
+    /* v33: إضافة مباشرة مضمونة للسلة — بلا وسيط، بنفس بنية عناصر السلة الأصلية */
     var unit = unitOf(g);
-    /* المسار الأساسي: عبر آلية الباقات الأصلية لضمان توافق السلة والخادم */
     try {
-      if (typeof addVariantToCart === 'function' && typeof openGroupId !== 'undefined') {
-        openGroupId = g._id;
-        g.variants = g.variants || [];
-        g.variants.push({ name: 'custom_' + Date.now(), price: unit, finalPrice: unit, icon: '' });
-        addVariantToCart(g.variants.length - 1);
-        /* v32: اكتب بيانات العميل مباشرة في آخر عنصر مُضاف لهذا المنتج — مطابقة مضمونة */
-        try {
-          var _arr = (typeof cart !== 'undefined' && Array.isArray(cart)) ? cart : null;
-          var _ls = false;
-          if (!_arr) { try { _arr = JSON.parse(localStorage.getItem('ds-cart') || '[]'); _ls = true; } catch (e2) {} }
-          if (_arr && _arr.length) {
-            for (var _i = _arr.length - 1; _i >= 0; _i--) {
-              if (String(_arr[_i].id) === String(g._id)) {
-                _arr[_i].qty = qty; _arr[_i].accountId = accountId; _arr[_i].extra = accountId;
-                _arr[_i].price = unit; _arr[_i].variant = 'custom';
-                _arr[_i].name = g.name + ' — ' + qty + ' ' + (g.unit || 'وحدة');
-                _arr[_i].requiresAccountId = false;
-                break;
-              }
-            }
-            if (_ls) { try { localStorage.setItem('ds-cart', JSON.stringify(_arr)); } catch (e3) {} }
-          }
-          try { if (typeof saveCart === 'function') saveCart(); } catch (e5) {}
-          try { if (typeof renderCart === 'function') renderCart(); } catch (e6) {}
-        } catch (e4) {}
-
-        try {
-          var _c = (typeof cart !== 'undefined' && Array.isArray(cart)) ? cart : null;
-          var _fromLS = false;
-          if (!_c) { try { _c = JSON.parse(localStorage.getItem('ds-cart') || '[]'); _fromLS = true; } catch (e2) {} }
-          if (_c && _c.length) {
-            for (var _i = _c.length - 1; _i >= 0; _i--) {
-              if (/^custom_/.test(String(_c[_i].variant || ''))) {
-                _c[_i].qty = qty; _c[_i].accountId = accountId; _c[_i].extra = accountId;
-                _c[_i].price = unit; _c[_i].name = g.name + ' — ' + qty + ' ' + (g.unit || 'وحدة');
-                _c[_i].requiresAccountId = false;
-                break;
-              }
-            }
-            if (_fromLS) { try { localStorage.setItem('ds-cart', JSON.stringify(_c)); } catch (e3) {} }
-          }
-          try { if (typeof saveCart === 'function') saveCart(); } catch (e5) {}
-          try { if (typeof renderCart === 'function') renderCart(); } catch (e6) {}
-        } catch (e4) {}
-        g.variants.pop();
-        showToast('✅ أُضيف إلى السلة: ' + g.name + ' × ' + qty);
-        return;
-      }
-    } catch (e) { console.error('custom-cart primary:', e); }
-    /* مسار احتياطي: كتابة مباشرة في مخزن السلة */
-    try {
-      var cart = JSON.parse(localStorage.getItem('ds-cart') || '[]');
-      cart.push({ id: g._id, variant: 'custom_' + Date.now(), extra: '', qty: qty, accountId: accountId,
-        name: g.name + ' — ' + qty + ' ' + (g.unit || 'وحدة'), price: unit });
-      localStorage.setItem('ds-cart', JSON.stringify(cart));
-        try { if (typeof saveCart === 'function') saveCart(); } catch (e) {}
-        try { if (typeof renderCart === 'function') renderCart(); } catch (e) {}
-        try { if (typeof updateCartBadge === 'function') updateCartBadge(); } catch (e) {}
-
-      showToast('✅ أُضيف إلى السلة: ' + g.name + ' × ' + qty);
-    } catch (e) { showToast('❌ تعذر الإضافة للسلة'); }
+      var item = {
+        id: g._id,
+        variant: 'custom',
+        extra: accountId,
+        name: g.name + ' — ' + qty + ' ' + (g.unit || 'وحدة'),
+        price: unit,
+        qty: qty,
+        accountId: accountId,
+        requiresAccountId: false   /* البيانات سُجلت في النافذة — لا حقل ولا فحص في السلة */
+      };
+      item.key = [item.id, item.variant, item.extra].filter(Boolean).join('|');
+      var wrote = false;
+      try {
+        if (typeof cart !== 'undefined' && Array.isArray(cart)) {
+          var dup = cart.find(function (x) { return x.key === item.key; });
+          if (dup) { dup.qty = qty; dup.accountId = accountId; dup.extra = accountId; dup.price = unit; }
+          else cart.push(item);
+          wrote = true;
+        }
+      } catch (e0) {}
+      try {
+        var stored = JSON.parse(localStorage.getItem('ds-cart') || '[]');
+        var d2 = stored.find(function (x) { return x.key === item.key; });
+        if (d2) { d2.qty = qty; d2.accountId = accountId; d2.extra = accountId; d2.price = unit; }
+        else stored.push(item);
+        localStorage.setItem('ds-cart', JSON.stringify(stored));
+        wrote = true;
+      } catch (e1) {}
+      try { if (typeof saveCart === 'function') saveCart(); } catch (e2) {}
+      try { if (typeof renderCart === 'function') renderCart(); } catch (e3) {}
+      if (wrote) showToast('✅ أُضيف إلى السلة: ' + g.name + ' × ' + qty);
+      else showToast('❌ تعذر الإضافة للسلة');
+    } catch (e) { console.error('addCustomToCart:', e); showToast('❌ تعذر الإضافة للسلة'); }
   }
 
   /* اعتراض النقر على منتجات الكمية المخصصة قبل المعالجات الأصلية (مرحلة الالتقاط) */

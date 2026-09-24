@@ -627,3 +627,6 @@ input, select, textarea { font-family: inherit; }
 
 /* v31: ملخص بيانات الشحن المعبأة في السلة */
 .cart-auth-summary{font-size:.78rem;color:#a29bfe;background:rgba(108,92,231,.1);border:1px dashed rgba(108,92,231,.4);border-radius:8px;padding:5px 10px;margin-top:5px;word-break:break-all;direction:ltr;text-align:left}
+
+/* v33: تنظيف عرض عناصر الكمية المخصصة في السلة */
+.cart-item small, .cart-item .item-variant { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
