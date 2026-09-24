@@ -940,3 +940,42 @@ document.getElementById('adminPassForm').addEventListener('submit', async e => {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { wire28(); load28(); });
   else { wire28(); load28(); }
 })();
+
+/* v32 fallback: ربط إظهار حقول الكمية المخصصة */
+document.addEventListener('change', function(e){
+  if (e.target && e.target.id === 'pPricingType') { if (window.syncCustomFields) window.syncCustomFields(); }
+});
+
+/* ═══ v32-fix: دالة إظهار/إخفاء حقول الكمية المخصصة — تعريف مضمون + ربط مباشر ═══ */
+(function () {
+  function syncCustom() {
+    var t = ((document.getElementById('pPricingType') || {}).value) || 'packages';
+    var type = ((document.getElementById('pType') || {}).value) || 'product';
+    var cf = document.getElementById('customAmountFields');
+    if (cf) cf.style.display = (t === 'custom_amount' && type === 'product') ? '' : 'none';
+    var prow = document.getElementById('pricingTypeRow');
+    if (prow) prow.style.display = (type === 'service') ? 'none' : '';
+    var vr = document.getElementById('variantRows');
+    if (vr) { var w = vr.closest('.form-row') || vr.parentElement; if (w) w.style.display = (t === 'custom_amount') ? 'none' : ''; }
+    var ab = document.getElementById('addVariantBtn'); if (ab) ab.style.display = (t === 'custom_amount') ? 'none' : '';
+  }
+  window.syncCustomFields = syncCustom;
+  window.__v32Sync = true;
+  function wireAll() {
+    var sel = document.getElementById('pPricingType');
+    if (sel && !sel.dataset.v32w) { sel.dataset.v32w = '1'; sel.addEventListener('change', syncCustom); sel.addEventListener('input', syncCustom); }
+    var tp = document.getElementById('pType');
+    if (tp && !tp.dataset.v32w) { tp.dataset.v32w = '1'; tp.addEventListener('change', syncCustom); }
+    syncCustom();
+  }
+  /* تفويض عام على المستند — يعمل حتى لو أُعيد رسم النموذج لاحقاً */
+  document.addEventListener('change', function (e) {
+    if (e.target && (e.target.id === 'pPricingType' || e.target.id === 'pType')) syncCustom();
+  });
+  var _lw = false;
+  new MutationObserver(function () {
+    if (_lw) return; _lw = true;
+    setTimeout(function () { _lw = false; wireAll(); }, 250);
+  }).observe(document.body, { childList: true, subtree: true });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireAll); else wireAll();
+})();

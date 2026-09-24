@@ -394,7 +394,7 @@ document.getElementById('payGrid').addEventListener('click', function (e) {
 /* ---------------- إتمام الطلب ---------------- */
 document.getElementById('checkoutBtn').addEventListener('click', async function () {
   if (!cart.length) return showToast('⚠️ السلة فارغة');
-  var missing = cart.find(function (i) { return i.requiresAccountId && !i.accountId && !(i.variant === 'custom' || /^custom_/.test(String(i.variant || ''))); });
+  var missing = cart.find(function (i) { return i.requiresAccountId && !i.accountId && i.variant !== 'custom'; });
   if (missing) {
     var inp = cartItemsEl.querySelector('[data-acct="' + missing.key + '"]');
     showToast('⚠️ أدخل معرّف الحساب لـ «' + missing.name + '»');
@@ -1460,7 +1460,7 @@ window.addEventListener('load', loadSiteSettings);
     var authHtml = '', hint = '';
     if (at === 'email_password') {
       authHtml = '<input type="email" id="cqmEmail" class="cqm-input" placeholder="البريد الإلكتروني" dir="ltr" />'
-        + '<input type="password" id="cqmPass" class="cqm-input" placeholder="كلمة المرور" dir="ltr" />';
+        + '<input type="text" id="cqmPass" class="cqm-input" placeholder="كلمة المرور (مرئية للتأكد)" dir="ltr" autocomplete="off" />';
       hint = '📧 الشحن عبر الحساب — أدخل البريد وكلمة المرور بدقة تامة';
     } else if (at === 'email_only') {
       authHtml = '<input type="email" id="cqmEmail" class="cqm-input" placeholder="البريد الإلكتروني (Supercell ID)" dir="ltr" />';
@@ -1545,6 +1545,27 @@ window.addEventListener('load', loadSiteSettings);
         g.variants = g.variants || [];
         g.variants.push({ name: 'custom_' + Date.now(), price: unit, finalPrice: unit, icon: '' });
         addVariantToCart(g.variants.length - 1);
+        /* v32: اكتب بيانات العميل مباشرة في آخر عنصر مُضاف لهذا المنتج — مطابقة مضمونة */
+        try {
+          var _arr = (typeof cart !== 'undefined' && Array.isArray(cart)) ? cart : null;
+          var _ls = false;
+          if (!_arr) { try { _arr = JSON.parse(localStorage.getItem('ds-cart') || '[]'); _ls = true; } catch (e2) {} }
+          if (_arr && _arr.length) {
+            for (var _i = _arr.length - 1; _i >= 0; _i--) {
+              if (String(_arr[_i].id) === String(g._id)) {
+                _arr[_i].qty = qty; _arr[_i].accountId = accountId; _arr[_i].extra = accountId;
+                _arr[_i].price = unit; _arr[_i].variant = 'custom';
+                _arr[_i].name = g.name + ' — ' + qty + ' ' + (g.unit || 'وحدة');
+                _arr[_i].requiresAccountId = false;
+                break;
+              }
+            }
+            if (_ls) { try { localStorage.setItem('ds-cart', JSON.stringify(_arr)); } catch (e3) {} }
+          }
+          try { if (typeof saveCart === 'function') saveCart(); } catch (e5) {}
+          try { if (typeof renderCart === 'function') renderCart(); } catch (e6) {}
+        } catch (e4) {}
+
         try {
           var _c = (typeof cart !== 'undefined' && Array.isArray(cart)) ? cart : null;
           var _fromLS = false;

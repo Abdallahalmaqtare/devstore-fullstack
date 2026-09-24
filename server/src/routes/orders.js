@@ -69,14 +69,15 @@ router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
         const q = Math.max(0, parseInt(i.qty) || 0);
         if (q < p.minQuantity || q > p.maxQuantity)
           throw Object.assign(new Error(`الكمية لـ «${p.name}» يجب أن تكون بين ${p.minQuantity} و ${p.maxQuantity}`), { status: 400 });
-        if (!String(i.accountId || '').trim())
+        const acct = String(i.accountId || i.extra || '').trim();
+        if (!acct)
           throw Object.assign(new Error(`بيانات الحساب مطلوبة لـ «${p.name}»`), { status: 400 });
         const ub = (p.unitPrice > 0 ? p.unitPrice : p.price);
         const up = p.isOnSale && p.discountPercent > 0 ? +(ub - ub * p.discountPercent / 100).toFixed(4) : ub;
         total += +(up * q).toFixed(2);
         return {
           product: p._id, name: `${p.name} — ${q} ${p.unit || 'وحدة'}`, variant: 'custom',
-          price: up, qty: q, extra: i.extra || '', accountId: String(i.accountId || '').trim(),
+          price: up, qty: q, extra: i.extra || acct || '', accountId: acct,
         };
       }
 
