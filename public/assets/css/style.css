@@ -54,21 +54,30 @@ input, select, textarea { font-family: inherit; }
   display: flex;
   align-items: center;
   justify-content: center;
-  width: auto;
-  height: 40px;
-  background: transparent !important;
-  border: none !important;
-  padding: 0 !important;
-  box-shadow: none !important;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: 14px;
+  background: var(--surface-2) !important;
+  /* تأثير التقعير الأنيق (Inset Depth) */
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.18),
+              inset -2px -2px 5px rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid var(--border) !important;
+  padding: 4px !important;
+  overflow: hidden;
+  transition: transform 0.2s ease;
 }
+
+.brand-icon:hover {
+  transform: scale(1.04);
+}
+
 .brand-icon img, #siteLogo {
-  max-height: 40px;
-  width: auto;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
-  border-radius: 0 !important;
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
+  border-radius: 10px;
   display: block;
 }
 .brand-name b { color: var(--primary); }
@@ -611,5 +620,19 @@ input, select, textarea { font-family: inherit; }
 
 /* ═══ v27: شعار بوابة الدفع — عنصر واحد، بلا تمطيط، بلا تكرار ═══ */
 .pay-btn{display:flex;align-items:center;justify-content:flex-start;gap:10px;direction:rtl}
-.pay-btn .pay-logo{width:40px;height:40px;max-width:40px;max-height:40px;min-width:40px;object-fit:contain;border-radius:8px;background:#fff;padding:3px;display:block;flex:0 0 auto;margin:0;border:1px solid rgba(0,0,0,.08);box-shadow:none;background-repeat:no-repeat}
-.pay-btn img:not(.pay-logo){display:none!important} /* إزالة أي صورة طافية زائدة داخل زر الدفع */
+.pay-btn .pay-logo {
+  width: 38px;
+  height: 38px;
+  max-width: 38px;
+  max-height: 38px;
+  min-width: 38px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+  display: block;
+  flex: 0 0 auto;
+  margin: 0;
+}.pay-btn img:not(.pay-logo){display:none!important} /* إزالة أي صورة طافية زائدة داخل زر الدفع */
