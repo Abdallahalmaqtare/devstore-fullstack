@@ -189,11 +189,10 @@ document.getElementById('productForm').addEventListener('submit', async e => {
     discountPercent: parseFloat(document.getElementById('pDisc').value || 0),
     pricingType: (document.getElementById('pPricingType') || {}).value || 'packages',
     authType: (document.getElementById('pAuthType') || {}).value || 'id_only',
-    unitPrice: (function(){ var mq=parseInt((document.getElementById('pMinQty')||{}).value)||0, mp=parseFloat((document.getElementById('pMinPrice')||{}).value)||0; return mq>0 ? +(mp/mq).toFixed(6) : 0; })(),
+    unitPrice: parseFloat((document.getElementById('pUnitPrice') || {}).value || 0),
     minQuantity: parseInt((document.getElementById('pMinQty') || {}).value || 1),
     maxQuantity: parseInt((document.getElementById('pMaxQty') || {}).value || 100000),
     step: parseInt((document.getElementById('pStep') || {}).value || 1),
-    unit: (document.getElementById('pUnitName') || {}).value || '',
     modes: type === 'service' ? ['online', 'onsite'] : [],
     meta: type === 'service' ? document.getElementById('pMeta').value.trim() : document.getElementById('pUnit').value.trim(),
     contactWhatsapp: type === 'service' ? normalizePhone(document.getElementById('pContactWa').value) : '',
@@ -262,8 +261,7 @@ document.getElementById('productsTable').addEventListener('click', async e => {
     document.getElementById('pDisc').value = p.discountPercent || '';
     if (document.getElementById('pPricingType')) document.getElementById('pPricingType').value = p.pricingType || 'packages';
     if (document.getElementById('pAuthType')) document.getElementById('pAuthType').value = p.authType || 'id_only';
-    if (document.getElementById('pMinPrice')) document.getElementById('pMinPrice').value = (p.unitPrice && p.minQuantity) ? +(p.unitPrice * p.minQuantity).toFixed(2) : '';
-    if (document.getElementById('pUnitName')) document.getElementById('pUnitName').value = p.unit || '';
+    if (document.getElementById('pUnitPrice')) document.getElementById('pUnitPrice').value = p.unitPrice || '';
     if (document.getElementById('pMinQty')) document.getElementById('pMinQty').value = p.minQuantity || '';
     if (document.getElementById('pMaxQty')) document.getElementById('pMaxQty').value = p.maxQuantity || '';
     if (document.getElementById('pStep')) document.getElementById('pStep').value = p.step || '';
@@ -945,29 +943,4 @@ document.getElementById('adminPassForm').addEventListener('submit', async e => {
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { wire28(); load28(); });
   else { wire28(); load28(); }
-})();
-
-function syncCustomFields() {
-  var t = (document.getElementById('pPricingType') || {}).value || 'packages';
-  var type = (document.getElementById('pType') || {}).value || 'product';
-  var isCustom = (t === 'custom_amount' && type === 'product');
-  var cf = document.getElementById('customAmountFields'); if (cf) cf.style.display = isCustom ? '' : 'none';
-  var prow = document.getElementById('pricingTypeRow'); if (prow) prow.style.display = type === 'service' ? 'none' : '';
-  var vr = document.getElementById('variantRows');
-  if (vr) { var w = vr.closest('.panel') || vr.closest('.form-row') || vr.parentElement; if (w) w.style.display = isCustom ? 'none' : ''; }
-  var ab = document.getElementById('addVariantBtn'); if (ab) { var aw = ab.closest('.form-row') || ab.parentElement; (aw || ab).style.display = isCustom ? 'none' : ''; }
-  var pp = document.getElementById('pPrice'); if (pp) { var pl = pp.closest('label'); if (pl) pl.style.display = isCustom ? 'none' : ''; }
-  var sr = document.querySelector('.sale-row'); if (sr) sr.style.display = isCustom ? 'none' : '';
-}
-window.syncCustomFields = syncCustomFields;
-
-(function(){
-  function wireSync(){
-    ['pPricingType','pType'].forEach(function(id){
-      var el=document.getElementById(id);
-      if(el && !el.dataset.v30sync){ el.dataset.v30sync='1'; el.addEventListener('change', window.syncCustomFields); }
-    });
-    if (window.syncCustomFields) window.syncCustomFields();
-  }
-  if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', wireSync); else wireSync();
 })();
