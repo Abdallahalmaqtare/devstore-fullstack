@@ -1493,7 +1493,7 @@ window.addEventListener('load', loadSiteSettings);
       document.getElementById('cqmTotal').textContent = '$' + total;
       document.getElementById('cqmBadge').textContent = '$' + total;
       var warn = document.getElementById('cqmWarn');
-      if (q < min) { warn.textContent = '⚠️ يجب أن تكون الكمية أكبر من أو تساوي ' + min; buyBtn.disabled = true; }
+      if (q < min) { warn.textContent = '⚠️ أقل كمية للشحن هي ' + min + ' ' + (g.unit || 'وحدة'); buyBtn.disabled = true; }
       else if (q > max) { warn.textContent = '⚠️ الحد الأقصى المسموح به ' + max; buyBtn.disabled = true; }
       else { warn.textContent = ''; buyBtn.disabled = false; }
     }
@@ -1567,4 +1567,24 @@ window.addEventListener('load', loadSiteSettings);
     e.preventDefault(); e.stopImmediatePropagation();
     openCustomModal(g);
   }, true);
+})();
+
+
+/* v30: تعبئة حقل الآيدي في السلة تلقائياً بالقيمة المدخلة في النافذة */
+(function () {
+  function fillCartAcct() {
+    try {
+      var v = window.__dsPendingAcct;
+      if (!v) return;
+      document.querySelectorAll('.cart-acct, input[placeholder*="معرّف الحساب"], input[placeholder*="الايدي"], input[placeholder*="ID"]').forEach(function (el) {
+        if (!el.value) el.value = v;
+      });
+      window.__dsPendingAcct = null;
+    } catch (e) {}
+  }
+  var l30 = false;
+  new MutationObserver(function () {
+    if (l30) return; l30 = true;
+    setTimeout(function () { l30 = false; fillCartAcct(); }, 250);
+  }).observe(document.body, { childList: true, subtree: true });
 })();
