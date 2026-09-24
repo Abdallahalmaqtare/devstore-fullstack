@@ -835,3 +835,47 @@ document.getElementById('adminPassForm').addEventListener('submit', async e => {
   function init() { injectBranding(); loadPm().then(enhancePayRows); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
+
+
+/* ════════════ v25: ربط ثابت لهوية المتجر + شعار طريقة الدفع ════════════ */
+(function () {
+  /* اعتراض إنشاء/تعديل طرق الدفع لإلحاق logoUrl من الحقل الثابت */
+  var _f = window.fetch;
+  window.fetch = function (url, opts) {
+    try {
+      if (opts && opts.body && typeof opts.body === 'string' && /\/settings\/payment-methods/.test(String(url)) && /POST|PUT/i.test(opts.method || 'GET')) {
+        var logoEl = document.getElementById('pmLogoUrl');
+        if (logoEl) {
+          var body = JSON.parse(opts.body);
+          if (body && body.logoUrl == null) body.logoUrl = logoEl.value || '';
+          opts.body = JSON.stringify(body);
+        }
+      }
+    } catch (e) {}
+    return _f.apply(this, arguments);
+  };
+  /* لوحة الهوية الثابتة: تحميل القيم + الحفظ */
+  async function loadBrand() {
+    try {
+      var b = await API.req('/settings/branding');
+      var n = document.getElementById('brandNameStatic'), l = document.getElementById('brandLogoStatic');
+      if (n && b.siteName) n.value = b.siteName;
+      if (l && b.logoUrl) { l.value = b.logoUrl;
+        document.getElementById('brandLogoPrev').innerHTML = '<img src="' + b.logoUrl + '" style="width:44px;height:44px;border-radius:12px;object-fit:cover" />'; }
+    } catch (e) {}
+  }
+  function wireBrand() {
+    var btn = document.getElementById('brandSaveStatic');
+    if (!btn || btn.dataset.v25) return; btn.dataset.v25 = '1';
+    btn.onclick = async function () {
+      try {
+        await API.req('/settings/branding', { method: 'PUT', body: {
+          siteName: document.getElementById('brandNameStatic').value,
+          logoUrl: document.getElementById('brandLogoStatic').value } });
+        showToast('✅ تم حفظ هوية المتجر — افتح الصفحة الرئيسية لرؤيتها');
+      } catch (e) { showToast('❌ ' + e.message); }
+    };
+  }
+  function init() { loadBrand(); wireBrand(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();

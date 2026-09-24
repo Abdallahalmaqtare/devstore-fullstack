@@ -9,9 +9,9 @@ router.get('/payment-methods/all', authRequired, adminOnly, async (req, res) => 
   res.json(await PaymentMethod.find().sort('createdAt').lean());
 });
 router.post('/payment-methods', authRequired, adminOnly, async (req, res) => {
-  const { name, account, instructions } = req.body || {};
+  const { name, account, instructions, logoUrl } = req.body || {};
   if (!name || !account) return res.status(400).json({ message: 'الاسم ورقم الحساب مطلوبان' });
-  res.status(201).json(await PaymentMethod.create({ name, account, instructions: instructions || '' }));
+  res.status(201).json(await PaymentMethod.create({ name, account, instructions: instructions || '', logoUrl: String(logoUrl || '').trim() }));
 });
 router.put('/payment-methods/:id', authRequired, adminOnly, async (req, res) => {
   const pm = await PaymentMethod.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });

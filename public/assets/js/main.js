@@ -1363,3 +1363,29 @@ loadAll();
   function init() { applyBranding(); loadPm().then(addPayLogos); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
+
+
+/* ════════════ v25: تطبيق هوية المتجر بصلابة (تصحيح عدم الظهور) ════════════ */
+(function () {
+  async function applyBranding25() {
+    try {
+      var b = await API.req('/settings/branding?t=' + Date.now());
+      if (b && b.siteName) {
+        var nameEl = document.querySelector('.brand-name');
+        if (nameEl) {
+          var parts = b.siteName.split(/\s+/);
+          nameEl.innerHTML = parts.length > 1 ? '<b>' + parts[0] + '</b>' + parts.slice(1).join(' ') : '<b>' + b.siteName + '</b>';
+        }
+        document.title = b.siteName;
+      }
+      if (b && b.logoUrl) {
+        var iconEl = document.querySelector('.brand-icon');
+        if (iconEl) iconEl.innerHTML = '<img src="' + b.logoUrl + '" alt="logo" style="width:30px;height:30px;border-radius:9px;object-fit:cover;vertical-align:middle" />';
+        var drawerIcon = document.querySelector('.drawer-head .brand-icon');
+        if (drawerIcon) drawerIcon.innerHTML = '<img src="' + b.logoUrl + '" alt="logo" style="width:26px;height:26px;border-radius:8px;object-fit:cover;vertical-align:middle" />';
+      }
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyBranding25); else applyBranding25();
+  window.addEventListener('load', applyBranding25);
+})();

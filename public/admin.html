@@ -257,12 +257,20 @@
       </section>
 
       <section class="admin-page" id="page-settings">
+        <div class="panel" id="brandBoxStatic">
+          <h3>🏷️ هوية المتجر (الاسم والشعار)</h3>
+          <label>اسم الموقع<input type="text" id="brandNameStatic" placeholder="DevStore" /></label>
+          <label>رابط الشعار / الأيقونة<input type="url" id="brandLogoStatic" dir="ltr" placeholder="https://.../logo.png" /></label>
+          <div id="brandLogoPrev" style="margin:6px 0"></div>
+          <button type="button" class="btn btn-primary" id="brandSaveStatic">💾 حفظ الهوية</button>
+        </div>
         <div class="panel">
           <h3>➕ إضافة طريقة دفع يدوية</h3>
           <form class="admin-form" id="pmForm">
             <div class="form-row">
               <label>الاسم<input type="text" id="pmName" required placeholder="الكريمي جوال / النجم" /></label>
               <label>الحساب / المحفظة<input type="text" id="pmAccount" required /></label>
+              <label>شعار البوابة (رابط صورة — اختياري)<input type="url" id="pmLogoUrl" dir="ltr" placeholder="https://.../logo.png" /></label>
             </div>
             <label>تعليمات (اختياري)<input type="text" id="pmInstructions" placeholder="حوّل باسم DevStore ثم ارفع السند" /></label>
             <div class="form-actions"><button type="submit" class="btn btn-primary">💾 إضافة</button></div>
