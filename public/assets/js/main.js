@@ -1438,16 +1438,21 @@ window.addEventListener('load', loadSiteSettings);
   try { fetch('/api/products').then(function (r) { return r.json(); }).then(function (l) { _prodCache = l; }); } catch (e) {}
 
   function unitOf(g) {
-    var base = (g.unitPrice != null && g.unitPrice > 0) ? g.unitPrice : (g.price || 0);
-    if (g.isOnSale && g.discountPercent > 0) return +(base - base * g.discountPercent / 100).toFixed(4);
-    return base;
+    /* v30: الاشتقاق التلقائي — سعر الوحدة = سعر الحد الأدنى ÷ الحد الأدنى */
+    var base = 0;
+    if (g.minQtyPrice > 0 && g.minQuantity > 0) base = g.minQtyPrice / g.minQuantity;
+    else if (g.unitPrice != null && g.unitPrice > 0) base = g.unitPrice;
+    else base = g.price || 0;
+    if (g.isOnSale && g.discountPercent > 0) return +(base - base * g.discountPercent / 100).toFixed(6);
+    return +base.toFixed ? +base.toFixed(6) : base;
   }
   function closeCqm() { var m = document.getElementById('cqmOverlay'); if (m) m.remove(); document.body.style.overflow = ''; }
 
   function openCustomModal(g) {
     closeCqm();
     var unit = unitOf(g);
-    var min = g.minQuantity || 1, max = g.maxQuantity || 100000, step = g.step || 1;
+    var min = g.minQuantity || 1, max = g.maxQuantity || 1000000;
+    var step = (g.step && g.step > 1) ? g.step : Math.max(1, Math.round(min / 100));
     var at = g.authType || 'id_only';
     var authHtml = '', hint = '';
     if (at === 'email_password') {
@@ -1469,7 +1474,7 @@ window.addEventListener('load', loadSiteSettings);
       '<div class="cqm-box" dir="rtl">'
       + '<button type="button" class="cqm-close" id="cqmClose">✕</button>'
       + '<div class="cqm-head">' + iconHtml
-      + '<div class="cqm-title"><b>' + g.name + '</b><small>سعر الوحدة: $' + unit + '</small></div>'
+      + '<div class="cqm-title"><b>' + g.name + '</b><small>' + min + ' وحدة = $' + (g.minQtyPrice || +(unit * min).toFixed(2)) + '</small></div>'
       + '<span class="cqm-badge" id="cqmBadge">$0.00</span></div>'
       + '<label class="cqm-label">🔢 الكمية المطلوبة</label>'
       + '<div class="cqm-qty"><button type="button" id="cqmMinus">−</button>'
@@ -1523,6 +1528,7 @@ window.addEventListener('load', loadSiteSettings);
       }
       addCustomToCart(g, q, accountId);
       closeCqm();
+      setTimeout(function () { var cb = document.getElementById('cartBtn'); if (cb) cb.click(); }, 250);
     };
     recalc();
   }

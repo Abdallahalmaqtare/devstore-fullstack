@@ -23,7 +23,10 @@ function sanitizeProduct(body) {
   b.pricingType = b.pricingType === 'custom_amount' ? 'custom_amount' : 'packages';
   b.authType = ['id_only','email_password','email_only'].indexOf(b.authType) !== -1 ? b.authType : 'id_only';
   b.unitPrice = Math.max(0, parseFloat(b.unitPrice) || 0);
+  b.minQtyPrice = Math.max(0, parseFloat(b.minQtyPrice) || 0);
   b.minQuantity = Math.max(1, parseInt(b.minQuantity) || 1);
+  /* v30: تبسيط — سعر الوحدة يُشتق تلقائياً من سعر الحد الأدنى ÷ الحد الأدنى */
+  if (b.minQtyPrice > 0) b.unitPrice = +(b.minQtyPrice / b.minQuantity).toFixed(6);
   b.maxQuantity = Math.max(b.minQuantity, parseInt(b.maxQuantity) || 100000);
   b.step = Math.max(1, parseInt(b.step) || 1);
   if (b.pricingType === 'custom_amount') { b.variants = []; b.price = b.unitPrice; b.finalPrice = b.unitPrice; b.requiresAccountId = true; }

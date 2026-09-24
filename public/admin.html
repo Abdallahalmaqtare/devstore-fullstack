@@ -142,10 +142,9 @@
                 </label>
               </div>
               <div class="form-row" id="customAmountFields" style="display:none">
-                <label>سعر الوحدة ($)<input type="number" id="pUnitPrice" step="0.0001" min="0" placeholder="0.001" /></label>
-                <label>الحد الأدنى للكمية<input type="number" id="pMinQty" min="1" placeholder="1000" /></label>
-                <label>الحد الأقصى<input type="number" id="pMaxQty" min="1" placeholder="100000" /></label>
-                <label>خطوة العداد<input type="number" id="pStep" min="1" placeholder="100" /></label>
+                <label>🔢 الحد الأدنى للكمية<input type="number" id="pMinQty" min="1" placeholder="مثال: 1000" /></label>
+                <label>💵 سعر هذا الحد الأدنى ($)<input type="number" id="pMinQtyPrice" step="0.01" min="0" placeholder="مثال: 1.00" /></label>
+                <small style="grid-column:1/-1;color:var(--muted,#999);font-size:.75rem">مثال: 1000 كوينز بسعر 1.00$ — وسيُحسب أي عدد يدخله العميل نسبياً تلقائياً (2000 ← 2$، 1500 ← 1.50$)</small>
               </div>
               <div class="form-row sale-row">
                 <label class="check-row"><input type="checkbox" id="pOnSale" /> 🔥 تفعيل تخفيض / عرض خاص</label>

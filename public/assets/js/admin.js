@@ -189,10 +189,8 @@ document.getElementById('productForm').addEventListener('submit', async e => {
     discountPercent: parseFloat(document.getElementById('pDisc').value || 0),
     pricingType: (document.getElementById('pPricingType') || {}).value || 'packages',
     authType: (document.getElementById('pAuthType') || {}).value || 'id_only',
-    unitPrice: parseFloat((document.getElementById('pUnitPrice') || {}).value || 0),
+    minQtyPrice: parseFloat((document.getElementById('pMinQtyPrice') || {}).value || 0),
     minQuantity: parseInt((document.getElementById('pMinQty') || {}).value || 1),
-    maxQuantity: parseInt((document.getElementById('pMaxQty') || {}).value || 100000),
-    step: parseInt((document.getElementById('pStep') || {}).value || 1),
     modes: type === 'service' ? ['online', 'onsite'] : [],
     meta: type === 'service' ? document.getElementById('pMeta').value.trim() : document.getElementById('pUnit').value.trim(),
     contactWhatsapp: type === 'service' ? normalizePhone(document.getElementById('pContactWa').value) : '',
@@ -261,10 +259,8 @@ document.getElementById('productsTable').addEventListener('click', async e => {
     document.getElementById('pDisc').value = p.discountPercent || '';
     if (document.getElementById('pPricingType')) document.getElementById('pPricingType').value = p.pricingType || 'packages';
     if (document.getElementById('pAuthType')) document.getElementById('pAuthType').value = p.authType || 'id_only';
-    if (document.getElementById('pUnitPrice')) document.getElementById('pUnitPrice').value = p.unitPrice || '';
     if (document.getElementById('pMinQty')) document.getElementById('pMinQty').value = p.minQuantity || '';
-    if (document.getElementById('pMaxQty')) document.getElementById('pMaxQty').value = p.maxQuantity || '';
-    if (document.getElementById('pStep')) document.getElementById('pStep').value = p.step || '';
+    if (document.getElementById('pMinQtyPrice')) document.getElementById('pMinQtyPrice').value = p.minQtyPrice || (p.unitPrice && p.minQuantity ? +(p.unitPrice * p.minQuantity).toFixed(2) : '');
     if (window.syncCustomFields) window.syncCustomFields();
     document.getElementById('pImageFile').value = '';
     const _pv = document.getElementById('pImagePreview');

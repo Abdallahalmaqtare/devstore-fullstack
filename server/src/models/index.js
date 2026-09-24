@@ -55,6 +55,7 @@ const productSchema = new Schema({
   /* v29: نظام الكمية المخصصة */
   pricingType: { type: String, enum: ['packages', 'custom_amount'], default: 'packages' },
   unitPrice: { type: Number, default: 0 },
+  minQtyPrice: { type: Number, default: 0 },  // سعر الحد الأدنى — يُشتق منه سعر الوحدة
   minQuantity: { type: Number, default: 1 },
   maxQuantity: { type: Number, default: 100000 },
   step: { type: Number, default: 1 },
