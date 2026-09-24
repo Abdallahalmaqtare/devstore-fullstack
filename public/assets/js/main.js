@@ -1313,3 +1313,53 @@ loadAll();
   function init() { ensureCache().then(upgradeIcons); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
+
+
+/* ════════════ v24: هوية المتجر الديناميكية + شعارات الدفع في السلة ════════════ */
+(function () {
+  /* ── تطبيق الهوية في الهيدر لكل الزوار ── */
+  async function applyBranding() {
+    try {
+      var b = await API.req('/settings/branding');
+      var nameEl = document.querySelector('.brand-name');
+      if (nameEl && b.siteName) {
+        var parts = b.siteName.split(/\s+/);
+        nameEl.innerHTML = parts.length > 1 ? '<b>' + parts[0] + '</b>' + parts.slice(1).join(' ') : '<b>' + b.siteName + '</b>';
+      }
+      var iconEl = document.querySelector('.brand-icon');
+      if (iconEl && b.logoUrl) {
+        iconEl.innerHTML = '<img src="' + b.logoUrl + '" alt="" style="width:30px;height:30px;border-radius:9px;object-fit:cover;vertical-align:middle" />';
+      }
+    } catch (e) {}
+  }
+  /* ── شعارات بوابات الدفع في السلة ── */
+  var pmCache = [];
+  async function loadPm() {
+    for (const ep of ['/settings/payment-methods', '/payment-methods']) {
+      try { var r = await API.req(ep); if (Array.isArray(r)) { pmCache = r; return; } } catch (e) {}
+    }
+  }
+  function addPayLogos() {
+    if (!pmCache.length) return;
+    document.querySelectorAll('[class*="pay"], [class*="Pay"]').forEach(function (el) {
+      if (el.dataset.v24logo || el.closest('#sideDrawer')) return;
+      var name = '';
+      pmCache.forEach(function (m) { if (m.name && m.logoUrl && el.textContent.indexOf(m.name) !== -1 && m.name.length > name.length) name = m.name; });
+      if (!name) return;
+      var m = pmCache.find(function (x) { return x.name === name; });
+      if (!m || !m.logoUrl) return;
+      el.dataset.v24logo = '1';
+      var img = document.createElement('img');
+      img.src = m.logoUrl; img.alt = m.name; img.className = 'pay-logo';
+      img.onerror = function () { this.style.display = 'none'; };
+      el.insertBefore(img, el.firstChild);
+    });
+  }
+  var l24 = false;
+  new MutationObserver(function () {
+    if (l24) return; l24 = true;
+    setTimeout(function () { l24 = false; addPayLogos(); }, 400);
+  }).observe(document.body, { childList: true, subtree: true });
+  function init() { applyBranding(); loadPm().then(addPayLogos); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();

@@ -67,6 +67,7 @@ const productSchema = new Schema({
 /* ===== طرق الدفع ===== */
 const paymentMethodSchema = new Schema({
   name: { type: String, required: true },
+  logoUrl: { type: String, default: '' },  // شعار بوابة الدفع
   account: { type: String, required: true },
   instructions: { type: String, default: '' },
   active: { type: Boolean, default: true },

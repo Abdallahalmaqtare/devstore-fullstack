@@ -766,3 +766,72 @@ document.getElementById('adminPassForm').addEventListener('submit', async e => {
   }).observe(document.body, { childList: true, subtree: true });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', injectImport); else injectImport();
 })();
+
+
+/* ════════════ v24: هوية المتجر + شعارات بوابات الدفع ════════════ */
+(function () {
+  /* ── حقول الهوية في الإعدادات ── */
+  async function injectBranding() {
+    if (document.getElementById('brandBox')) return;
+    var host = document.getElementById('cancelWinBox');
+    if (!host) { var panels = document.querySelectorAll('.panel'); host = panels[panels.length - 1]; }
+    if (!host) return;
+    var box = document.createElement('div');
+    box.id = 'brandBox'; box.className = 'panel';
+    box.innerHTML = '<h3>🏷️ هوية المتجر (الشعار والاسم)</h3>'
+      + '<label>اسم الموقع<input type="text" id="brandName" placeholder="DevStore" /></label>'
+      + '<label>رابط الشعار / الأيقونة (URL)<input type="url" id="brandLogoUrl" placeholder="https://.../logo.png" dir="ltr" /></label>'
+      + '<div id="brandLogoPreview" style="margin:6px 0"></div>'
+      + '<button class="btn btn-primary" id="brandSave">💾 حفظ الهوية</button>';
+    host.parentElement.insertBefore(box, host);
+    try {
+      var b = await API.req('/settings/branding');
+      if (b.siteName) document.getElementById('brandName').value = b.siteName;
+      if (b.logoUrl) { document.getElementById('brandLogoUrl').value = b.logoUrl;
+        document.getElementById('brandLogoPreview').innerHTML = '<img src="' + b.logoUrl + '" style="width:44px;height:44px;border-radius:12px;object-fit:cover" />'; }
+    } catch (e) {}
+    document.getElementById('brandSave').onclick = async function () {
+      try {
+        await API.req('/settings/branding', { method: 'PUT', body: { siteName: document.getElementById('brandName').value, logoUrl: document.getElementById('brandLogoUrl').value } });
+        showToast('✅ تم حفظ هوية المتجر — ستظهر لكل الزوار فوراً');
+      } catch (e) { showToast('❌ ' + e.message); }
+    };
+  }
+  /* ── زر شعار لكل طريقة دفع ── */
+  var pmCache = [];
+  async function loadPm() {
+    for (const ep of ['/settings/payment-methods', '/payment-methods']) {
+      try { var r = await API.req(ep); if (Array.isArray(r) && r.length) { pmCache = r; return; } } catch (e) {}
+    }
+  }
+  function enhancePayRows() {
+    var host = document.getElementById('payMethods');
+    if (!host) return;
+    host.querySelectorAll('tr, .pm-row, li, div').forEach(function (row) {
+      if (row.dataset.v24logo) return;
+      var name = '';
+      pmCache.forEach(function (m) { if (m.name && row.textContent.indexOf(m.name) !== -1 && m.name.length > name.length) name = m.name; });
+      if (!name) return;
+      row.dataset.v24logo = '1';
+      var m = pmCache.find(function (x) { return x.name === name; });
+      var b = document.createElement('button');
+      b.className = 'row-btn'; b.textContent = '🖼️'; b.title = 'تعيين شعار البوابة';
+      b.onclick = async function () {
+        var url = prompt('رابط شعار "' + name + '" (URL):', (m && m.logoUrl) || '');
+        if (url === null) return;
+        try {
+          await API.req('/settings/paymethod-logo', { method: 'PUT', body: { id: m && m._id, name: name, logoUrl: url } });
+          showToast('✅ تم حفظ الشعار'); loadPm().then(enhancePayRows);
+        } catch (e) { showToast('❌ ' + e.message); }
+      };
+      row.appendChild(b);
+    });
+  }
+  var l24 = false;
+  new MutationObserver(function () {
+    if (l24) return; l24 = true;
+    setTimeout(function () { l24 = false; injectBranding(); enhancePayRows(); }, 300);
+  }).observe(document.body, { childList: true, subtree: true });
+  function init() { injectBranding(); loadPm().then(enhancePayRows); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
