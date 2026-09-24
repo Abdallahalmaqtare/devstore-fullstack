@@ -899,3 +899,35 @@ document.getElementById('adminPassForm').addEventListener('submit', async e => {
   function init() { loadBrand(); wireBrand(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();
+
+
+/* ═══ v28: حفظ الهوية عبر المسار الموحد PUT /api/settings ═══ */
+(function () {
+  function wire28() {
+    var btn = document.getElementById('brandSaveStatic');
+    if (!btn || btn.dataset.v28) return; btn.dataset.v28 = '1';
+    btn.onclick = async function () {
+      var name = document.getElementById('brandNameStatic').value.trim();
+      var logo = document.getElementById('brandLogoStatic').value.trim();
+      try {
+        await API.req('/settings', { method: 'PUT', body: { siteName: name, siteLogo: logo } });
+        showToast('✅ تم الحفظ بنجاح — حدّث الصفحة الرئيسية لرؤية التغيير');
+      } catch (e) {
+        /* احتياط: المسار القديم */
+        try { await API.req('/settings/branding', { method: 'PUT', body: { siteName: name, logoUrl: logo } }); showToast('✅ تم الحفظ بنجاح'); }
+        catch (e2) { showToast('❌ ' + e2.message); }
+      }
+    };
+  }
+  async function load28() {
+    try {
+      var d = await (await fetch('/api/settings?t=' + Date.now(), { cache: 'no-store' })).json();
+      var n = document.getElementById('brandNameStatic'), l = document.getElementById('brandLogoStatic');
+      if (n && d.siteName) n.value = d.siteName;
+      if (l && d.siteLogo) { l.value = d.siteLogo;
+        document.getElementById('brandLogoPrev').innerHTML = '<img src="' + d.siteLogo + '" style="width:44px;height:44px;border-radius:12px;object-fit:contain;background:#fff;padding:3px" />'; }
+    } catch (e) {}
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { wire28(); load28(); });
+  else { wire28(); load28(); }
+})();

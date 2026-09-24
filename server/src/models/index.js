@@ -116,6 +116,7 @@ const currencySchema = new Schema({
 
 /* ===== إعدادات الموقع ===== */
 const settingsSchema = new Schema({
+  value: { type: String, default: '' },  // قيمة عامة للمفاتيح المفردة (siteName, logoUrl, cancelWindowMinutes...)
   key: { type: String, unique: true, default: 'site' },
   whatsapp: { type: String, default: '967700000000' },
   telegram: { type: String, default: 'devstore_support' },

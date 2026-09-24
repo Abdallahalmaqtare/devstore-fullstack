@@ -1393,3 +1393,33 @@ loadAll();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', applyBranding25); else applyBranding25();
   window.addEventListener('load', applyBranding25);
 })();
+
+
+/* ═══ v28: جلب إعدادات الموقع ديناميكياً فور التحميل (siteName + siteLogo) ═══ */
+async function loadSiteSettings() {
+  try {
+    const res = await fetch('/api/settings?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    var name = data.siteName || '', logo = data.siteLogo || '';
+    if (name) {
+      ['siteBrandName', 'siteBrandNameDrawer'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) { var parts = name.split(/\s+/);
+          el.innerHTML = parts.length > 1 ? '<b>' + parts[0] + '</b>' + parts.slice(1).join(' ') : '<b>' + name + '</b>'; }
+      });
+      var legacy = document.querySelector('.brand-name:not(#siteBrandName):not(#siteBrandNameDrawer)');
+      if (legacy) legacy.innerHTML = '<b>' + name + '</b>';
+      document.title = name;
+    }
+    if (logo) {
+      [['siteBrandLogo', 'siteBrandEmoji'], ['siteBrandLogoDrawer', 'siteBrandEmojiDrawer']].forEach(function (pair) {
+        var img = document.getElementById(pair[0]), emo = document.getElementById(pair[1]);
+        if (img) { img.src = logo; img.style.display = 'inline-block'; }
+        if (emo) emo.style.display = 'none';
+      });
+    }
+  } catch (err) { console.error('Error loading settings:', err); }
+}
+document.addEventListener('DOMContentLoaded', loadSiteSettings);
+window.addEventListener('load', loadSiteSettings);
