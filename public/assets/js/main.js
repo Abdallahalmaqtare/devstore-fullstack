@@ -372,7 +372,9 @@ function renderPayMethods() {
   var grid = document.getElementById('payGrid');
   if (!PAY_METHODS.length) { grid.innerHTML = '<p class="cart-empty">لا توجد طرق دفع مفعّلة</p>'; return; }
   grid.innerHTML = PAY_METHODS.map(function (pm) {
-    return '<button class="pay-btn" data-pm="' + pm._id + '">💳 ' + pm.name + '</button>';
+    return '<button class="pay-btn" data-pm="' + pm._id + '">' +
+      (pm.logoUrl ? '<img class="pay-logo" src="' + pm.logoUrl + '" alt="" onerror="this.outerHTML=\'💳\'" />' : '💳') +
+      ' ' + pm.name + '</button>';
   }).join('');
 }
 document.getElementById('payGrid').addEventListener('click', function (e) {
@@ -1320,7 +1322,7 @@ loadAll();
   /* ── تطبيق الهوية في الهيدر لكل الزوار ── */
   async function applyBranding() {
     try {
-      var b = await API.req('/settings/branding');
+      var b = await (await fetch('/api/settings/branding?t=' + Date.now(), { cache: 'no-store' })).json();
       var nameEl = document.querySelector('.brand-name');
       if (nameEl && b.siteName) {
         var parts = b.siteName.split(/\s+/);
@@ -1369,7 +1371,7 @@ loadAll();
 (function () {
   async function applyBranding25() {
     try {
-      var b = await API.req('/settings/branding?t=' + Date.now());
+      var b = await (await fetch('/api/settings/branding?t=' + Date.now(), { cache: 'no-store' })).json();
       if (b && b.siteName) {
         var nameEl = document.querySelector('.brand-name');
         if (nameEl) {

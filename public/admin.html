@@ -268,7 +268,8 @@
           <h3>➕ إضافة طريقة دفع يدوية</h3>
           <form class="admin-form" id="pmForm">
             <div class="form-row">
-              <label>الاسم<input type="text" id="pmName" required placeholder="الكريمي جوال / النجم" /></label>
+              <label>الاسم<input type="hidden" id="pmId" />
+              <input type="text" id="pmName" required placeholder="الكريمي جوال / النجم" /></label>
               <label>الحساب / المحفظة<input type="text" id="pmAccount" required /></label>
               <label>شعار البوابة (رابط صورة — اختياري)<input type="url" id="pmLogoUrl" dir="ltr" placeholder="https://.../logo.png" /></label>
             </div>

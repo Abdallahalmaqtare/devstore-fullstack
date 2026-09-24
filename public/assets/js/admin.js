@@ -344,9 +344,9 @@ async function renderPayMethods() {
     const pms = await API.req('/settings/payment-methods/all');
     document.querySelector('#pmTable tbody').innerHTML = pms.length ? pms.map(pm => `
       <tr>
-        <td><b>${pm.name}</b></td><td>${pm.account}</td><td>${pm.instructions || '—'}</td>
+        <td>${pm.logoUrl ? '<img src="' + pm.logoUrl + '" style="width:30px;height:30px;border-radius:8px;object-fit:cover;vertical-align:middle;margin-inline-end:6px" onerror="this.style.display=\'none\'" />' : ''}<b>${pm.name}</b></td><td>${pm.account}</td><td>${pm.instructions || '—'}</td>
         <td><button class="status-badge ${pm.active ? 'status-done' : 'status-cancel'}" data-pmtoggle="${pm._id}" data-active="${pm.active}">${pm.active ? 'مفعّلة' : 'معطّلة'}</button></td>
-        <td><button class="row-btn row-del" data-pmdel="${pm._id}">🗑️</button></td>
+        <td><button class="row-btn" data-pmedit="${pm._id}">✏️</button> <button class="row-btn row-del" data-pmdel="${pm._id}">🗑️</button></td>
       </tr>`).join('')
       : '<tr><td colspan="5" class="empty-row">أضف أول طريقة دفع</td></tr>';
   } catch (e) { showToast('❌ ' + e.message); }
@@ -354,21 +354,41 @@ async function renderPayMethods() {
 document.getElementById('pmForm').addEventListener('submit', async e => {
   e.preventDefault();
   try {
-    await API.req('/settings/payment-methods', {
-      method: 'POST',
+    var _pmEditId = (document.getElementById('pmId') || {}).value || '';
+    await API.req('/settings/payment-methods' + (_pmEditId ? '/' + _pmEditId : ''), {
+      method: _pmEditId ? 'PUT' : 'POST',
       body: {
         name: document.getElementById('pmName').value.trim(),
         account: document.getElementById('pmAccount').value.trim(),
         instructions: document.getElementById('pmInstructions').value.trim(),
+        logoUrl: (document.getElementById('pmLogoUrl') || {}).value ? document.getElementById('pmLogoUrl').value.trim() : '',
       },
     });
-    e.target.reset(); renderPayMethods();
-    showToast('✅ تمت الإضافة');
+    e.target.reset(); if (document.getElementById('pmId')) document.getElementById('pmId').value = '';
+    renderPayMethods();
+    showToast('✅ تم الحفظ');
   } catch (err) { showToast('❌ ' + err.message); }
 });
 document.getElementById('pmTable').addEventListener('click', async e => {
   const toggle = e.target.closest('[data-pmtoggle]');
   const del = e.target.closest('[data-pmdel]');
+  const edit = e.target.closest('[data-pmedit]');
+  if (edit) {
+    try {
+      const all = await API.req('/settings/payment-methods/all');
+      const pm = all.find(x => String(x._id) === edit.dataset.pmedit);
+      if (pm) {
+        document.getElementById('pmId').value = pm._id;
+        document.getElementById('pmName').value = pm.name || '';
+        document.getElementById('pmAccount').value = pm.account || '';
+        document.getElementById('pmInstructions').value = pm.instructions || '';
+        if (document.getElementById('pmLogoUrl')) document.getElementById('pmLogoUrl').value = pm.logoUrl || '';
+        showToast('✏️ وضع تعديل «' + pm.name + '» — عدّل ثم اضغط حفظ');
+        document.getElementById('pmName').focus();
+      }
+    } catch (err) { showToast('❌ ' + err.message); }
+    return;
+  }
   try {
     if (toggle) {
       await API.req('/settings/payment-methods/' + toggle.dataset.pmtoggle, {
