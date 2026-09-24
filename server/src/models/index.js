@@ -52,6 +52,13 @@ const productSchema = new Schema({
   variants: { type: [variantSchema], default: [] },
   countrySelect: { type: Boolean, default: false },
   requiresAccountId: { type: Boolean, default: false },
+  /* v29: نظام الكمية المخصصة */
+  pricingType: { type: String, enum: ['packages', 'custom_amount'], default: 'packages' },
+  unitPrice: { type: Number, default: 0 },
+  minQuantity: { type: Number, default: 1 },
+  maxQuantity: { type: Number, default: 100000 },
+  step: { type: Number, default: 1 },
+  authType: { type: String, enum: ['id_only', 'email_password', 'email_only'], default: 'id_only' },
   /* نظام العروض والتخفيضات */
   isOnSale: { type: Boolean, default: false },
   discountPercent: { type: Number, default: 0, min: 0, max: 100 },

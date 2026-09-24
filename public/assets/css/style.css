@@ -51,34 +51,9 @@ input, select, textarea { font-family: inherit; }
 .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 100%; gap: 16px; }
 .brand { display: flex; align-items: center; gap: 8px; font-size: 1.35rem; font-weight: 800; }
 .brand-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
-  min-height: 48px;
-  border-radius: 14px;
-  background: var(--surface-2) !important;
-  /* تأثير التقعير الأنيق (Inset Depth) */
-  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.18),
-              inset -2px -2px 5px rgba(255, 255, 255, 0.08) !important;
-  border: 1px solid var(--border) !important;
-  padding: 4px !important;
-  overflow: hidden;
-  transition: transform 0.2s ease;
-}
-
-.brand-icon:hover {
-  transform: scale(1.04);
-}
-
-.brand-icon img, #siteLogo {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  border-radius: 10px;
-  display: block;
+  display: grid; place-items: center; width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  border-radius: 12px; font-size: 1.2rem;
 }
 .brand-name b { color: var(--primary); }
 .nav-links { display: flex; gap: 6px; }
@@ -620,19 +595,32 @@ input, select, textarea { font-family: inherit; }
 
 /* ═══ v27: شعار بوابة الدفع — عنصر واحد، بلا تمطيط، بلا تكرار ═══ */
 .pay-btn{display:flex;align-items:center;justify-content:flex-start;gap:10px;direction:rtl}
-.pay-btn .pay-logo {
-  width: 38px;
-  height: 38px;
-  max-width: 38px;
-  max-height: 38px;
-  min-width: 38px;
-  object-fit: contain;
-  border-radius: 6px;
-  background: transparent !important;
-  padding: 0 !important;
-  border: none !important;
-  box-shadow: none !important;
-  display: block;
-  flex: 0 0 auto;
-  margin: 0;
-}.pay-btn img:not(.pay-logo){display:none!important} /* إزالة أي صورة طافية زائدة داخل زر الدفع */
+.pay-btn .pay-logo{width:40px;height:40px;max-width:40px;max-height:40px;min-width:40px;object-fit:contain;border-radius:8px;background:#fff;padding:3px;display:block;flex:0 0 auto;margin:0;border:1px solid rgba(0,0,0,.08);box-shadow:none;background-repeat:no-repeat}
+.pay-btn img:not(.pay-logo){display:none!important} /* إزالة أي صورة طافية زائدة داخل زر الدفع */
+
+/* ═══ v29: نافذة الكمية المخصصة ═══ */
+.cqm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(6px);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+.cqm-box{background:var(--card,#141428);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:22px 20px;width:100%;max-width:400px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.5);animation:cqmIn .28s cubic-bezier(.22,1,.36,1)}
+[data-theme="light"] .cqm-box{background:#fff}
+@keyframes cqmIn{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+.cqm-close{position:absolute;top:12px;left:12px;width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,.08);color:inherit;cursor:pointer;font-size:.9rem}
+.cqm-head{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.cqm-img{width:52px;height:52px;border-radius:14px;object-fit:cover;flex:0 0 auto}
+.cqm-title{flex:1;min-width:0}
+.cqm-title b{display:block;font-size:1rem}
+.cqm-title small{color:var(--muted,#999);font-size:.78rem}
+.cqm-badge{background:linear-gradient(135deg,#6c5ce7,#8e7cf3);color:#fff;font-weight:800;font-size:.9rem;padding:6px 14px;border-radius:999px;white-space:nowrap}
+.cqm-label{display:block;font-size:.85rem;font-weight:700;margin-bottom:8px}
+.cqm-qty{display:flex;gap:8px;align-items:stretch}
+.cqm-qty button{width:46px;border:none;border-radius:12px;background:rgba(108,92,231,.15);color:#a29bfe;font-size:1.3rem;font-weight:800;cursor:pointer;transition:background .2s}
+.cqm-qty button:hover{background:rgba(108,92,231,.3)}
+.cqm-qty input{flex:1;text-align:center;font-size:1.15rem;font-weight:800;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:transparent;color:inherit}
+[data-theme="light"] .cqm-qty input{border-color:#ddd}
+.cqm-meta{display:block;color:var(--muted,#999);font-size:.72rem;margin-top:6px}
+.cqm-warn{color:#ff4757;font-size:.8rem;font-weight:700;min-height:1.2em;margin:8px 0 0}
+.cqm-totalrow{display:flex;justify-content:space-between;align-items:center;background:rgba(46,213,115,.1);border:1px dashed rgba(46,213,115,.4);border-radius:12px;padding:12px 14px;margin:12px 0;font-size:.95rem}
+.cqm-totalrow b{color:#2ed573;font-size:1.15rem}
+.cqm-input{width:100%;padding:11px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:transparent;color:inherit;font-size:.9rem;margin-bottom:8px}
+[data-theme="light"] .cqm-input{border-color:#ddd}
+.cqm-hint{display:block;color:var(--muted,#999);font-size:.74rem;margin-bottom:12px}
+.cqm-buy:disabled{opacity:.45;cursor:not-allowed}

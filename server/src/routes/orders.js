@@ -64,6 +64,22 @@ router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
       const p = pmap[i.id];
       if (!p) throw Object.assign(new Error('عنصر غير قابل للشراء المباشر'), { status: 400 });
 
+      /* v29: منتج بكمية مخصصة — الكمية والسعر يُحسبان خادمياً حصراً */
+      if (p.pricingType === 'custom_amount') {
+        const q = Math.max(0, parseInt(i.qty) || 0);
+        if (q < p.minQuantity || q > p.maxQuantity)
+          throw Object.assign(new Error(`الكمية لـ «${p.name}» يجب أن تكون بين ${p.minQuantity} و ${p.maxQuantity}`), { status: 400 });
+        if (!String(i.accountId || '').trim())
+          throw Object.assign(new Error(`بيانات الحساب مطلوبة لـ «${p.name}»`), { status: 400 });
+        const ub = (p.unitPrice > 0 ? p.unitPrice : p.price);
+        const up = p.isOnSale && p.discountPercent > 0 ? +(ub - ub * p.discountPercent / 100).toFixed(4) : ub;
+        total += +(up * q).toFixed(2);
+        return {
+          product: p._id, name: `${p.name} — ${q} ${p.unit || 'وحدة'}`, variant: 'custom',
+          price: up, qty: q, extra: i.extra || '', accountId: String(i.accountId || '').trim(),
+        };
+      }
+
       /* حسم السعر والاسم من قاعدة البيانات: من الباقة إن وُجدت، وإلا من المنتج نفسه */
       let name = p.name, price = (p.finalPrice > 0 ? p.finalPrice : salePrice(p, p.price)), variant = '';
       if (p.variants?.length) {

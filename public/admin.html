@@ -126,6 +126,27 @@
                 <label>السعر ($) — للسلعة المفردة فقط<input type="number" id="pPrice" step="0.01" min="0" placeholder="اتركه 0 إن كانت مجموعة باقات" /></label>
                 <label>الوحدة<input type="text" id="pUnit" placeholder="مثال: يبدأ من / شهرياً" /></label>
               </div>
+              <div class="form-row" id="pricingTypeRow">
+                <label>نظام التسعير
+                  <select id="pPricingType">
+                    <option value="packages">📦 باقات ثابتة</option>
+                    <option value="custom_amount">🔢 كمية مخصصة (العميل يحدد العدد)</option>
+                  </select>
+                </label>
+                <label>نوع بيانات الشحن
+                  <select id="pAuthType">
+                    <option value="id_only">🆔 الشحن عبر الأيدي فقط</option>
+                    <option value="email_password">📧 بريد إلكتروني + كلمة مرور</option>
+                    <option value="email_only">✉️ بريد إلكتروني فقط (Supercell ID)</option>
+                  </select>
+                </label>
+              </div>
+              <div class="form-row" id="customAmountFields" style="display:none">
+                <label>سعر الوحدة ($)<input type="number" id="pUnitPrice" step="0.0001" min="0" placeholder="0.001" /></label>
+                <label>الحد الأدنى للكمية<input type="number" id="pMinQty" min="1" placeholder="1000" /></label>
+                <label>الحد الأقصى<input type="number" id="pMaxQty" min="1" placeholder="100000" /></label>
+                <label>خطوة العداد<input type="number" id="pStep" min="1" placeholder="100" /></label>
+              </div>
               <div class="form-row sale-row">
                 <label class="check-row"><input type="checkbox" id="pOnSale" /> 🔥 تفعيل تخفيض / عرض خاص</label>
                 <label>نسبة التخفيض (%)<input type="number" id="pDisc" min="0" max="100" step="1" placeholder="مثال: 20" /></label>

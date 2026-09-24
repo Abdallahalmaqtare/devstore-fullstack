@@ -1423,3 +1423,148 @@ async function loadSiteSettings() {
 }
 document.addEventListener('DOMContentLoaded', loadSiteSettings);
 window.addEventListener('load', loadSiteSettings);
+
+
+/* ════════════ v29: منتجات الكمية المخصصة (Custom Quantity Checkout) ════════════ */
+(function () {
+  var _prodCache = null;
+  function findProduct(id) {
+    if (typeof PRODUCTS !== 'undefined' && Array.isArray(PRODUCTS)) {
+      var f = PRODUCTS.find(function (p) { return String(p._id) === String(id); });
+      if (f) return f;
+    }
+    return _prodCache ? _prodCache.find(function (p) { return String(p._id) === String(id); }) : null;
+  }
+  try { fetch('/api/products').then(function (r) { return r.json(); }).then(function (l) { _prodCache = l; }); } catch (e) {}
+
+  function unitOf(g) {
+    var base = (g.unitPrice != null && g.unitPrice > 0) ? g.unitPrice : (g.price || 0);
+    if (g.isOnSale && g.discountPercent > 0) return +(base - base * g.discountPercent / 100).toFixed(4);
+    return base;
+  }
+  function closeCqm() { var m = document.getElementById('cqmOverlay'); if (m) m.remove(); document.body.style.overflow = ''; }
+
+  function openCustomModal(g) {
+    closeCqm();
+    var unit = unitOf(g);
+    var min = g.minQuantity || 1, max = g.maxQuantity || 100000, step = g.step || 1;
+    var at = g.authType || 'id_only';
+    var authHtml = '', hint = '';
+    if (at === 'email_password') {
+      authHtml = '<input type="email" id="cqmEmail" class="cqm-input" placeholder="البريد الإلكتروني" dir="ltr" />'
+        + '<input type="password" id="cqmPass" class="cqm-input" placeholder="كلمة المرور" dir="ltr" />';
+      hint = '📧 الشحن عبر الحساب — أدخل البريد وكلمة المرور بدقة تامة';
+    } else if (at === 'email_only') {
+      authHtml = '<input type="email" id="cqmEmail" class="cqm-input" placeholder="البريد الإلكتروني (Supercell ID)" dir="ltr" />';
+      hint = '✉️ الشحن عبر البريد الإلكتروني فقط';
+    } else {
+      authHtml = '<input type="text" id="cqmId" class="cqm-input" placeholder="أدخل الايدي (Player ID)" dir="ltr" />';
+      hint = '🆔 الشحن عبر الايدي';
+    }
+    var iconHtml = '';
+    try { if (typeof appIconImg === 'function') iconHtml = appIconImg(g, 'cqm-img'); } catch (e) {}
+    var ov = document.createElement('div');
+    ov.id = 'cqmOverlay'; ov.className = 'cqm-overlay';
+    ov.innerHTML =
+      '<div class="cqm-box" dir="rtl">'
+      + '<button type="button" class="cqm-close" id="cqmClose">✕</button>'
+      + '<div class="cqm-head">' + iconHtml
+      + '<div class="cqm-title"><b>' + g.name + '</b><small>سعر الوحدة: $' + unit + '</small></div>'
+      + '<span class="cqm-badge" id="cqmBadge">$0.00</span></div>'
+      + '<label class="cqm-label">🔢 الكمية المطلوبة</label>'
+      + '<div class="cqm-qty"><button type="button" id="cqmMinus">−</button>'
+      + '<input type="number" id="cqmQty" value="' + min + '" step="' + step + '" inputmode="numeric" />'
+      + '<button type="button" id="cqmPlus">+</button></div>'
+      + '<small class="cqm-meta">الحد الأدنى ' + min + ' • الأقصى ' + max + ' • الخطوة ' + step + '</small>'
+      + '<p class="cqm-warn" id="cqmWarn"></p>'
+      + '<div class="cqm-totalrow">الإجمالي: <b id="cqmTotal">$0.00</b></div>'
+      + authHtml
+      + '<small class="cqm-hint">' + hint + '</small>'
+      + '<button type="button" class="btn btn-primary btn-block cqm-buy" id="cqmBuy" disabled>🛒 أضف للسلة</button>'
+      + '</div>';
+    document.body.appendChild(ov);
+    document.body.style.overflow = 'hidden';
+
+    var qtyEl = document.getElementById('cqmQty');
+    var buyBtn = document.getElementById('cqmBuy');
+    function recalc() {
+      var q = parseInt(qtyEl.value) || 0;
+      var total = +(unit * q).toFixed(2);
+      document.getElementById('cqmTotal').textContent = '$' + total;
+      document.getElementById('cqmBadge').textContent = '$' + total;
+      var warn = document.getElementById('cqmWarn');
+      if (q < min) { warn.textContent = '⚠️ يجب أن تكون الكمية أكبر من أو تساوي ' + min; buyBtn.disabled = true; }
+      else if (q > max) { warn.textContent = '⚠️ الحد الأقصى المسموح به ' + max; buyBtn.disabled = true; }
+      else { warn.textContent = ''; buyBtn.disabled = false; }
+    }
+    qtyEl.addEventListener('input', recalc);
+    document.getElementById('cqmMinus').onclick = function () { qtyEl.value = Math.max(min, (parseInt(qtyEl.value) || min) - step); recalc(); };
+    document.getElementById('cqmPlus').onclick = function () { qtyEl.value = Math.min(max, (parseInt(qtyEl.value) || 0) + step); recalc(); };
+    document.getElementById('cqmClose').onclick = closeCqm;
+    ov.addEventListener('click', function (e) { if (e.target === ov) closeCqm(); });
+
+    buyBtn.onclick = function () {
+      var q = parseInt(qtyEl.value) || 0;
+      if (q < min || q > max) return;
+      var accountId = '';
+      if (at === 'id_only') {
+        accountId = (document.getElementById('cqmId').value || '').trim();
+        if (!accountId) { showToast('⚠️ أدخل الايدي أولاً'); return; }
+      } else if (at === 'email_only') {
+        accountId = (document.getElementById('cqmEmail').value || '').trim();
+        if (!accountId || accountId.indexOf('@') === -1) { showToast('⚠️ أدخل بريداً إلكترونياً صحيحاً'); return; }
+        accountId = '📧 ' + accountId;
+      } else {
+        var em = (document.getElementById('cqmEmail').value || '').trim();
+        var pw = (document.getElementById('cqmPass').value || '').trim();
+        if (!em || em.indexOf('@') === -1) { showToast('⚠️ أدخل بريداً إلكترونياً صحيحاً'); return; }
+        if (!pw) { showToast('⚠️ أدخل كلمة المرور'); return; }
+        accountId = '📧 ' + em + ' | 🔑 ' + pw;
+      }
+      addCustomToCart(g, q, accountId);
+      closeCqm();
+    };
+    recalc();
+  }
+
+  function addCustomToCart(g, qty, accountId) {
+    var unit = unitOf(g);
+    /* المسار الأساسي: عبر آلية الباقات الأصلية لضمان توافق السلة والخادم */
+    try {
+      if (typeof addVariantToCart === 'function' && typeof openGroupId !== 'undefined') {
+        openGroupId = g._id;
+        g.variants = g.variants || [];
+        g.variants.push({ name: 'custom_' + Date.now(), price: unit, finalPrice: unit, icon: '' });
+        addVariantToCart(g.variants.length - 1);
+
+        g.variants.pop();
+        showToast('✅ أُضيف إلى السلة: ' + g.name + ' × ' + qty);
+        return;
+      }
+    } catch (e) { console.error('custom-cart primary:', e); }
+    /* مسار احتياطي: كتابة مباشرة في مخزن السلة */
+    try {
+      var cart = JSON.parse(localStorage.getItem('ds-cart') || '[]');
+      cart.push({ id: g._id, variant: 'custom_' + Date.now(), extra: '', qty: qty, accountId: accountId,
+        name: g.name + ' — ' + qty + ' ' + (g.unit || 'وحدة'), price: unit });
+      localStorage.setItem('ds-cart', JSON.stringify(cart));
+        try { if (typeof saveCart === 'function') saveCart(); } catch (e) {}
+        try { if (typeof renderCart === 'function') renderCart(); } catch (e) {}
+        try { if (typeof updateCartBadge === 'function') updateCartBadge(); } catch (e) {}
+
+      showToast('✅ أُضيف إلى السلة: ' + g.name + ' × ' + qty);
+    } catch (e) { showToast('❌ تعذر الإضافة للسلة'); }
+  }
+
+  /* اعتراض النقر على منتجات الكمية المخصصة قبل المعالجات الأصلية (مرحلة الالتقاط) */
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-buy]');
+    var grp = e.target.closest('[data-group]');
+    var id = btn ? btn.dataset.buy : (grp ? grp.dataset.group : null);
+    if (!id) return;
+    var g = findProduct(id);
+    if (!g || g.pricingType !== 'custom_amount') return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    openCustomModal(g);
+  }, true);
+})();

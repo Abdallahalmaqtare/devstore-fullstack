@@ -20,6 +20,13 @@ function sanitizeProduct(body) {
   if (typeof b.modes === 'string') { try { b.modes = JSON.parse(b.modes); } catch { b.modes = []; } }
   b.requiresAccountId = b.requiresAccountId === true || b.requiresAccountId === 'true';
   b.countrySelect = b.countrySelect === true || b.countrySelect === 'true';
+  b.pricingType = b.pricingType === 'custom_amount' ? 'custom_amount' : 'packages';
+  b.authType = ['id_only','email_password','email_only'].indexOf(b.authType) !== -1 ? b.authType : 'id_only';
+  b.unitPrice = Math.max(0, parseFloat(b.unitPrice) || 0);
+  b.minQuantity = Math.max(1, parseInt(b.minQuantity) || 1);
+  b.maxQuantity = Math.max(b.minQuantity, parseInt(b.maxQuantity) || 100000);
+  b.step = Math.max(1, parseInt(b.step) || 1);
+  if (b.pricingType === 'custom_amount') { b.variants = []; b.price = b.unitPrice; b.finalPrice = b.unitPrice; b.requiresAccountId = true; }
   b.isOnSale = b.isOnSale === true || b.isOnSale === 'true';
   b.discountPercent = Math.min(100, Math.max(0, parseFloat(b.discountPercent) || 0));
   if (!b.isOnSale) b.discountPercent = 0;
