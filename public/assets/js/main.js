@@ -145,13 +145,37 @@ function renderProducts() {
     });
   }
   document.getElementById('productsGrid').innerHTML = list.length ? list.map(function (p) {
-    var isGroup = (p.variants || []).length > 0;
-    var minPrice = isGroup ? Math.min.apply(null, p.variants.map(function (v) { return effPrice(v); })) : effPrice(p);
-    var footer = isGroup
-      ? '<div class="product-price">' + fmtPrice(minPrice) + ' <small>يبدأ من</small></div>' +
-        '<button class="buy-btn group-btn" data-group="' + p._id + '">📦 عرض الباقات (' + p.variants.length + ')</button>'
-      : '<div class="product-price">' + fmtPrice(effPrice(p)) + ' <small>' + (p.unit || '') + '</small></div>' +
+   var isCustom = p.pricingType === 'custom_amount';
+    var isGroup = !isCustom && (p.variants || []).length > 0;
+
+    var footer = '';
+
+    if (isCustom) {
+      // 1) إذا كان البرنامج كمية مفتوحة مخصصة من العميل:
+      var minUnit = (p.minQtyPrice > 0 && p.minQuantity > 0)
+        ? (p.minQtyPrice / p.minQuantity)
+        : (p.unitPrice || p.price || 0);
+      var minCost = p.minQtyPrice || (p.minQuantity ? +(minUnit * p.minQuantity).toFixed(2) : effPrice(p));
+      
+      // إذا كان للمنتج باقة حد أدنى مسجلة نعتمد سعرها
+      if (p.variants && p.variants.length > 0 && p.variants[0].finalPrice) {
+        minCost = p.variants[0].finalPrice;
+      }
+
+      footer = '<div class="product-price">' + fmtPrice(minCost) + ' <small>يبدأ من</small></div>' +
+        '<button class="buy-btn custom-amount-btn" data-buy="' + p._id + '">تحديد الكمية والشحن ⚡</button>';
+
+    } else if (isGroup) {
+      // 2) إذا كان التطبيق يحتوي على باقات ثابتة متعددة:
+      var minPrice = Math.min.apply(null, p.variants.map(function (v) { return effPrice(v); }));
+      footer = '<div class="product-price">' + fmtPrice(minPrice) + ' <small>يبدأ من</small></div>' +
+        '<button class="buy-btn group-btn" data-group="' + p._id + '">📦 عرض الباقات (' + p.variants.length + ')</button>';
+
+    } else {
+      // 3) إذا كان منتجاً مفرداً عادياً:
+      footer = '<div class="product-price">' + fmtPrice(effPrice(p)) + ' <small>' + (p.unit || '') + '</small></div>' +
         '<button class="buy-btn" data-buy="' + p._id + '">أضف للسلة 🛒</button>';
+    }
     var countrySel = p.countrySelect
       ? '<div class="product-extra"><select id="country-' + p._id + '"><option value="">اختر الدولة 🌍</option>' +
         COUNTRIES.map(function (c) { return '<option value="' + c[1] + '">' + c[0] + ' ' + c[1] + '</option>'; }).join('') +
