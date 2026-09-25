@@ -129,6 +129,8 @@ router.post('/products/import-json', authRequired, adminOnly, async (req, res) =
       const basePrice = parseFloat(p.price) || 0;
       const pOn = !isService && p.isOnSale === true && (parseFloat(p.discountPercent) || 0) > 0;
       const pD = pOn ? Math.min(100, Math.max(0, parseFloat(p.discountPercent))) : 0;
+      /* v36: منتج الكمية المخصصة — تصفير variants إجبارياً واستقبال حقول العداد */
+      const isCustom = !isService && p.pricingType === 'custom_amount';
       const set = {
         name: String(p.name).trim(),
         cat: String(p.category || p.cat).toLowerCase().trim(),
@@ -137,11 +139,30 @@ router.post('/products/import-json', authRequired, adminOnly, async (req, res) =
         price: isService ? 0 : basePrice,
         image: String(p.image || ''),
         requiresAccountId: !!(p.requiresPlayerId || p.requiresAccountId),
-        variants: isService ? [] : variants,
+        variants: (isService || isCustom) ? [] : variants,
         isOnSale: pOn, discountPercent: pD,
         finalPrice: pOn ? +(basePrice - basePrice * pD / 100).toFixed(2) : basePrice,
         active: p.isActive !== false,
       };
+      if (isCustom) {
+        const minQ = Math.max(1, parseInt(p.minQuantity) || 1);
+        let unitP = parseFloat(p.unitPrice) || 0;
+        /* اشتقاق سعر الوحدة من finalPrice للباقة المرجعية عند غياب unitPrice */
+        if (unitP <= 0 && variants.length) unitP = +(variants[0].finalPrice / minQ).toFixed(8);
+        set.pricingType = 'custom_amount';
+        set.minQuantity = minQ;
+        set.maxQuantity = Math.max(minQ, parseInt(p.maxQuantity) || 1000000);
+        set.step = Math.max(1, parseInt(p.step) || Math.max(1, Math.round(minQ / 100)));
+        set.unitPrice = unitP;
+        set.minQtyPrice = +(unitP * minQ).toFixed(2);
+        set.price = unitP; set.finalPrice = unitP; set.isOnSale = false; set.discountPercent = 0;
+        set.unit = String(p.unitName || p.unit || 'وحدة');
+        /* authType من حقول الاستيراد أو الافتراضي */
+        set.authType = (p.requiresEmail && p.requiresPassword) ? 'email_password'
+          : p.requiresEmail ? 'email_only'
+          : (p.authType && ['id_only','email_password','email_only'].includes(p.authType)) ? p.authType : 'id_only';
+        set.requiresAccountId = set.authType === 'id_only';
+      }
       if (p.playerIdLabel) set.unit = String(p.playerIdLabel);
       if (p.contactWhatsapp) set.contactWhatsapp = String(p.contactWhatsapp).replace(/\D/g, '');
       if (p.contactTelegram) set.contactTelegram = String(p.contactTelegram).replace(/^@/, '');
