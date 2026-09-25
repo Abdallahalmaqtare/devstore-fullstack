@@ -198,8 +198,15 @@ input, select, textarea { font-family: inherit; }
 .courses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
 .course-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: .3s; display: flex; flex-direction: column; }
 .course-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
-.course-cover { height: 130px; display: grid; place-items: center; font-size: 3rem; background: linear-gradient(135deg, var(--primary), var(--accent)); }
-.course-body { padding: 22px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+.course-cover { 
+  height: 170px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  background: var(--surface-2); 
+  padding: 16px;
+  overflow: hidden;
+}.course-body { padding: 22px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
 .course-name { font-size: 1.15rem; font-weight: 800; }
 .course-desc { font-size: .92rem; color: var(--muted); flex: 1; }
 .course-modes { display: flex; gap: 8px; flex-wrap: wrap; }
