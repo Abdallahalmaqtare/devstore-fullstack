@@ -185,6 +185,7 @@ document.getElementById('productForm').addEventListener('submit', async e => {
     desc: document.getElementById('pDesc').value.trim(),
     countrySelect: type === 'product' && cat === 'numbers',
     requiresAccountId: type === 'product' && document.getElementById('pReqId').checked,
+    isAvailable: document.getElementById('pAvailable').checked,
     isOnSale: document.getElementById('pOnSale').checked,
     discountPercent: parseFloat(document.getElementById('pDisc').value || 0),
     pricingType: (document.getElementById('pPricingType') || {}).value || 'packages',
@@ -1005,3 +1006,16 @@ document.addEventListener('change', function(e){
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ load(); wire(); });
   else { load(); wire(); }
 })();
+
+/* v37: تعبئة حالة التوفر عند فتح تعديل أي منتج */
+document.getElementById('productsTable').addEventListener('click', function (e) {
+  var btn = e.target.closest('button');
+  if (!btn) return;
+  var raw = btn.dataset.pedit || btn.dataset.edit || btn.dataset.product || '';
+  if (!raw) return;
+  try {
+    var p = JSON.parse(raw);
+    var av = document.getElementById('pAvailable');
+    if (av && p && typeof p === 'object') av.checked = p.isAvailable !== false;
+  } catch (err) {}
+});

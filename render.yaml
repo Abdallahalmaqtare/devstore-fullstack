@@ -1,35 +1,29 @@
-services:
-  - type: web
-    name: devstore
-    runtime: node
-    plan: free
-    buildCommand: npm install
-    startCommand: node server/src/index.js
-    healthCheckPath: /api/health
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: JWT_SECRET
-        generateValue: true
-      - key: MONGODB_URI
-        sync: false
-      - key: ADMIN_PHONE
-        sync: false
-      - key: ADMIN_PASSWORD
-        sync: false
-      - key: ADMIN_NAME
-        value: المدير العام
-      - key: CLOUDINARY_CLOUD_NAME
-        sync: false
-      - key: CLOUDINARY_API_KEY
-        sync: false
-      - key: CLOUDINARY_API_SECRET
-        sync: false
-      - key: TELEGRAM_BOT_TOKEN
-        sync: false
-      - key: TELEGRAM_CHAT_ID
-        sync: false
-      - key: TELEGRAM_BOT_USERNAME
-        sync: false
-      - key: PUBLIC_URL
-        sync: false
+# ===== انسخ هذا الملف إلى .env محلياً، وفي Render أضفها كـ Environment Variables =====
+
+MONGODB_URI=mongodb+srv://USER:PASS@cluster0.xxxxx.mongodb.net/devstore
+JWT_SECRET=change-this-to-a-long-random-string
+
+ADMIN_PHONE=967700000000
+ADMIN_PASSWORD=change-me-strong-password
+ADMIN_NAME=المدير العام
+
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
+TELEGRAM_CHAT_ID=123456789
+# يوزر البوت (بدون @) — لتفعيل استلام OTP آلياً عبر رابط t.me/<BOT>?start=otp_xxx
+TELEGRAM_BOT_USERNAME=devstore_bot
+
+# رابط موقعك العام — إلزامي لتفعيل الرد الآلي (يسجّل Webhook تلقائياً عند الإقلاع)
+# محلياً: شغّل ngrok وضع رابطه. على Render: https://devstore-xxxx.onrender.com
+PUBLIC_URL=http://localhost:3000
+
+# (اختياري) Twilio SMS
+TWILIO_ACCOUNT_SID=
+TWILIO_AUTH_TOKEN=
+TWILIO_FROM=
+
+PORT=3000
+NODE_ENV=development

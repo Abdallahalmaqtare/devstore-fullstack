@@ -19,6 +19,7 @@ function sanitizeProduct(body) {
   if (typeof b.variants === 'string') { try { b.variants = JSON.parse(b.variants); } catch { b.variants = []; } }
   if (typeof b.modes === 'string') { try { b.modes = JSON.parse(b.modes); } catch { b.modes = []; } }
   b.requiresAccountId = b.requiresAccountId === true || b.requiresAccountId === 'true';
+  b.isAvailable = !(b.isAvailable === false || b.isAvailable === 'false' || b.available === false || b.available === 'false');
   b.countrySelect = b.countrySelect === true || b.countrySelect === 'true';
   b.pricingType = b.pricingType === 'custom_amount' ? 'custom_amount' : 'packages';
   b.authType = ['id_only','email_password','email_only'].indexOf(b.authType) !== -1 ? b.authType : 'id_only';

@@ -54,6 +54,7 @@ const productSchema = new Schema({
   requiresAccountId: { type: Boolean, default: false },
   /* v29: نظام الكمية المخصصة */
   pricingType: { type: String, enum: ['packages', 'custom_amount'], default: 'packages' },
+  isAvailable: { type: Boolean, default: true }, // حالة التوفر — false = غير متاح حالياً
   unitPrice: { type: Number, default: 0 },
   minQtyPrice: { type: Number, default: 0 },  // سعر الحد الأدنى — يُشتق منه سعر الوحدة
   minQuantity: { type: Number, default: 1 },

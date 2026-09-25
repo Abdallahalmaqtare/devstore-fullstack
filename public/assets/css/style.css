@@ -198,15 +198,8 @@ input, select, textarea { font-family: inherit; }
 .courses-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
 .course-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; transition: .3s; display: flex; flex-direction: column; }
 .course-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
-.course-cover { 
-  height: 170px; 
-  display: flex; 
-  align-items: center; 
-  justify-content: center; 
-  background: var(--surface-2); 
-  padding: 16px;
-  overflow: hidden;
-}.course-body { padding: 22px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
+.course-cover { height: 130px; display: grid; place-items: center; font-size: 3rem; background: linear-gradient(135deg, var(--primary), var(--accent)); }
+.course-body { padding: 22px; display: flex; flex-direction: column; gap: 12px; flex: 1; }
 .course-name { font-size: 1.15rem; font-weight: 800; }
 .course-desc { font-size: .92rem; color: var(--muted); flex: 1; }
 .course-modes { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -686,3 +679,12 @@ input, select, textarea { font-family: inherit; }
 .pay-sheet .pay-grid{display:flex;flex-direction:column;gap:10px}
 .pay-sheet .pay-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;font-size:.95rem;border-radius:12px}
 .pay-sheet .pay-logo{width:32px;height:32px;object-fit:contain;border-radius:8px;background:#fff;padding:2px}
+
+/* ═══ v37 — حالة التوفر: كرت مجمّد + شارة علوية ═══ */
+.product-card.product-unavailable{position:relative;opacity:.65;filter:grayscale(40%);cursor:not-allowed !important}
+.product-card.product-unavailable .product-footer,.product-card.product-unavailable .buy-btn{pointer-events:none}
+.product-card.product-unavailable::before{content:"غير متاح حالياً 🚫";position:absolute;top:12px;right:-8px;background:#e74c3c;color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:6px 0 0 6px;box-shadow:0 2px 6px rgba(231,76,60,.4);z-index:5}
+.disabled-btn{background:#4b5563 !important;color:#9ca3af !important;cursor:not-allowed !important;border:none !important}
+/* الشارة العلوية لنافذة الكمية تدعم HTML المشطوب */
+.cqm-badge{line-height:1.5;text-align:center}
+.cqm-badge .local-price{display:block;font-size:.72rem;opacity:.9}

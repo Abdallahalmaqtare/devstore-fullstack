@@ -145,43 +145,24 @@ function renderProducts() {
     });
   }
   document.getElementById('productsGrid').innerHTML = list.length ? list.map(function (p) {
-   var isCustom = p.pricingType === 'custom_amount';
-    var isGroup = !isCustom && (p.variants || []).length > 0;
-
-    var footer = '';
-
-    if (isCustom) {
-      // 1) إذا كان البرنامج كمية مفتوحة مخصصة من العميل:
-      var minUnit = (p.minQtyPrice > 0 && p.minQuantity > 0)
-        ? (p.minQtyPrice / p.minQuantity)
-        : (p.unitPrice || p.price || 0);
-      var minCost = p.minQtyPrice || (p.minQuantity ? +(minUnit * p.minQuantity).toFixed(2) : effPrice(p));
-      
-      // إذا كان للمنتج باقة حد أدنى مسجلة نعتمد سعرها
-      if (p.variants && p.variants.length > 0 && p.variants[0].finalPrice) {
-        minCost = p.variants[0].finalPrice;
-      }
-
-      footer = '<div class="product-price">' + fmtPrice(minCost) + ' <small>يبدأ من</small></div>' +
-        '<button class="buy-btn custom-amount-btn" data-buy="' + p._id + '">تحديد الكمية والشحن ⚡</button>';
-
-    } else if (isGroup) {
-      // 2) إذا كان التطبيق يحتوي على باقات ثابتة متعددة:
-      var minPrice = Math.min.apply(null, p.variants.map(function (v) { return effPrice(v); }));
-      footer = '<div class="product-price">' + fmtPrice(minPrice) + ' <small>يبدأ من</small></div>' +
-        '<button class="buy-btn group-btn" data-group="' + p._id + '">📦 عرض الباقات (' + p.variants.length + ')</button>';
-
-    } else {
-      // 3) إذا كان منتجاً مفرداً عادياً:
-      footer = '<div class="product-price">' + fmtPrice(effPrice(p)) + ' <small>' + (p.unit || '') + '</small></div>' +
+    var isGroup = (p.variants || []).length > 0;
+    var minPrice = isGroup ? Math.min.apply(null, p.variants.map(function (v) { return effPrice(v); })) : effPrice(p);
+    /* v37: حالة التوفر — تجميد الكرت عند عدم التوفر */
+    var isUnavailable = (p.isAvailable === false || p.available === false);
+    var footer = isUnavailable
+      ? '<div class="product-price">' + fmtPrice(minPrice) + '</div>' +
+        '<button class="buy-btn disabled-btn" disabled>غير متاح حالياً 🔒</button>'
+      : isGroup
+      ? '<div class="product-price">' + fmtPrice(minPrice) + ' <small>يبدأ من</small></div>' +
+        '<button class="buy-btn group-btn" data-group="' + p._id + '">📦 عرض الباقات (' + p.variants.length + ')</button>'
+      : '<div class="product-price">' + fmtPrice(effPrice(p)) + ' <small>' + (p.unit || '') + '</small></div>' +
         '<button class="buy-btn" data-buy="' + p._id + '">أضف للسلة 🛒</button>';
-    }
     var countrySel = p.countrySelect
       ? '<div class="product-extra"><select id="country-' + p._id + '"><option value="">اختر الدولة 🌍</option>' +
         COUNTRIES.map(function (c) { return '<option value="' + c[1] + '">' + c[0] + ' ' + c[1] + '</option>'; }).join('') +
         '</select></div>'
       : '';
-    return '<article class="product-card' + (isGroup ? ' group-card' : '') + '"' + (isGroup ? ' data-group="' + p._id + '"' : '') + '>' +
+    return '<article class="product-card' + (isGroup ? ' group-card' : '') + (isUnavailable ? ' product-unavailable' : '') + '"' + (isGroup ? ' data-group="' + p._id + '"' : '') + '>' +
       '<div class="product-icon">' + iconHtml(p) + '</div>' +
       '<span class="product-cat">' + (CAT_LABELS[p.cat] || '') + '</span>' +
       '<h3 class="product-name">' + p.name + '</h3>' +
@@ -1480,6 +1461,14 @@ window.addEventListener('load', loadSiteSettings);
     var unit = unitOf(g);
     var min = g.minQuantity || 1, max = g.maxQuantity || 1000000;
     var step = (g.step && g.step > 1) ? g.step : Math.max(1, Math.round(min / 100));
+    /* v37: سعر الوحدة قبل الخصم وبعده — لعرض المشطوب والعملة المزدوجة */
+    var origUnit = (g.minQtyPrice > 0 && g.minQuantity > 0) ? (g.minQtyPrice / g.minQuantity) : (g.unitPrice || g.price || 0);
+    if (g.variants && g.variants[0] && g.minQuantity) {
+      var v0 = g.variants[0];
+      var v0orig = (v0.originalPrice != null ? v0.originalPrice : v0.price);
+      if (v0orig > 0) origUnit = v0orig / g.minQuantity;
+    }
+    var hasDiscount = (g.isOnSale && g.discountPercent > 0) || !!(g.variants && g.variants[0] && g.variants[0].isOnSale && (g.variants[0].discountPercent || 0) > 0);
     var at = g.authType || 'id_only';
     var authHtml = '', hint = '';
     if (at === 'email_password') {
@@ -1521,9 +1510,17 @@ window.addEventListener('load', loadSiteSettings);
     var buyBtn = document.getElementById('cqmBuy');
     function recalc() {
       var q = parseInt(qtyEl.value) || 0;
-      var total = +(unit * q).toFixed(2);
-      document.getElementById('cqmTotal').textContent = '$' + total;
-      document.getElementById('cqmBadge').textContent = '$' + total;
+      var totalFinal = +(unit * q).toFixed(2);
+      var totalOriginal = +(origUnit * q).toFixed(2);
+      /* الإجمالي السفلي: السعر النهائي بعد الخصم بالعملتين */
+      document.getElementById('cqmTotal').innerHTML = fmtPrice(totalFinal);
+      /* الشارة العلوية: السعر الأصلي قبل الخصم مشطوباً بالعملتين (أو السعر العادي) */
+      var badgeEl = document.getElementById('cqmBadge');
+      if (hasDiscount && totalOriginal > totalFinal) {
+        badgeEl.innerHTML = '<span style="text-decoration:line-through;opacity:.85">' + fmtPrice(totalOriginal) + '</span>';
+      } else {
+        badgeEl.innerHTML = fmtPrice(totalFinal);
+      }
       var warn = document.getElementById('cqmWarn');
       if (q < min) { warn.textContent = '⚠️ يجب أن تكون الكمية أكبر من أو تساوي ' + min; buyBtn.disabled = true; }
       else if (q > max) { warn.textContent = '⚠️ الحد الأقصى المسموح به ' + max; buyBtn.disabled = true; }
@@ -1606,7 +1603,9 @@ window.addEventListener('load', loadSiteSettings);
     var id = btn ? btn.dataset.buy : (grp ? grp.dataset.group : null);
     if (!id) return;
     var g = findProduct(id);
-    if (!g || g.pricingType !== 'custom_amount') return;
+    if (!g) return;
+    if (g.isAvailable === false || g.available === false) { e.preventDefault(); e.stopImmediatePropagation(); showToast('🚫 هذا المنتج غير متاح حالياً'); return; }
+    if (g.pricingType !== 'custom_amount') return;
     e.preventDefault(); e.stopImmediatePropagation();
     openCustomModal(g);
   }, true);
@@ -1720,3 +1719,9 @@ window.addEventListener('load', loadSiteSettings);
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
   window.addEventListener('load', loadLiveStats);
 })();
+
+/* v37: حارس نقر عام لكروت المنتجات غير المتاحة */
+document.addEventListener('click', function (e) {
+  var card = e.target.closest('.product-card.product-unavailable, .course-card.product-unavailable');
+  if (card) { e.preventDefault(); e.stopImmediatePropagation(); }
+}, true);

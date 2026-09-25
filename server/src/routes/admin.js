@@ -143,6 +143,7 @@ router.post('/products/import-json', authRequired, adminOnly, async (req, res) =
         isOnSale: pOn, discountPercent: pD,
         finalPrice: pOn ? +(basePrice - basePrice * pD / 100).toFixed(2) : basePrice,
         active: p.isActive !== false,
+        isAvailable: !(p.isAvailable === false || p.available === false),
       };
       if (isCustom) {
         const minQ = Math.max(1, parseInt(p.minQuantity) || 1);
