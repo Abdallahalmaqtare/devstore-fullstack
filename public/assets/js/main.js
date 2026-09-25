@@ -74,6 +74,7 @@ var cart = JSON.parse(localStorage.getItem('ds-cart') || '[]');
 var selectedPmId = '';
 var currentFilter = 'all';
 var searchQuery = '';
+var courseSearchQuery = '';
 
 var COUNTRIES = [
   ['🇺🇸', 'أمريكا (+1)'], ['🇬🇧', 'بريطانيا (+44)'], ['🇷🇺', 'روسيا (+7)'],
@@ -145,24 +146,75 @@ function renderProducts() {
     });
   }
   document.getElementById('productsGrid').innerHTML = list.length ? list.map(function (p) {
-    var isGroup = (p.variants || []).length > 0;
-    var minPrice = isGroup ? Math.min.apply(null, p.variants.map(function (v) { return effPrice(v); })) : effPrice(p);
-    /* v37: حالة التوفر — تجميد الكرت عند عدم التوفر */
     var isUnavailable = (p.isAvailable === false || p.available === false);
-    var footer = isUnavailable
-      ? '<div class="product-price">' + fmtPrice(minPrice) + '</div>' +
-        '<button class="buy-btn disabled-btn" disabled>غير متاح حالياً 🔒</button>'
-      : isGroup
-      ? '<div class="product-price">' + fmtPrice(minPrice) + ' <small>يبدأ من</small></div>' +
-        '<button class="buy-btn group-btn" data-group="' + p._id + '">📦 عرض الباقات (' + p.variants.length + ')</button>'
-      : '<div class="product-price">' + fmtPrice(effPrice(p)) + ' <small>' + (p.unit || '') + '</small></div>' +
-        '<button class="buy-btn" data-buy="' + p._id + '">تحديد الكمية والشحن ⚡</button>';
+    var isCustom = p.pricingType === 'custom_amount';
+    var isGroup = !isCustom && (p.variants || []).length > 0;
+
+    /* 1) حساب السعر الحالي والسعر القديم بدقة — من المنبع */
+    var currentPrice = 0, oldPrice = 0, discPct = 0;
+    if (isCustom) {
+      if (p.variants && p.variants.length > 0 && p.variants[0].finalPrice) {
+        currentPrice = p.variants[0].finalPrice;
+        oldPrice = p.variants[0].originalPrice || 0;
+        discPct = p.variants[0].discountPercent || 0;
+      } else {
+        var baseU = (p.minQtyPrice > 0 && p.minQuantity > 0) ? (p.minQtyPrice / p.minQuantity) : (p.unitPrice || p.price || 0);
+        currentPrice = p.minQtyPrice || (p.minQuantity ? +(baseU * p.minQuantity).toFixed(2) : effPrice(p));
+        if (p.isOnSale && p.discountPercent > 0) {
+          discPct = p.discountPercent;
+          oldPrice = +(currentPrice / (1 - discPct / 100)).toFixed(2);
+        }
+      }
+    } else if (isGroup) {
+      currentPrice = Math.min.apply(null, p.variants.map(function (v) { return effPrice(v); }));
+      var vMin = p.variants.find(function (v) { return effPrice(v) === currentPrice; });
+      if (vMin) {
+        oldPrice = (vMin.originalPrice != null ? vMin.originalPrice : (vMin.isOnSale ? vMin.price : 0)) || 0;
+        discPct = vMin.discountPercent || 0;
+      }
+    } else {
+      currentPrice = effPrice(p);
+      oldPrice = (p.isOnSale && p.discountPercent > 0) ? p.price : (p.originalPrice || 0);
+      discPct = p.discountPercent || 0;
+    }
+
+    /* 2) تنسيق عرض السعر مع السعر المشطوب عند التخفيض */
+    var hasDiscount = (oldPrice > currentPrice && currentPrice > 0);
+    if (hasDiscount && !discPct) discPct = Math.round((1 - currentPrice / oldPrice) * 100);
+    var priceDisplay = hasDiscount
+      ? '<span class="price-old" style="text-decoration:line-through;opacity:.65;margin-left:6px;font-size:.85em">' + fmtPrice(oldPrice) + '</span> ' +
+        '<span class="price-new" style="color:#2ecc71;font-weight:bold">' + fmtPrice(currentPrice) + '</span>'
+      : fmtPrice(currentPrice);
+
+    /* 3) الأزرار وحالة المنتج */
+    var footer;
+    if (isUnavailable) {
+      footer = '<div class="product-price">' + priceDisplay + '</div>' +
+               '<button class="buy-btn disabled-btn" disabled>غير متاح حالياً 🔒</button>';
+    } else if (isCustom) {
+      footer = '<div class="product-price">' + priceDisplay + ' <small>يبدأ من</small></div>' +
+               '<button class="buy-btn custom-amount-btn" data-buy="' + p._id + '">تحديد الكمية والشحن ⚡</button>';
+    } else if (isGroup) {
+      footer = '<div class="product-price">' + priceDisplay + ' <small>يبدأ من</small></div>' +
+               '<button class="buy-btn group-btn" data-group="' + p._id + '">📦 عرض الباقات (' + p.variants.length + ')</button>';
+    } else {
+      footer = '<div class="product-price">' + priceDisplay + ' <small>' + (p.unit || '') + '</small></div>' +
+               '<button class="buy-btn" data-buy="' + p._id + '">أضف للسلة 🛒</button>';
+    }
+
     var countrySel = p.countrySelect
       ? '<div class="product-extra"><select id="country-' + p._id + '"><option value="">اختر الدولة 🌍</option>' +
         COUNTRIES.map(function (c) { return '<option value="' + c[1] + '">' + c[0] + ' ' + c[1] + '</option>'; }).join('') +
         '</select></div>'
       : '';
-    return '<article class="product-card' + (isGroup ? ' group-card' : '') + (isUnavailable ? ' product-unavailable' : '') + '"' + (isGroup ? ' data-group="' + p._id + '"' : '') + '>' +
+
+    var discountBadge = hasDiscount
+      ? '<span class="sale-badge" style="position:absolute;top:10px;left:10px;background:#e74c3c;color:#fff;font-size:11px;padding:3px 8px;border-radius:6px;font-weight:bold;z-index:2">خصم ' + discPct + '% 🔥</span>'
+      : '';
+    var unavailClass = isUnavailable ? ' product-unavailable' : '';
+
+    return '<article class="product-card' + (isGroup ? ' group-card' : '') + unavailClass + '"' + (isGroup ? ' data-group="' + p._id + '"' : '') + ' style="position:relative">' +
+      discountBadge +
       '<div class="product-icon">' + iconHtml(p) + '</div>' +
       '<span class="product-cat">' + (CAT_LABELS[p.cat] || '') + '</span>' +
       '<h3 class="product-name">' + p.name + '</h3>' +
@@ -248,7 +300,14 @@ document.querySelector('[data-close="groupModal"]').addEventListener('click', fu
 
 /* ---------------- الدورات والخدمات ---------------- */
 function renderCourses() {
-  document.getElementById('coursesGrid').innerHTML = COURSES.map(function (c) {
+  var list = COURSES;
+  if (courseSearchQuery) {
+    var q = courseSearchQuery.toLowerCase();
+    list = list.filter(function (c) {
+      return (c.name + ' ' + (c.desc || '') + ' ' + (c.meta || '')).toLowerCase().indexOf(q) !== -1;
+    });
+  }
+  document.getElementById('coursesGrid').innerHTML = list.length ? list.map(function (c) {
     return '<article class="course-card">' +
       '<div class="course-cover">' + iconHtml(c) + '</div>' +
       '<div class="course-body">' +
@@ -263,8 +322,16 @@ function renderCourses() {
       '<div class="course-price course-inquiry">💬 تواصل للاتفاق</div>' +
       '<button class="buy-btn contact-btn" data-inquire="' + c._id + '">تواصل للاتفاق 📩</button>' +
       '</div></div></article>';
-  }).join('');
+  }).join('') : '<p class="cart-empty">لا توجد نتائج مطابقة لبحثك 🔍</p>';
 }
+
+/* v38: بحث الدورات والخدمات */
+document.addEventListener('input', function (e) {
+  if (e.target && e.target.id === 'coursesSearch') {
+    courseSearchQuery = e.target.value.trim();
+    renderCourses();
+  }
+});
 
 /* ---------------- السلة ---------------- */
 var cartPanel = document.getElementById('cartPanel');
