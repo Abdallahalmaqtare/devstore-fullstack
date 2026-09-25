@@ -695,3 +695,10 @@ input, select, textarea { font-family: inherit; }
 /* الشارة العلوية لنافذة الكمية تدعم HTML المشطوب */
 .cqm-badge{line-height:1.5;text-align:center}
 .cqm-badge .local-price{display:block;font-size:.72rem;opacity:.9}
+
+/* ═══ v39 — نافذة الكمية: مشطوب/جديد في الإجمالي + بحث الدورات ═══ */
+.cqm-old{text-decoration:line-through;opacity:.6;font-size:.85em;font-weight:600;margin-inline-end:8px}
+.cqm-old .local-price{display:inline}
+.cqm-new{color:#2ecc71;font-weight:800}
+.cqm-badge{line-height:1.4;text-align:center}
+.courses-search{margin:0 auto 18px;max-width:640px;width:100%}

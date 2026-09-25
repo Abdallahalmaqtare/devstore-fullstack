@@ -179,12 +179,8 @@ function renderProducts() {
     }
 
     /* 2) تنسيق عرض السعر مع السعر المشطوب عند التخفيض */
-    var hasDiscount = (oldPrice > currentPrice && currentPrice > 0);
-    if (hasDiscount && !discPct) discPct = Math.round((1 - currentPrice / oldPrice) * 100);
-    var priceDisplay = hasDiscount
-      ? '<span class="price-old" style="text-decoration:line-through;opacity:.65;margin-left:6px;font-size:.85em">' + fmtPrice(oldPrice) + '</span> ' +
-        '<span class="price-new" style="color:#2ecc71;font-weight:bold">' + fmtPrice(currentPrice) + '</span>'
-      : fmtPrice(currentPrice);
+    /* v39: التخفيض يظهر داخل النوافذ فقط — البطاقات الرئيسية تعرض السعر الحالي فقط */
+    var priceDisplay = fmtPrice(currentPrice);
 
     /* 3) الأزرار وحالة المنتج */
     var footer;
@@ -208,9 +204,7 @@ function renderProducts() {
         '</select></div>'
       : '';
 
-    var discountBadge = hasDiscount
-      ? '<span class="sale-badge" style="position:absolute;top:10px;left:10px;background:#e74c3c;color:#fff;font-size:11px;padding:3px 8px;border-radius:6px;font-weight:bold;z-index:2">خصم ' + discPct + '% 🔥</span>'
-      : '';
+    var discountBadge = '';
     var unavailClass = isUnavailable ? ' product-unavailable' : '';
 
     return '<article class="product-card' + (isGroup ? ' group-card' : '') + unavailClass + '"' + (isGroup ? ' data-group="' + p._id + '"' : '') + ' style="position:relative">' +
@@ -1579,15 +1573,13 @@ window.addEventListener('load', loadSiteSettings);
       var q = parseInt(qtyEl.value) || 0;
       var totalFinal = +(unit * q).toFixed(2);
       var totalOriginal = +(origUnit * q).toFixed(2);
-      /* الإجمالي السفلي: السعر النهائي بعد الخصم بالعملتين */
-      document.getElementById('cqmTotal').innerHTML = fmtPrice(totalFinal);
-      /* الشارة العلوية: السعر الأصلي قبل الخصم مشطوباً بالعملتين (أو السعر العادي) */
-      var badgeEl = document.getElementById('cqmBadge');
-      if (hasDiscount && totalOriginal > totalFinal) {
-        badgeEl.innerHTML = '<span style="text-decoration:line-through;opacity:.85">' + fmtPrice(totalOriginal) + '</span>';
-      } else {
-        badgeEl.innerHTML = fmtPrice(totalFinal);
-      }
+      var showDisc = hasDiscount && totalOriginal > totalFinal;
+      /* الشارة العلوية: السعر قبل التخفيض دائماً (بدون شطب) */
+      document.getElementById('cqmBadge').innerHTML = fmtPrice(showDisc ? totalOriginal : totalFinal);
+      /* الإجمالي السفلي: القديم مشطوباً ثم الجديد — بالعملتين */
+      document.getElementById('cqmTotal').innerHTML = showDisc
+        ? '<span class="cqm-old">' + fmtPrice(totalOriginal) + '</span> <span class="cqm-new">' + fmtPrice(totalFinal) + '</span>'
+        : '<span class="cqm-new">' + fmtPrice(totalFinal) + '</span>';
       var warn = document.getElementById('cqmWarn');
       if (q < min) { warn.textContent = '⚠️ يجب أن تكون الكمية أكبر من أو تساوي ' + min; buyBtn.disabled = true; }
       else if (q > max) { warn.textContent = '⚠️ الحد الأقصى المسموح به ' + max; buyBtn.disabled = true; }
