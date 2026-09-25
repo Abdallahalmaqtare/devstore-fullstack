@@ -402,9 +402,9 @@ document.getElementById('checkoutBtn').addEventListener('click', async function 
     return;
   }
   if (!API.user()) { closeCart(); openAuth('login'); return showToast('⚠️ سجّل الدخول أولاً'); }
-  if (!selectedPmId) return showToast('⚠️ اختر طريقة الدفع');
+  if (!selectedPmId) { if (window.__openPaySheet) window.__openPaySheet(); return showToast('⚠️ اختر طريقة الدفع'); }
   var receipt = document.getElementById('receiptInput').files[0];
-  if (!receipt) return showToast('⚠️ صورة سند الحوالة مطلوبة 📎');
+  if (!receipt) { if (window.__openPaySheet) window.__openPaySheet(); return showToast('⚠️ صورة سند الحوالة مطلوبة 📎'); }
 
   var btn = document.getElementById('checkoutBtn');
   btn.disabled = true; btn.textContent = '⏳ جارٍ الإرسال...';
@@ -1601,7 +1601,6 @@ window.addEventListener('load', loadSiteSettings);
     var payMethods = panel.querySelector('.pay-methods');
     if (!footer || !payMethods) return;
 
-    /* ابحث عن زر تأكيد الطلب الأصلي وانقله للشريط السفلي (يحتفظ بمعرّفه ومستمعيه) */
     var confirmBtn = null;
     panel.querySelectorAll('button').forEach(function (b) { if (/تأكيد/.test(b.textContent)) confirmBtn = b; });
 
@@ -1615,30 +1614,31 @@ window.addEventListener('load', loadSiteSettings);
     document.body.appendChild(overlay);
     document.body.appendChild(sheet);
 
-    /* الشريط السفلي الثابت */
+    /* الشريط السفلي الثابت: [شريط اختيار الدفع] فوق [الإجمالي] فوق [تأكيد الطلب] */
     footer.classList.add('cart-bottom-bar');
-    var actions = document.createElement('div');
-    actions.className = 'cart-actions';
-    var openBtn = document.createElement('button');
-    openBtn.type = 'button'; openBtn.id = 'openPaySheet'; openBtn.className = 'btn btn-outline pay-open-btn';
-    openBtn.innerHTML = '💳 <span id="paySheetBtnLabel">اختر طريقة الدفع</span>';
-    actions.appendChild(openBtn);
-    if (confirmBtn) { confirmBtn.classList.add('cart-confirm-btn'); actions.appendChild(confirmBtn); }
-    footer.appendChild(actions);
+    var payBar = document.createElement('button');
+    payBar.type = 'button'; payBar.id = 'openPaySheet'; payBar.className = 'pay-select-bar';
+    payBar.innerHTML = '💳 <span id="paySheetBtnLabel">اضغط لاختيار طريقة الدفع</span>';
+    footer.insertBefore(payBar, footer.firstChild);
+    var total = footer.querySelector('.cart-total');
+    if (total) footer.insertBefore(total, payBar.nextSibling);
+    if (confirmBtn) { confirmBtn.classList.add('cart-confirm-btn'); footer.appendChild(confirmBtn); }
 
     function openSheet() { sheet.classList.add('open'); overlay.classList.add('show'); }
     function closeSheet() { sheet.classList.remove('open'); overlay.classList.remove('show'); }
-    openBtn.addEventListener('click', openSheet);
-    overlay.addEventListener('click', closeSheet);
-    sheet.querySelector('#paySheetClose').addEventListener('click', closeSheet);
+    window.__openPaySheet = openSheet;
+    payBar.addEventListener('click', openSheet);
+    overlay.addEventListener('click', closeSheet);                       /* النقر خارج النافذة */
+    sheet.querySelector('#paySheetClose').addEventListener('click', closeSheet);   /* زر X */
+    sheet.querySelector('.pay-sheet-handle').addEventListener('click', closeSheet); /* شريط السحب */
 
-    /* عند اختيار طريقة دفع: حدّث اسم الزر وأغلق الشيت (المستمع الأصلي يبقى يضبط selectedPmId) */
+    /* عند اختيار طريقة دفع: تحديث اسم الشريط فقط — الشيت يبقى مفتوحاً لرفع السند */
     document.addEventListener('click', function (e) {
       var pb = e.target.closest('#payGrid .pay-btn');
       if (!pb) return;
       var label = document.getElementById('paySheetBtnLabel');
       if (label) label.textContent = pb.textContent.trim();
-      setTimeout(closeSheet, 250);
+      payBar.classList.add('has-selection');
     });
   }
 

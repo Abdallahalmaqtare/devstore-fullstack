@@ -632,9 +632,10 @@ input, select, textarea { font-family: inherit; }
 .cart-item small, .cart-item .item-variant { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
 
 /* ═══ v34: شريط التصنيفات — تمرير أفقي سلس ═══ */
-.store-filters{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:8px;padding:8px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+/* v35 — إصلاح تمرير التصنيفات RTL: يبدأ من اليمين دون اقتصاص */
+.store-filters{display:flex;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;gap:8px;padding:8px 16px;justify-content:flex-start;width:100%;box-sizing:border-box;scrollbar-width:none;margin-bottom:24px}
 .store-filters::-webkit-scrollbar{display:none}
-.filter-chip{white-space:nowrap;flex:0 0 auto}
+.filter-chip{flex:0 0 auto;flex-shrink:0;white-space:nowrap}
 /* ═══ v34: السلة — قائمة تمرير كاملة + شريط سفلي ثابت ═══ */
 .offcanvas#cartPanel{display:flex;flex-direction:column;height:100dvh;max-height:100dvh}
 .offcanvas#cartPanel .cart-items{flex:1;overflow-y:auto;min-height:0;padding-bottom:8px}
@@ -658,3 +659,23 @@ input, select, textarea { font-family: inherit; }
 .pay-sheet .pay-methods{margin:0}
 /* فلاتر الدورات */
 .courses-filters{margin:10px 0 14px}
+
+/* ═══ v35 — شريط اختيار الدفع التفاعلي أسفل السلة ═══ */
+.cart-bottom-bar{flex:0 0 auto;position:sticky;bottom:0;z-index:2;display:flex;flex-direction:column;gap:10px;padding:14px 18px max(14px, env(safe-area-inset-bottom));background:var(--surface);border-top:1px solid var(--border);box-shadow:0 -10px 24px rgba(0,0,0,.14)}
+.pay-select-bar{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px 16px;border-radius:12px;font-weight:800;font-size:.95rem;background:var(--surface-2);border:1.5px dashed var(--primary);color:var(--primary);transition:.25s;cursor:pointer}
+.pay-select-bar:hover{background:color-mix(in srgb, var(--primary) 10%, transparent)}
+.pay-select-bar.has-selection{border-style:solid;background:color-mix(in srgb, var(--primary) 12%, transparent)}
+.cart-bottom-bar .cart-total{margin:0}
+.cart-bottom-bar .cart-confirm-btn{width:100%}
+/* شيت الدفع التصاعدي */
+.pay-sheet-overlay{position:fixed;inset:0;z-index:238;background:rgba(4,8,18,.58);backdrop-filter:blur(4px);opacity:0;visibility:hidden;pointer-events:none;transition:.25s}
+.pay-sheet-overlay.show{opacity:1;visibility:visible;pointer-events:auto}
+.pay-sheet{position:fixed;left:0;right:0;bottom:0;z-index:240;margin:0 auto;width:min(100%,480px);max-height:82vh;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:22px 22px 0 0;padding:14px 20px max(18px, env(safe-area-inset-bottom));box-shadow:0 -18px 60px rgba(0,0,0,.28);transform:translateY(105%);transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+.pay-sheet.open{transform:translateY(0)}
+.pay-sheet-handle{width:44px;height:5px;border-radius:99px;background:var(--border);margin:2px auto 12px;cursor:pointer}
+.pay-sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:12px;border-bottom:1px solid var(--border);margin-bottom:14px}
+.pay-sheet-head h4{margin:0;font-size:1.05rem}
+.pay-sheet-head .modal-close{position:static;flex:0 0 auto}
+.pay-sheet .pay-grid{display:flex;flex-direction:column;gap:10px}
+.pay-sheet .pay-btn{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;font-size:.95rem;border-radius:12px}
+.pay-sheet .pay-logo{width:32px;height:32px;object-fit:contain;border-radius:8px;background:#fff;padding:2px}
