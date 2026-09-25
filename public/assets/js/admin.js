@@ -979,3 +979,29 @@ document.addEventListener('change', function(e){
   }).observe(document.body, { childList: true, subtree: true });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wireAll); else wireAll();
 })();
+
+/* ═══ v34: حفظ عدادات الواجهة ═══ */
+(function () {
+  async function load() {
+    try {
+      var d = await (await fetch('/api/settings/stats?t=' + Date.now(), { cache: 'no-store' })).json();
+      var t = document.getElementById('statTrainees'); if (t && d.trainees != null) t.value = d.trainees;
+      var sp = document.getElementById('statSupport'); if (sp && d.support != null) sp.value = d.support;
+    } catch (e) {}
+  }
+  function wire() {
+    var b = document.getElementById('statsSave');
+    if (!b || b.dataset.v34) return; b.dataset.v34 = '1';
+    b.onclick = async function () {
+      try {
+        await API.req('/settings', { method: 'PUT', body: {
+          statTrainees: document.getElementById('statTrainees').value,
+          statBase: document.getElementById('statBase').value,
+          statSupport: document.getElementById('statSupport').value } });
+        showToast('✅ تم حفظ العدادات — تظهر في الواجهة فوراً');
+      } catch (e) { showToast('❌ ' + e.message); }
+    };
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function(){ load(); wire(); });
+  else { load(); wire(); }
+})();

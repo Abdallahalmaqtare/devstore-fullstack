@@ -277,6 +277,13 @@
       </section>
 
       <section class="admin-page" id="page-settings">
+        <div class="panel" id="statsBoxStatic">
+          <h3>📊 عدادات الواجهة الرئيسية</h3>
+          <label>طالب ومتدرب (يدوي)<input type="number" id="statTrainees" min="0" placeholder="350" /></label>
+          <label>قيمة أساسية للخدمات المنجزة (تُضاف لعدد الطلبات المكتملة تلقائياً)<input type="number" id="statBase" min="0" placeholder="0" /></label>
+          <label>نص الدعم (مثال: 24)<input type="text" id="statSupport" placeholder="24" /></label>
+          <button type="button" class="btn btn-primary" id="statsSave">💾 حفظ العدادات</button>
+        </div>
         <div class="panel" id="brandBoxStatic">
           <h3>🏷️ هوية المتجر (الاسم والشعار)</h3>
           <label>اسم الموقع<input type="text" id="brandNameStatic" placeholder="DevStore" /></label>

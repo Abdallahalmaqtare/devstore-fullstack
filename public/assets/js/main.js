@@ -1590,3 +1590,109 @@ window.addEventListener('load', loadSiteSettings);
 
 
 
+
+/* ════════════ v34: إعادة هيكلة السلة + فلاتر الخدمات + العدادات الحية ════════════ */
+(function () {
+  /* ── 1) هيكلة السلة: قائمة تمرير + شريط سفلي ثابت + شيت دفع تصاعدي ── */
+  function restructureCart() {
+    var panel = document.getElementById('cartPanel');
+    if (!panel || document.getElementById('paySheet')) return;
+    var footer = panel.querySelector('.cart-footer');
+    var payMethods = panel.querySelector('.pay-methods');
+    if (!footer || !payMethods) return;
+
+    /* ابحث عن زر تأكيد الطلب الأصلي وانقله للشريط السفلي (يحتفظ بمعرّفه ومستمعيه) */
+    var confirmBtn = null;
+    panel.querySelectorAll('button').forEach(function (b) { if (/تأكيد/.test(b.textContent)) confirmBtn = b; });
+
+    /* شيت الدفع التصاعدي — نقل عقدة payMethods الفعلية إليه (تبقى المعرّفات والمستمعون سليمة) */
+    var overlay = document.createElement('div');
+    overlay.id = 'paySheetOverlay'; overlay.className = 'pay-sheet-overlay';
+    var sheet = document.createElement('div');
+    sheet.id = 'paySheet'; sheet.className = 'pay-sheet';
+    sheet.innerHTML = '<div class="pay-sheet-handle"></div><div class="pay-sheet-head"><h4>💳 اختر طريقة الدفع</h4><button type="button" class="modal-close" id="paySheetClose">✕</button></div>';
+    sheet.appendChild(payMethods);
+    document.body.appendChild(overlay);
+    document.body.appendChild(sheet);
+
+    /* الشريط السفلي الثابت */
+    footer.classList.add('cart-bottom-bar');
+    var actions = document.createElement('div');
+    actions.className = 'cart-actions';
+    var openBtn = document.createElement('button');
+    openBtn.type = 'button'; openBtn.id = 'openPaySheet'; openBtn.className = 'btn btn-outline pay-open-btn';
+    openBtn.innerHTML = '💳 <span id="paySheetBtnLabel">اختر طريقة الدفع</span>';
+    actions.appendChild(openBtn);
+    if (confirmBtn) { confirmBtn.classList.add('cart-confirm-btn'); actions.appendChild(confirmBtn); }
+    footer.appendChild(actions);
+
+    function openSheet() { sheet.classList.add('open'); overlay.classList.add('show'); }
+    function closeSheet() { sheet.classList.remove('open'); overlay.classList.remove('show'); }
+    openBtn.addEventListener('click', openSheet);
+    overlay.addEventListener('click', closeSheet);
+    sheet.querySelector('#paySheetClose').addEventListener('click', closeSheet);
+
+    /* عند اختيار طريقة دفع: حدّث اسم الزر وأغلق الشيت (المستمع الأصلي يبقى يضبط selectedPmId) */
+    document.addEventListener('click', function (e) {
+      var pb = e.target.closest('#payGrid .pay-btn');
+      if (!pb) return;
+      var label = document.getElementById('paySheetBtnLabel');
+      if (label) label.textContent = pb.textContent.trim();
+      setTimeout(closeSheet, 250);
+    });
+  }
+
+  /* ── 2) فلاتر أقسام الدورات والخدمات الفرعية ── */
+  function buildCourseFilters() {
+    var sec = document.getElementById('courses');
+    if (!sec || document.getElementById('coursesFilters')) return;
+    if (typeof CATEGORIES === 'undefined' || typeof COURSES === 'undefined') return;
+    var svcCats = CATEGORIES.filter(function (c) { return c.kind === 'services'; });
+    if (!svcCats.length) return;
+    var bar = document.createElement('div');
+    bar.id = 'coursesFilters'; bar.className = 'store-filters courses-filters';
+    bar.innerHTML = '<button class="filter-chip active" data-cfilter="all">الكل</button>' +
+      svcCats.map(function (c) { return '<button class="filter-chip" data-cfilter="' + c.slug + '">' + (c.icon || '') + ' ' + c.nameAr + '</button>'; }).join('');
+    var head = sec.querySelector('h2, .section-head, .section-title') || sec.firstElementChild;
+    if (head && head.parentElement) head.parentElement.insertBefore(bar, head.nextSibling);
+    else sec.insertBefore(bar, sec.firstChild);
+    bar.addEventListener('click', function (e) {
+      var chip = e.target.closest('.filter-chip'); if (!chip) return;
+      bar.querySelectorAll('.filter-chip').forEach(function (c) { c.classList.remove('active'); });
+      chip.classList.add('active');
+      var slug = chip.dataset.cfilter;
+      var cards = sec.querySelectorAll('[class*="card"], [class*="course"]');
+      cards.forEach(function (card) {
+        if (card.id === 'coursesFilters' || card.closest('#coursesFilters')) return;
+        var match = null;
+        COURSES.forEach(function (c) { if (card.textContent.indexOf(c.name) !== -1 && (!match || c.name.length > match.name.length)) match = c; });
+        card.style.display = (slug === 'all' || !match || match.cat === slug) ? '' : 'none';
+      });
+    });
+  }
+
+  /* ── 3) العدادات الحية من قاعدة البيانات ── */
+  async function loadLiveStats() {
+    try {
+      var d = await (await fetch('/api/settings/stats?t=' + Date.now(), { cache: 'no-store' })).json();
+      document.querySelectorAll('.hero-stats .stat, .stats .stat, [class*="stats"] .stat').forEach(function (st) {
+        var b = st.querySelector('b'); var label = (st.textContent || '');
+        if (!b) return;
+        var val = null;
+        if (/خدمة|منجزة/.test(label)) val = d.services;
+        else if (/طالب|متدرب/.test(label)) val = d.trainees;
+        else if (/دعم/.test(label)) val = d.support;
+        if (val != null) { b.dataset.count = val; b.textContent = '+' + val; }
+      });
+    } catch (e) {}
+  }
+
+  var l34 = false;
+  new MutationObserver(function () {
+    if (l34) return; l34 = true;
+    setTimeout(function () { l34 = false; restructureCart(); buildCourseFilters(); }, 300);
+  }).observe(document.body, { childList: true, subtree: true });
+  function init() { restructureCart(); buildCourseFilters(); loadLiveStats(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  window.addEventListener('load', loadLiveStats);
+})();

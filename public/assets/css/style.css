@@ -630,3 +630,31 @@ input, select, textarea { font-family: inherit; }
 
 /* v33: تنظيف عرض عناصر الكمية المخصصة في السلة */
 .cart-item small, .cart-item .item-variant { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+
+/* ═══ v34: شريط التصنيفات — تمرير أفقي سلس ═══ */
+.store-filters{display:flex;flex-wrap:nowrap;overflow-x:auto;gap:8px;padding:8px 4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.store-filters::-webkit-scrollbar{display:none}
+.filter-chip{white-space:nowrap;flex:0 0 auto}
+/* ═══ v34: السلة — قائمة تمرير كاملة + شريط سفلي ثابت ═══ */
+.offcanvas#cartPanel{display:flex;flex-direction:column;height:100dvh;max-height:100dvh}
+.offcanvas#cartPanel .cart-items{flex:1;overflow-y:auto;min-height:0;padding-bottom:8px}
+.cart-bottom-bar{flex:0 0 auto;background:var(--card,#141428);border-top:1px solid rgba(255,255,255,.1);padding:12px 14px;box-shadow:0 -6px 20px rgba(0,0,0,.25)}
+[data-theme="light"] .cart-bottom-bar{background:#fff;border-top-color:rgba(0,0,0,.08)}
+.cart-bottom-bar .cart-total{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:.95rem}
+.cart-bottom-bar .cart-total b{color:#2ed573;font-size:1.2rem}
+.cart-actions{display:flex;gap:8px}
+.pay-open-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cart-confirm-btn{flex:1;white-space:nowrap}
+/* ═══ v34: شيت الدفع التصاعدي ═══ */
+.pay-sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .28s;z-index:1001}
+.pay-sheet-overlay.show{opacity:1;pointer-events:auto}
+.pay-sheet{position:fixed;bottom:0;left:0;right:0;z-index:1002;background:var(--card,#141428);border-radius:22px 22px 0 0;padding:8px 18px 22px;transform:translateY(105%);transition:transform .34s cubic-bezier(.22,1,.36,1);max-height:78dvh;overflow-y:auto;box-shadow:0 -10px 40px rgba(0,0,0,.4)}
+[data-theme="light"] .pay-sheet{background:#fff}
+.pay-sheet.open{transform:translateY(0)}
+.pay-sheet-handle{width:44px;height:5px;border-radius:999px;background:rgba(255,255,255,.25);margin:6px auto 10px}
+[data-theme="light"] .pay-sheet-handle{background:rgba(0,0,0,.2)}
+.pay-sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.pay-sheet-head h4{margin:0;font-size:1rem}
+.pay-sheet .pay-methods{margin:0}
+/* فلاتر الدورات */
+.courses-filters{margin:10px 0 14px}

@@ -25,6 +25,9 @@ router.put('/', authRequired, adminOnly, async (req, res) => {
     const b = req.body || {};
     if (b.siteName != null) await SiteSettings.findOneAndUpdate({ key: 'siteName' }, { $set: { key: 'siteName', value: String(b.siteName).trim() } }, { upsert: true });
     const logo = b.siteLogo != null ? b.siteLogo : b.logoUrl;
+    if (b.statTrainees != null) await SiteSettings.findOneAndUpdate({ key: 'statTrainees' }, { $set: { key: 'statTrainees', value: String(b.statTrainees).trim() } }, { upsert: true });
+    if (b.statBase != null) await SiteSettings.findOneAndUpdate({ key: 'statBaseCompleted' }, { $set: { key: 'statBaseCompleted', value: String(b.statBase).trim() } }, { upsert: true });
+    if (b.statSupport != null) await SiteSettings.findOneAndUpdate({ key: 'statSupport' }, { $set: { key: 'statSupport', value: String(b.statSupport).trim() } }, { upsert: true });
     if (logo != null) await SiteSettings.findOneAndUpdate({ key: 'logoUrl' }, { $set: { key: 'logoUrl', value: String(logo).trim() } }, { upsert: true });
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ message: e.message }); }
