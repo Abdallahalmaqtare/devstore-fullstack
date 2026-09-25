@@ -156,7 +156,7 @@ function renderProducts() {
       ? '<div class="product-price">' + fmtPrice(minPrice) + ' <small>يبدأ من</small></div>' +
         '<button class="buy-btn group-btn" data-group="' + p._id + '">📦 عرض الباقات (' + p.variants.length + ')</button>'
       : '<div class="product-price">' + fmtPrice(effPrice(p)) + ' <small>' + (p.unit || '') + '</small></div>' +
-        '<button class="buy-btn" data-buy="' + p._id + '">أضف للسلة 🛒</button>';
+        '<button class="buy-btn" data-buy="' + p._id + '">تحديد الكمية والشحن ⚡</button>';
     var countrySel = p.countrySelect
       ? '<div class="product-extra"><select id="country-' + p._id + '"><option value="">اختر الدولة 🌍</option>' +
         COUNTRIES.map(function (c) { return '<option value="' + c[1] + '">' + c[0] + ' ' + c[1] + '</option>'; }).join('') +
