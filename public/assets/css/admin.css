@@ -118,3 +118,14 @@
 
 .imp-spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(108,92,231,.3);border-top-color:#6c5ce7;border-radius:50%;animation:impspin .7s linear infinite;vertical-align:middle}
 @keyframes impspin{to{transform:rotate(360deg)}}
+
+/* ═══ v46 — تجميع القائمة الجانبية بفئات ═══ */
+.side-group{display:flex;flex-direction:column;gap:2px;margin-bottom:14px}
+.side-group-title{font-size:.72rem;font-weight:800;color:var(--muted);padding:0 12px 4px;letter-spacing:.5px;opacity:.7}
+.side-group .side-link{margin-bottom:0}
+
+/* شارات حالات الطلبات الملونة */
+.status-badge{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:99px;font-size:.78rem;font-weight:700;cursor:pointer;transition:.2s;border:none}
+.status-done{background:rgba(46,204,113,.15);color:#2ecc71}
+.status-cancel{background:rgba(231,76,60,.15);color:#e74c3c}
+.status-pending{background:rgba(241,196,15,.15);color:#f1c40f}

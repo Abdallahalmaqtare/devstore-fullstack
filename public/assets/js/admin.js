@@ -1297,3 +1297,69 @@ document.getElementById('pType').addEventListener('change', syncCryptoFields);
     } catch (err) {}
   });
 })();
+
+
+/* ═══ v46: أمان حساب المدير — OTP عبر تليجرام ═══ */
+(function () {
+  var form = document.getElementById('adminSecurityForm'); if (!form) return;
+  var pendingChanges = [];
+
+  function detectChanges() {
+    var changes = [];
+    var name = document.getElementById('adName').value.trim();
+    var phone = document.getElementById('adPhone').value.replace(/\D/g, '');
+    var pass = document.getElementById('adPass').value;
+    var u = API.user() || {};
+    if (name && name !== u.name) changes.push('name');
+    if (phone && phone !== u.phone) changes.push('phone');
+    if (pass) changes.push('password');
+    return { changes: changes, name: name, phone: phone, pass: pass };
+  }
+
+  document.getElementById('adRequestOtp').addEventListener('click', async function () {
+    var d = detectChanges();
+    if (!d.changes.length) return showToast('⚠️ لا توجد تعديلات لإرسال رمز لها');
+    try {
+      await API.req('/users/request-admin-otp', { method: 'POST', body: { purpose: d.changes[0] } });
+      pendingChanges = d;
+      showOtpModal(d);
+    } catch (err) { showToast('❌ ' + err.message); }
+  });
+
+  function showOtpModal(d) {
+    var old = document.getElementById('adOtpModal'); if (old) old.remove();
+    var ov = document.createElement('div'); ov.id = 'adOtpModal'; ov.className = 'desc-modal-overlay';
+    var labels = { name: 'تغيير الاسم', phone: 'تغيير رقم الهاتف', password: 'تغيير كلمة المرور' };
+    ov.innerHTML = '<div class="desc-modal" dir="rtl" style="max-width:380px">'
+      + '<button class="modal-close" id="adOtpClose">✕</button>'
+      + '<h3>🔐 تأكيد العملية الحساسة</h3>'
+      + '<p class="auth-note">أُرسل رمز مكوّن من 6 أرقام إلى بوت تليجرام الإدارة.<br>العمليات المطلوبة: <b>' + d.changes.map(function(c){return labels[c];}).join('، ') + '</b></p>'
+      + '<input type="text" id="adOtpInput" class="cqm-input" dir="ltr" maxlength="6" placeholder="______" inputmode="numeric" style="text-align:center;font-size:1.4rem;letter-spacing:8px;margin:12px 0" />'
+      + '<button class="btn btn-primary btn-block" id="adOtpConfirm">✅ تأكيد وحفظ</button>'
+      + '</div>';
+    document.body.appendChild(ov);
+    ov.addEventListener('click', function (e) { if (e.target === ov) ov.remove(); });
+    document.getElementById('adOtpClose').onclick = function () { ov.remove(); };
+    document.getElementById('adOtpConfirm').onclick = async function () {
+      var otp = document.getElementById('adOtpInput').value.trim();
+      if (otp.length !== 6) return showToast('⚠️ أدخل الرمز المكوّن من 6 أرقام');
+      try {
+        var body = { otp: otp };
+        if (pendingChanges.name) body.name = pendingChanges.name;
+        if (pendingChanges.phone) body.phone = pendingChanges.phone;
+        if (pendingChanges.pass) body.password = pendingChanges.pass;
+        var res = await API.req('/users/admin-profile', { method: 'PUT', body: body });
+        API.setSession(API.token(), res.user, true);
+        ov.remove();
+        form.reset();
+        showToast('✅ تم حفظ التعديلات وإرسال تنبيه أمني');
+      } catch (err) { showToast('❌ ' + err.message); }
+    };
+  }
+
+  /* منع الحفظ المباشر بدون OTP */
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    showToast('📨 اضغط «إرسال رمز التحقق» أولاً لتأكيد التعديلات الحساسة');
+  });
+})();

@@ -45,13 +45,23 @@
         <span class="brand-name"><b>Dev</b>Store</span>
       </a>
       <nav class="side-nav">
-        <button class="side-link active" data-page="dashboard">📊 الرئيسية</button>
-        <button class="side-link" data-page="products">🛍️ المنتجات والخدمات</button>
-        <button class="side-link" data-page="categories">🗂️ إدارة الأقسام</button>
-        <button class="side-link" data-page="orders">📦 إدارة الطلبات</button>
-        <button class="side-link" data-page="users">👥 إدارة المستخدمين</button>
-        <button class="side-link" data-page="admins">🛡️ إدارة المسؤولين</button>
-        <button class="side-link" data-page="settings">⚙️ الإعدادات</button>
+        <div class="side-group"><span class="side-group-title">🏠 الرئيسية</span>
+          <button class="side-link active" data-page="dashboard">📊 لوحة المتابعة</button>
+        </div>
+        <div class="side-group"><span class="side-group-title">🛍️ إدارة المتجر</span>
+          <button class="side-link" data-page="products">🛒 المنتجات والخدمات</button>
+          <button class="side-link" data-page="categories">🗂️ الأقسام والتصنيفات</button>
+        </div>
+        <div class="side-group"><span class="side-group-title">💰 المبيعات والمالية</span>
+          <button class="side-link" data-page="orders">📦 إدارة الطلبات</button>
+        </div>
+        <div class="side-group"><span class="side-group-title">👥 المستخدمون</span>
+          <button class="side-link" data-page="users">🧑‍🤝‍🧑 العملاء</button>
+          <button class="side-link" data-page="admins">🛡️ المسؤولون</button>
+        </div>
+        <div class="side-group"><span class="side-group-title">⚙️ الإعدادات العامة</span>
+          <button class="side-link" data-page="settings">🔧 الإعدادات والحساب</button>
+        </div>
       </nav>
       <div class="sidebar-footer">
         <button class="icon-btn" id="adminThemeToggle" title="تبديل الوضع الليلي">
@@ -389,14 +399,21 @@
         </div>
 
         <div class="panel">
-          <h3>🔐 أمان حساب المدير</h3>
-          <form class="admin-form" id="adminPassForm">
+          <h3>🔐 أمان حساب المدير — تعديل البيانات الحساسة</h3>
+          <p class="auth-note" style="margin-bottom:14px">أي تعديل في الاسم أو الهاتف أو كلمة المرور يتطلب رمز تحقق يُرسل فوراً إلى بوت تليجرام الخاص بالإدارة، ويُسجَّل تنبيه أمني بعد الحفظ.</p>
+          <form class="admin-form" id="adminSecurityForm">
             <div class="form-row">
-              <label>كلمة المرور الحالية<input type="password" id="adCur" required /></label>
-              <label>كلمة المرور الجديدة<input type="password" id="adNew" required minlength="6" /></label>
+              <label>اسم المسؤول<input type="text" id="adName" placeholder="اسمك الحالي" autocomplete="off" /></label>
+              <label>رقم الهاتف / المعرف<input type="tel" id="adPhone" dir="ltr" placeholder="967771234567" inputmode="numeric" autocomplete="off" /></label>
             </div>
-            <label>تأكيد كلمة المرور<input type="password" id="adNew2" required minlength="6" /></label>
-            <div class="form-actions"><button type="submit" class="btn btn-primary">🔒 تحديث كلمة مرور المدير</button></div>
+            <label>كلمة المرور الجديدة (اتركها فارغة إن لم ترد تغييرها)<input type="password" id="adPass" placeholder="••••••••" autocomplete="new-password" /></label>
+            <small class="field-hint">كلمة المرور تُحفظ مشفرة — لا تُعرض بعد الحفظ أبداً.</small>
+            <div class="form-actions" style="margin-top:12px">
+              <button type="button" class="btn btn-outline" id="adRequestOtp">📨 إرسال رمز التحقق لتليجرام</button>
+              <button type="submit" class="btn btn-primary" id="adSaveProfile">💾 حفظ التعديلات</button>
+            </div>
+          </form>
+        </div>
           </form>
         </div>
       </section>
