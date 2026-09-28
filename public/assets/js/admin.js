@@ -653,11 +653,12 @@ document.getElementById('adminPassForm').addEventListener('submit', async e => {
   e.preventDefault();
   const n1 = document.getElementById('adNew').value;
   const n2 = document.getElementById('adNew2').value;
-  if (n1 !== n2) return showToast('⚠️ كلمتا المرور غير متطابقتين');
+  if (!n1 && !document.getElementById('adPhoneNew').value.replace(/\D/g, '')) return showToast('ℹ️ لا توجد تعديلات لحفظها');
+  if (n1 && n1 !== n2) return showToast('⚠️ كلمتا المرور غير متطابقتين');
   try {
     await API.req('/users/change-password', {
       method: 'PUT',
-      body: { current: document.getElementById('adCur').value, next: n1 },
+      body: { current: document.getElementById('adCur').value, next: n1 || undefined, phone: document.getElementById('adPhoneNew').value.replace(/\D/g, '').replace(/^0+/, '') || undefined },
     });
     e.target.reset();
     showToast('🔒 تم تحديث كلمة مرور المدير');

@@ -392,10 +392,11 @@
           <h3>🔐 أمان حساب المدير</h3>
           <form class="admin-form" id="adminPassForm">
             <div class="form-row">
-              <label>كلمة المرور الحالية<input type="password" id="adCur" required /></label>
-              <label>كلمة المرور الجديدة<input type="password" id="adNew" required minlength="6" /></label>
+              <label>كلمة المرور الحالية (إجباري — لتأكيد هويتك)<input type="password" id="adCur" required placeholder="••••••••" autocomplete="current-password" /></label>
+              <label>رقم الهاتف الجديد للمسؤول (اختياري)<input type="tel" id="adPhoneNew" dir="ltr" placeholder="967771234567 — اتركه فارغاً لعدم التغيير" inputmode="numeric" autocomplete="off" /><small class="field-hint">الرقم الجديد يُعتمد فوراً في تسجيل الدخول القادم.</small></label>
             </div>
-            <label>تأكيد كلمة المرور<input type="password" id="adNew2" required minlength="6" /></label>
+            <label>تأكيد كلمة المرور الجديدة<input type="password" id="adNew2" minlength="6" autocomplete="new-password" /></label>
+            <small class="field-hint">تُملأ حقول كلمة المرور فقط عند الرغبة بتغييرها — وعند الحفظ يصل إشعار فوري لبوت تليجرام يوضح ما تغيّر بالضبط.</small>
             <div class="form-actions"><button type="submit" class="btn btn-primary">🔒 تحديث كلمة مرور المدير</button></div>
           </form>
         </div>

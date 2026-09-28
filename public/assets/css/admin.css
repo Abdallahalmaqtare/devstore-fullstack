@@ -118,3 +118,10 @@
 
 .imp-spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(108,92,231,.3);border-top-color:#6c5ce7;border-radius:50%;animation:impspin .7s linear infinite;vertical-align:middle}
 @keyframes impspin{to{transform:rotate(360deg)}}
+
+/* ═══ v50 — تثبيت فوتر القائمة + تحسين بصري للبطاقات (بصري فقط، بلا مساس بالوظائف) ═══ */
+.sidebar{display:flex !important;flex-direction:column !important;height:100vh;overflow:hidden}
+.side-nav{flex:1 1 auto;overflow-y:auto;min-height:0;padding-bottom:8px}
+.sidebar-footer{margin-top:auto !important;padding:15px !important;border-top:1px solid rgba(255,255,255,.08) !important;flex:0 0 auto;background:inherit}
+.admin-page .panel{border-radius:16px;box-shadow:0 2px 14px rgba(0,0,0,.10);margin-bottom:20px}
+.admin-form label small.field-hint{display:block;margin-top:4px;font-size:.76rem;color:var(--muted);font-weight:400;line-height:1.6}
