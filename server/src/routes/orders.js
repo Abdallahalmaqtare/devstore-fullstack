@@ -81,9 +81,17 @@ router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
         };
       }
 
-      /* حسم السعر والاسم من قاعدة البيانات: من الباقة إن وُجدت، وإلا من المنتج نفسه */
+      /* v40 — أرقام وهمية: السعر من الدولة المختارة (تحقق خادمي) */
       let name = p.name, price = (p.finalPrice > 0 ? p.finalPrice : salePrice(p, p.price)), variant = '';
-      if (p.variants?.length) {
+      if (p.supportedCountries && p.supportedCountries.length) {
+        const chosen = String(i.selectedCountry || i.extra || '').trim();
+        if (!chosen) throw Object.assign(new Error(`اختر الدولة لـ «${p.name}»`), { status: 400 });
+        const c = p.supportedCountries.find(x => x.countryName === chosen || x.countryCode === chosen);
+        if (!c || c.isAvailable === false) throw Object.assign(new Error(`الدولة «${chosen}» غير متوفرة لـ «${p.name}»`), { status: 400 });
+        name = `${p.name} — ${c.flag || ''} ${c.countryName}`;
+        price = +c.price;
+        variant = c.countryName;
+      } else if (p.variants?.length) {
         const v = p.variants.find(x => x.name === i.variant);
         if (!v) throw Object.assign(new Error(`الباقة غير متوفرة في «${p.name}»`), { status: 400 });
         name = `${p.name} — ${v.name}`;

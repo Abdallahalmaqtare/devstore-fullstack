@@ -179,6 +179,12 @@ function renderProducts() {
     }
 
     /* 2) تنسيق عرض السعر مع السعر المشطوب عند التخفيض */
+    /* v40: للأرقام الوهمية، السعر يبدأ من أرخص دولة متاحة */
+    var hasCountries = Array.isArray(p.supportedCountries) && p.supportedCountries.length > 0;
+    if (hasCountries) {
+      var avail = p.supportedCountries.filter(function(c){ return c.isAvailable !== false; });
+      if (avail.length) currentPrice = Math.min.apply(null, avail.map(function(c){ return +c.price; }));
+    }
     /* v39: التخفيض يظهر داخل النوافذ فقط — البطاقات الرئيسية تعرض السعر الحالي فقط */
     var priceDisplay = fmtPrice(currentPrice);
 
@@ -198,11 +204,21 @@ function renderProducts() {
                '<button class="buy-btn" data-buy="' + p._id + '">أضف للسلة 🛒</button>';
     }
 
-    var countrySel = p.countrySelect
-      ? '<div class="product-extra"><select id="country-' + p._id + '"><option value="">اختر الدولة 🌍</option>' +
+    var countrySel = '';
+    if (hasCountries) {
+      var opts = p.supportedCountries.filter(function(c){ return c.isAvailable !== false; })
+        .map(function(c){ return '<option value="' + c.countryName + '" data-price="' + (+c.price) + '">' + (c.flag||'🌍') + ' ' + c.countryName + (c.countryCode?' ('+c.countryCode+')':'') + '</option>'; }).join('');
+      countrySel = '<div class="product-extra"><select class="country-picker" id="country-' + p._id + '" data-product="' + p._id + '"><option value="">اختر الدولة 🌍</option>' + opts + '</select></div>';
+    } else if (p.countrySelect) {
+      countrySel = '<div class="product-extra"><select id="country-' + p._id + '"><option value="">اختر الدولة 🌍</option>' +
         COUNTRIES.map(function (c) { return '<option value="' + c[1] + '">' + c[0] + ' ' + c[1] + '</option>'; }).join('') +
-        '</select></div>'
-      : '';
+        '</select></div>';
+    }
+    /* زر شراء مباشر لمنتج الأرقام */
+    if (hasCountries && !isUnavailable) {
+      footer = '<div class="product-price" id="price-' + p._id + '">' + priceDisplay + ' <small>يبدأ من</small></div>' +
+               '<button class="buy-btn" data-buy="' + p._id + '">أضف للسلة 🛒</button>';
+    }
 
     var discountBadge = '';
     var unavailClass = isUnavailable ? ' product-unavailable' : '';
@@ -339,16 +355,27 @@ function getItemInfo(id) { return PRODUCTS.find(function (p) { return p._id === 
 function addToCart(id) {
   var product = getItemInfo(id);
   if (!product) return;
-  var extra = '';
-  if (product.countrySelect) {
+  var extra = '', priceOverride = null, nameOverride = null, selectedCountry = '';
+  var hasCountries = Array.isArray(product.supportedCountries) && product.supportedCountries.length > 0;
+  if (hasCountries) {
     var sel = document.getElementById('country-' + id);
     if (!sel || !sel.value) { showToast('⚠️ اختر الدولة أولاً'); if (sel) sel.focus(); return; }
-    extra = sel.value;
+    var c = product.supportedCountries.find(function(x){ return x.countryName === sel.value; });
+    if (!c || c.isAvailable === false) { showToast('⚠️ الدولة غير متوفرة حالياً'); return; }
+    selectedCountry = c.countryName;
+    extra = (c.flag || '🌍') + ' ' + c.countryName + (c.countryCode ? ' (' + c.countryCode + ')' : '');
+    priceOverride = +c.price;
+    nameOverride = product.name + ' — ' + (c.flag || '') + ' ' + c.countryName;
+  } else if (product.countrySelect) {
+    var sel2 = document.getElementById('country-' + id);
+    if (!sel2 || !sel2.value) { showToast('⚠️ اختر الدولة أولاً'); if (sel2) sel2.focus(); return; }
+    extra = sel2.value;
   }
   pushItem({
-    id: id, variant: '', extra: extra,
-    name: product.name, price: product.price, icon: product.icon,
-    image: product.image || '',
+    id: id, variant: '', extra: extra, selectedCountry: selectedCountry,
+    name: nameOverride || product.name,
+    price: priceOverride != null ? priceOverride : product.price,
+    icon: product.icon, image: product.image || '',
     requiresAccountId: !!product.requiresAccountId,
   });
 }
@@ -477,7 +504,7 @@ document.getElementById('checkoutBtn').addEventListener('click', async function 
   try {
     var form = new FormData();
     form.append('items', JSON.stringify(cart.map(function (i) {
-      return { id: i.id, variant: i.variant || '', qty: i.qty, extra: i.extra, accountId: i.accountId };
+      return { id: i.id, variant: i.variant || '', qty: i.qty, selectedCountry: i.selectedCountry || '', extra: i.extra, accountId: i.accountId };
     })));
     form.append('paymentMethodId', selectedPmId);
     form.append('receipt', receipt);
@@ -1784,3 +1811,15 @@ document.addEventListener('click', function (e) {
   var card = e.target.closest('.product-card.product-unavailable, .course-card.product-unavailable');
   if (card) { e.preventDefault(); e.stopImmediatePropagation(); }
 }, true);
+
+
+/* v40: تحديث السعر ديناميكياً عند اختيار دولة الأرقام الوهمية */
+document.addEventListener('change', function(e){
+  var sel = e.target.closest('.country-picker'); if (!sel) return;
+  var pid = sel.dataset.product;
+  var priceEl = document.getElementById('price-' + pid);
+  if (!priceEl) return;
+  var opt = sel.options[sel.selectedIndex];
+  var pr = opt && opt.dataset.price ? parseFloat(opt.dataset.price) : 0;
+  if (pr > 0) priceEl.innerHTML = fmtPrice(pr) + ' <small>' + (opt.textContent.trim().split(' ')[0]) + '</small>';
+});

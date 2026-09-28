@@ -51,6 +51,15 @@ const productSchema = new Schema({
   /* باقات المجموعة — لو فيها عناصر يصبح المنتج "مجموعة" تُفتح باقاتها في نافذة */
   variants: { type: [variantSchema], default: [] },
   countrySelect: { type: Boolean, default: false },
+  /* v40 — دول الأرقام الوهمية: كل دولة بسعرها المستقل */
+  supportedCountries: { type: [{
+    countryName: { type: String, required: true },
+    countryCode: { type: String, default: '' },
+    flag: { type: String, default: '🌍' },
+    price: { type: Number, required: true, min: 0 },
+    originalPrice: { type: Number, default: 0 },
+    isAvailable: { type: Boolean, default: true },
+  }], default: [] },
   requiresAccountId: { type: Boolean, default: false },
   /* v29: نظام الكمية المخصصة */
   pricingType: { type: String, enum: ['packages', 'custom_amount'], default: 'packages' },

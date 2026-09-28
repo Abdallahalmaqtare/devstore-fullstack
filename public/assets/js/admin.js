@@ -196,6 +196,7 @@ document.getElementById('productForm').addEventListener('submit', async e => {
     meta: type === 'service' ? document.getElementById('pMeta').value.trim() : document.getElementById('pUnit').value.trim(),
     contactWhatsapp: type === 'service' ? normalizePhone(document.getElementById('pContactWa').value) : '',
     contactTelegram: type === 'service' ? document.getElementById('pContactTg').value.replace(/^@/, '').trim() : '',
+    supportedCountries: (type === 'product' && cat === 'numbers' && window.__getSupportedCountries) ? window.__getSupportedCountries() : [],
   };
   if (type === 'product' && !variants.length && !body.price)
     return showToast('⚠️ أدخل سعراً للسلعة أو أضف باقات للمجموعة');
@@ -226,6 +227,8 @@ function resetProductForm() {
   const _prev = document.getElementById('pImagePreview');
   _prev.classList.add('hidden'); _prev.innerHTML = '';
   syncTypeFields();
+  if (window.__resetSupportedCountries) window.__resetSupportedCountries();
+  if (typeof syncCountriesEditor === 'function') syncCountriesEditor();
 }
 
 /* معاينة فورية للصورة المختارة من الجهاز */
@@ -1019,3 +1022,90 @@ document.getElementById('productsTable').addEventListener('click', function (e) 
     if (av && p && typeof p === 'object') av.checked = p.isAvailable !== false;
   } catch (err) {}
 });
+
+
+/* ═══════════ v40: إدارة دول الأرقام الوهمية ═══════════ */
+var WORLD_COUNTRIES = [
+  ['اليمن','YE','+967','🇾🇪'],['السعودية','SA','+966','🇸🇦'],['الإمارات','AE','+971','🇦🇪'],['مصر','EG','+20','🇪🇬'],['الأردن','JO','+962','🇯🇴'],
+  ['الكويت','KW','+965','🇰🇼'],['قطر','QA','+974','🇶🇦'],['البحرين','BH','+973','🇧🇭'],['عُمان','OM','+968','🇴🇲'],['العراق','IQ','+964','🇮🇶'],
+  ['سوريا','SY','+963','🇸🇾'],['لبنان','LB','+961','🇱🇧'],['فلسطين','PS','+970','🇵🇸'],['ليبيا','LY','+218','🇱🇾'],['تونس','TN','+216','🇹🇳'],
+  ['الجزائر','DZ','+213','🇩🇿'],['المغرب','MA','+212','🇲🇦'],['السودان','SD','+249','🇸🇩'],['الصومال','SO','+252','🇸🇴'],['موريتانيا','MR','+222','🇲🇷'],
+  ['أمريكا','US','+1','🇺🇸'],['كندا','CA','+1','🇨🇦'],['المملكة المتحدة','GB','+44','🇬🇧'],['ألمانيا','DE','+49','🇩🇪'],['فرنسا','FR','+33','🇫🇷'],
+  ['إسبانيا','ES','+34','🇪🇸'],['إيطاليا','IT','+39','🇮🇹'],['هولندا','NL','+31','🇳🇱'],['روسيا','RU','+7','🇷🇺'],['تركيا','TR','+90','🇹🇷'],
+  ['الصين','CN','+86','🇨🇳'],['اليابان','JP','+81','🇯🇵'],['كوريا الجنوبية','KR','+82','🇰🇷'],['الهند','IN','+91','🇮🇳'],['باكستان','PK','+92','🇵🇰'],
+  ['إندونيسيا','ID','+62','🇮🇩'],['ماليزيا','MY','+60','🇲🇾'],['سنغافورة','SG','+65','🇸🇬'],['تايلاند','TH','+66','🇹🇭'],['الفلبين','PH','+63','🇵🇭'],
+  ['فيتنام','VN','+84','🇻🇳'],['أستراليا','AU','+61','🇦🇺'],['البرازيل','BR','+55','🇧🇷'],['المكسيك','MX','+52','🇲🇽'],['الأرجنتين','AR','+54','🇦🇷'],
+  ['نيجيريا','NG','+234','🇳🇬'],['كينيا','KE','+254','🇰🇪'],['جنوب أفريقيا','ZA','+27','🇿🇦'],['أوكرانيا','UA','+380','🇺🇦'],['بولندا','PL','+48','🇵🇱'],
+];
+var _countriesBuf = [];
+function renderCountriesTable(){
+  var tb = document.querySelector('#countriesTable tbody'); if (!tb) return;
+  tb.innerHTML = _countriesBuf.length ? _countriesBuf.map(function(c,i){
+    return '<tr><td>'+ (c.flag||'🌍') +' '+ c.countryName +'</td>'
+      + '<td dir="ltr">'+ (c.countryCode||'—') +'</td>'
+      + '<td><b>$'+ (+c.price).toFixed(2) +'</b></td>'
+      + '<td>'+ (c.originalPrice ? '$'+(+c.originalPrice).toFixed(2) : '—') +'</td>'
+      + '<td><button type="button" class="status-badge '+(c.isAvailable!==false?'status-done':'status-cancel')+'" data-ctog="'+i+'">'+(c.isAvailable!==false?'متوفر':'موقوف')+'</button></td>'
+      + '<td><button type="button" class="row-btn row-del" data-cdel="'+i+'">🗑️</button></td></tr>';
+  }).join('') : '<tr><td colspan="6" class="empty-row">لم تُضف دول بعد.</td></tr>';
+}
+function refreshCountryDatalist(){
+  var dl = document.getElementById('countryList'); if (!dl) return;
+  var used = _countriesBuf.map(function(c){ return c.countryName; });
+  dl.innerHTML = WORLD_COUNTRIES.filter(function(c){ return used.indexOf(c[0])===-1; })
+    .map(function(c){ return '<option value="'+ c[0] +'" data-code="'+ c[2] +'" data-flag="'+ c[3] +'">'+ c[3] +' '+ c[0] +' ('+ c[2] +')</option>'; }).join('');
+}
+function syncCountriesEditor(){
+  var wrap = document.getElementById('countriesEditorWrap'); if (!wrap) return;
+  var isNumbers = document.getElementById('pType').value === 'product' && document.getElementById('pCat').value === 'numbers';
+  wrap.style.display = isNumbers ? '' : 'none';
+  if (isNumbers) { refreshCountryDatalist(); renderCountriesTable(); }
+}
+document.getElementById('pCat').addEventListener('change', syncCountriesEditor);
+document.getElementById('pType').addEventListener('change', syncCountriesEditor);
+document.getElementById('addCountryBtn').addEventListener('click', function(){
+  var name = (document.getElementById('countrySearch').value || '').trim();
+  var price = parseFloat(document.getElementById('countryPrice').value);
+  var orig = parseFloat(document.getElementById('countryOrigPrice').value) || 0;
+  if (!name) return showToast('⚠️ اختر أو اكتب اسم الدولة');
+  if (isNaN(price) || price < 0) return showToast('⚠️ أدخل سعراً صحيحاً');
+  if (_countriesBuf.some(function(c){ return c.countryName === name; })) return showToast('⚠️ الدولة مضافة مسبقاً');
+  var meta = WORLD_COUNTRIES.find(function(c){ return c[0].toLowerCase() === name.toLowerCase() || c[1].toLowerCase() === name.toLowerCase(); });
+  _countriesBuf.push({ countryName: meta?meta[0]:name, countryCode: meta?meta[2]:'', flag: meta?meta[3]:'🌍', price: price, originalPrice: orig, isAvailable: true });
+  document.getElementById('countrySearch').value = '';
+  document.getElementById('countryPrice').value = '';
+  document.getElementById('countryOrigPrice').value = '';
+  renderCountriesTable(); refreshCountryDatalist();
+});
+document.getElementById('countriesTable').addEventListener('click', function(e){
+  var del = e.target.closest('[data-cdel]'), tog = e.target.closest('[data-ctog]');
+  if (del) { _countriesBuf.splice(+del.dataset.cdel, 1); renderCountriesTable(); refreshCountryDatalist(); }
+  if (tog) { var c = _countriesBuf[+tog.dataset.ctog]; c.isAvailable = !(c.isAvailable !== false); renderCountriesTable(); }
+});
+/* حقن قيم الدول عند حفظ المنتج */
+(function(){
+  var origSubmit = document.getElementById('productForm').onsubmit;
+  document.getElementById('productForm').addEventListener('submit', function(){
+    setTimeout(function(){ /* placeholder */ }, 0);
+  }, true);
+})();
+window.__getSupportedCountries = function(){ return _countriesBuf.slice(); };
+window.__setSupportedCountries = function(arr){ _countriesBuf = Array.isArray(arr) ? arr.slice() : []; renderCountriesTable(); refreshCountryDatalist(); };
+window.__resetSupportedCountries = function(){ _countriesBuf = []; renderCountriesTable(); refreshCountryDatalist(); };
+syncCountriesEditor();
+
+/* v40: تعبئة الدول عند فتح تعديل منتج */
+(function(){
+  var tbl = document.getElementById('productsTable');
+  if (!tbl) return;
+  tbl.addEventListener('click', function(e){
+    var btn = e.target.closest('button'); if (!btn) return;
+    var raw = btn.dataset.pedit || btn.dataset.edit || btn.dataset.product || '';
+    if (!raw) return;
+    try {
+      var p = JSON.parse(raw);
+      if (window.__setSupportedCountries) window.__setSupportedCountries(Array.isArray(p.supportedCountries) ? p.supportedCountries : []);
+      setTimeout(function(){ if (typeof syncCountriesEditor === 'function') syncCountriesEditor(); }, 20);
+    } catch (err) {}
+  });
+})();

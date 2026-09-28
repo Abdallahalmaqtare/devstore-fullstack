@@ -17,6 +17,10 @@ function sanitizeProduct(body) {
   const b = { ...body };
   delete b.image; // الصورة تُعيَّن فقط من ملف مرفوع
   if (typeof b.variants === 'string') { try { b.variants = JSON.parse(b.variants); } catch { b.variants = []; } }
+  if (typeof b.supportedCountries === 'string') { try { b.supportedCountries = JSON.parse(b.supportedCountries); } catch { b.supportedCountries = []; } }
+  b.supportedCountries = (Array.isArray(b.supportedCountries) ? b.supportedCountries : [])
+    .filter(function(c){ return c && String(c.countryName||'').trim() && !isNaN(parseFloat(c.price)); })
+    .map(function(c){ return { countryName: String(c.countryName).trim(), countryCode: String(c.countryCode||'').trim(), flag: String(c.flag||'🌍'), price: +parseFloat(c.price).toFixed(4), originalPrice: +(parseFloat(c.originalPrice)||0).toFixed(4), isAvailable: c.isAvailable !== false && c.isAvailable !== 'false' }; });
   if (typeof b.modes === 'string') { try { b.modes = JSON.parse(b.modes); } catch { b.modes = []; } }
   b.requiresAccountId = b.requiresAccountId === true || b.requiresAccountId === 'true';
   b.isAvailable = !(b.isAvailable === false || b.isAvailable === 'false' || b.available === false || b.available === 'false');
