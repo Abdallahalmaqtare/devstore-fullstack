@@ -1,5 +1,3 @@
-const crypto = require('crypto');
-const { sendTelegram } = require('../utils/notify');
 const jwt = require('jsonwebtoken');
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
@@ -51,79 +49,6 @@ router.post('/logout-all', authRequired, async (req, res) => {
   try {
     await User.findByIdAndUpdate(req.user._id, { sessionResetAt: new Date() });
     res.json({ ok: true });
-  } catch (e) { res.status(500).json({ message: e.message }); }
-});
-
-
-/* ═══ v47 — دورة OTP الكاملة لتعديل بيانات الأدمن عبر تليجرام ═══ */
-const adminOtps = new Map(); // userId -> { hash, expires }
-
-router.post('/request-admin-otp', authRequired, async (req, res) => {
-  try {
-    if (req.user.role !== 'admin') return res.status(403).json({ message: 'للمسؤولين فقط' });
-    const code = String(Math.floor(100000 + Math.random() * 900000));
-    adminOtps.set(String(req.user._id), {
-      hash: crypto.createHash('sha256').update(code).digest('hex'),
-      expires: Date.now() + 5 * 60 * 1000, /* صالح 5 دقائق */
-    });
-    await sendTelegram('🔐 رمز التحقق لتعديل بيانات حساب المدير:\nالكود: [ ' + code + ' ]\nصالح لمدة 5 دقائق فقط. لا تشارك هذا الرمز مع أي شخص.');
-    res.json({ ok: true, message: 'أُرسل رمز التحقق إلى تليجرام الإدارة' });
-  } catch (e) { res.status(500).json({ message: e.message }); }
-});
-
-function consumeAdminOtp(userId, code) {
-  const rec = adminOtps.get(userId);
-  if (!rec || rec.expires < Date.now()) return false;
-  if (crypto.createHash('sha256').update(String(code || '')).digest('hex') !== rec.hash) return false;
-  adminOtps.delete(userId); /* رمز لمرة واحدة */
-  return true;
-}
-
-router.put('/admin-profile', authRequired, async (req, res) => {
-  try {
-    if (req.user.role !== 'admin') return res.status(403).json({ message: 'للمسؤولين فقط' });
-    const bcrypt = require('bcryptjs');
-    const { User } = require('../models');
-    /* v48: وثيقة حية مباشرة من قاعدة البيانات — لا اعتماد على req.user المحتمل قِدمه */
-    const admin = await User.findById(req.user._id);
-    if (!admin) return res.status(404).json({ message: 'الحساب غير موجود' });
-    const name = String(req.body.name || '').trim();
-    /* توحيد تطبيع الهاتف مع مسار تسجيل الدخول: أرقام فقط بدون أصفار بادئة */
-    const phone = String(req.body.phone || '').replace(/\D/g, '').replace(/^0+/, '');
-    const password = String(req.body.password || '');
-    const changes = [];
-    if (name && name !== admin.name) changes.push({ key: 'name', label: '✏️ تم تغيير الاسم إلى: ' + name });
-    if (phone && phone !== admin.phone) changes.push({ key: 'phone', label: '📱 تم تعديل رقم الهاتف إلى: ' + phone });
-    if (password) changes.push({ key: 'password', label: '🔑 تم تغيير كلمة المرور' });
-    if (!changes.length) return res.status(400).json({ message: 'لا توجد تغييرات لحفظها' });
-    if (!consumeAdminOtp(String(admin._id), req.body.otp))
-      return res.status(400).json({ message: 'رمز التحقق غير صحيح أو منتهي — اطلب رمزاً جديداً' });
-    const $set = { sessionResetAt: new Date() };
-    if (changes.some(c => c.key === 'phone')) {
-      const dup = await User.findOne({ phone, _id: { $ne: admin._id } });
-      if (dup) return res.status(400).json({ message: 'رقم الهاتف مستخدم لحساب آخر' });
-      $set.phone = phone;
-    }
-    if (changes.some(c => c.key === 'name')) $set.name = name;
-    if (changes.some(c => c.key === 'password')) $set.password = await bcrypt.hash(password.trim(), 10);
-    /* v49: كتابة ذرّية مباشرة — تتجاوز أي حالة وثيقة قديمة */
-    await User.findByIdAndUpdate(admin._id, { $set }, { runValidators: true });
-    console.log('✅ حُدّث حساب الأدمن في القاعدة:', Object.keys($set).join(', '));
-    /* v48: تحقق ذاتي إلزامي بعد الحفظ — فشله يعني فشل العملية */
-    const check = await User.findById(admin._id).lean();
-    const vName = !name || check.name === name;
-    const vPhone = !phone || check.phone === phone;
-    const vPass = !password || (await bcrypt.compare(password, check.password));
-    if (!vName || !vPhone || !vPass)
-      return res.status(500).json({ message: '⚠️ فشل تأكيد الحفظ في قاعدة البيانات — لم تُعتمد التعديلات' });
-    const now = new Date().toLocaleString('ar-EG', { timeZone: 'Asia/Aden' });
-    const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').toString().split(',')[0].trim();
-    await sendTelegram('🚨 <b>إشعار أمني — تم تعديل بيانات حساب المدير بنجاح:</b>\n- التعديلات المعتمدة:\n'
-      + changes.map(c => '  • ' + c.label).join('\n')
-      + '\n- اسم المدير: ' + check.name
-      + '\n- التوقيت: ' + now
-      + '\n- عنوان IP: <code>' + ip + '</code>');
-    res.json({ ok: true, user: { name: check.name, phone: check.phone, role: check.role } });
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 

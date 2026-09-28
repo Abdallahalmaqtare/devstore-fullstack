@@ -1210,19 +1210,13 @@ function refreshCountryDatalist(){
   dl.innerHTML = WORLD_COUNTRIES.filter(function(c){ return used.indexOf(c[0])===-1; })
     .map(function(c){ return '<option value="'+ c[0] +'" data-code="'+ c[2] +'" data-flag="'+ c[3] +'">'+ c[3] +' '+ c[0] +' ('+ c[2] +')</option>'; }).join('');
 }
-function selectedCatText(){
-  var sel = document.getElementById('pCat');
-  var opt = sel && sel.options[sel.selectedIndex];
-  return ((sel ? sel.value : '') + ' ' + (opt ? opt.textContent : '')).toLowerCase();
-}
 function syncCountriesEditor(){
   var wrap = document.getElementById('countriesEditorWrap'); if (!wrap) return;
-  var t = selectedCatText();
-  var isNumbers = document.getElementById('pType').value === 'product' && (t.indexOf('numbers') !== -1 || t.indexOf('أرقام') !== -1 || t.indexOf('تفعيلات') !== -1 || t.indexOf('وهمية') !== -1);
+  var isNumbers = document.getElementById('pType').value === 'product' && document.getElementById('pCat').value === 'numbers';
   wrap.style.display = isNumbers ? '' : 'none';
   if (isNumbers) { refreshCountryDatalist(); renderCountriesTable(); }
 }
-document.getElementById('pCat').addEventListener('change', function(){ syncCountriesEditor(); syncCryptoFields(); });
+document.getElementById('pCat').addEventListener('change', syncCountriesEditor);
 document.getElementById('pType').addEventListener('change', syncCountriesEditor);
 document.getElementById('addCountryBtn').addEventListener('click', function(){
   var name = (document.getElementById('countrySearch').value || '').trim();
@@ -1282,8 +1276,7 @@ syncCountriesEditor();
 /* ═══ v44: إظهار حقول الكريبتو + تعبئتها عند التعديل ═══ */
 function syncCryptoFields() {
   var el = document.getElementById('cryptoFields'); if (!el) return;
-  var t = selectedCatText();
-  var isCrypto = document.getElementById('pType').value === 'product' && (t.indexOf('crypto') !== -1 || t.indexOf('عملات رقمية') !== -1 || t.indexOf('usdt') !== -1 || t.indexOf('كريبتو') !== -1);
+  var isCrypto = document.getElementById('pType').value === 'product' && document.getElementById('pCat').value === 'crypto';
   el.classList.toggle('hidden', !isCrypto);
 }
 document.getElementById('pCat').addEventListener('change', syncCryptoFields);
@@ -1304,98 +1297,3 @@ document.getElementById('pType').addEventListener('change', syncCryptoFields);
     } catch (err) {}
   });
 })();
-
-
-/* ═══ v47: أمان حساب المدير — دورة OTP كاملة عبر تليجرام (زر واحد) ═══ */
-(function () {
-  var form = document.getElementById('adminSecurityForm'); if (!form) return;
-  var pending = null;
-
-  /* تعبئة القيم الحالية */
-  (function prefill() {
-    var u = (typeof API !== 'undefined' && API.user && API.user()) || {};
-    var n = document.getElementById('adName'); if (n && u.name) n.value = u.name;
-    var ph = document.getElementById('adPhone'); if (ph && u.phone) ph.value = u.phone;
-  })();
-
-  function detectChanges() {
-    var u = (API.user && API.user()) || {};
-    var name = document.getElementById('adName').value.trim();
-    var phone = document.getElementById('adPhone').value.replace(/\D/g, '');
-    var pass = document.getElementById('adPass').value;
-    var changes = [];
-    if (name && name !== u.name) changes.push('name');
-    if (phone && phone !== u.phone) changes.push('phone');
-    if (pass) changes.push('password');
-    return { changes: changes, name: name, phone: phone, pass: pass };
-  }
-
-  /* الزر الواحد: فحص التغييرات ← طلب الرمز ← فتح النافذة */
-  form.addEventListener('submit', async function (e) {
-    e.preventDefault();
-    var d = detectChanges();
-    if (!d.changes.length) return showToast('ℹ️ لا توجد تغييرات لحفظها');
-    var btn = document.getElementById('adSaveProfile');
-    btn.disabled = true; btn.textContent = '⏳ جارٍ إرسال الرمز إلى تليجرام...';
-    try {
-      await API.req('/users/request-admin-otp', { method: 'POST', body: {} });
-      pending = d;
-      showOtpModal();
-      showToast('📨 أُرسل رمز التحقق إلى بوت تليجرام الإدارة');
-    } catch (err) { showToast('❌ ' + err.message); }
-    btn.disabled = false; btn.textContent = 'تأكيد وحفظ التعديلات 💾';
-  });
-
-  function showOtpModal() {
-    var old = document.getElementById('adOtpModal'); if (old) old.remove();
-    var ov = document.createElement('div'); ov.id = 'adOtpModal'; ov.className = 'desc-modal-overlay';
-    ov.innerHTML = '<div class="desc-modal" dir="rtl" style="max-width:400px;text-align:center">'
-      + '<button class="modal-close" id="adOtpClose" style="position:absolute;top:12px;left:12px">✕</button>'
-      + '<h3 style="margin-bottom:8px">🔑 أدخل رمز التحقق المرسل إلى تليجرام</h3>'
-      + '<p class="auth-note">رمز مكوّن من 6 أرقام — صالح لمدة 5 دقائق فقط</p>'
-      + '<input type="text" id="adOtpInput" class="cqm-input" dir="ltr" maxlength="6" placeholder="______" inputmode="numeric" style="text-align:center;font-size:1.5rem;letter-spacing:10px;margin:14px 0" />'
-      + '<button class="btn btn-primary btn-block" id="adOtpConfirm">✅ تأكيد التعديل نهائياً</button>'
-      + '</div>';
-    document.body.appendChild(ov);
-    var inp = document.getElementById('adOtpInput');
-    setTimeout(function () { inp.focus(); }, 80);
-    inp.addEventListener('input', function () { this.value = this.value.replace(/\D/g, '').slice(0, 6); });
-    inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') document.getElementById('adOtpConfirm').click(); });
-    ov.addEventListener('click', function (e) { if (e.target === ov) ov.remove(); });
-    document.getElementById('adOtpClose').onclick = function () { ov.remove(); };
-    document.getElementById('adOtpConfirm').onclick = async function () {
-      var otp = inp.value.trim();
-      if (otp.length !== 6) return showToast('⚠️ أدخل الرمز المكوّن من 6 أرقام');
-      var cb = this; cb.disabled = true; cb.textContent = '⏳ جارٍ الاعتماد...';
-      try {
-        var body = { otp: otp };
-        if (pending.name) body.name = pending.name;
-        if (pending.phone) body.phone = pending.phone;
-        if (pending.pass) body.password = pending.pass;
-        var res = await API.req('/users/admin-profile', { method: 'PUT', body: body });
-        if (res.user) API.setSession(API.token(), res.user, true);
-        ov.remove();
-        document.getElementById('adPass').value = '';
-        showToast('✅ تم حفظ التعديلات وإرسال الإشعار الأمني لتليجرام');
-      } catch (err) {
-        showToast('❌ ' + err.message);
-        cb.disabled = false; cb.textContent = '✅ تأكيد التعديل نهائياً';
-      }
-    };
-  }
-})();
-
-
-/* ═══ v48: بحث فوري (Live Filtering) في جميع جداول اللوحة ═══ */
-document.addEventListener('input', function (e) {
-  var inp = e.target.closest('.adm-search'); if (!inp) return;
-  var q = inp.value.trim().toLowerCase();
-  var tbl = document.getElementById(inp.dataset.table); if (!tbl) return;
-  tbl.querySelectorAll('tbody tr').forEach(function (tr) {
-    tr.style.display = (!q || tr.textContent.toLowerCase().indexOf(q) !== -1) ? '' : 'none';
-  });
-});
-
-/* v49: إعادة مزامنة الحقول الشرطية بعد ملء قائمة الأقسام من قاعدة البيانات */
-setTimeout(function(){ try { syncCountriesEditor(); syncCryptoFields(); } catch(e){} }, 600);
-setTimeout(function(){ try { syncCountriesEditor(); syncCryptoFields(); } catch(e){} }, 1800);
