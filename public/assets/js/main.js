@@ -75,6 +75,7 @@ var selectedPmId = '';
 var currentFilter = 'all';
 var searchQuery = '';
 var courseSearchQuery = '';
+var courseFilter = 'all';
 
 var COUNTRIES = [
   ['🇺🇸', 'أمريكا (+1)'], ['🇬🇧', 'بريطانيا (+44)'], ['🇷🇺', 'روسيا (+7)'],
@@ -353,14 +354,18 @@ document.querySelector('[data-close="groupModal"]').addEventListener('click', fu
 /* ---------------- الدورات والخدمات ---------------- */
 function renderCourses() {
   var list = COURSES;
+  if (courseFilter !== 'all') list = list.filter(function (c) { return (c.cat || c.category) === courseFilter; });
   if (courseSearchQuery) {
     var q = courseSearchQuery.toLowerCase();
     list = list.filter(function (c) {
       return (c.name + ' ' + (c.desc || '') + ' ' + (c.meta || '')).toLowerCase().indexOf(q) !== -1;
     });
   }
-  document.getElementById('coursesGrid').innerHTML = list.length ? list.map(function (c) {
-    return '<article class="course-card">' +
+  var grid = document.getElementById('coursesGrid');
+  if (!grid) return;
+  /* v43: كرت الخدمة يحمل تصنيفه كخاصية بيانات data-cat للفلترة الدقيقة */
+  function buildCourseCard(c) {
+    return '<article class="course-card" data-cat="' + (c.cat || c.category || '') + '">' +
       '<div class="course-cover">' + iconHtml(c) + '</div>' +
       '<div class="course-body">' +
       '<h3 class="course-name">' + c.name + '</h3>' +
@@ -374,7 +379,26 @@ function renderCourses() {
       '<div class="course-price course-inquiry">💬 تواصل للاتفاق</div>' +
       '<button class="buy-btn contact-btn" data-inquire="' + c._id + '">تواصل للاتفاق 📩</button>' +
       '</div></div></article>';
-  }).join('') : '<p class="cart-empty">لا توجد نتائج مطابقة لبحثك 🔍</p>';
+  }
+  if (!list.length) { grid.classList.remove('categories-mode'); grid.innerHTML = '<p class="cart-empty">لا توجد نتائج مطابقة لبحثك 🔍</p>'; return; }
+  /* v43: وضع «الكل» بلا بحث — صف تمرير أفقي لكل قسم فرعي (مثل المتجر) */
+  if (courseFilter === 'all' && !courseSearchQuery && typeof CATEGORIES !== 'undefined' && CATEGORIES.length) {
+    var svcCats = CATEGORIES.filter(function (c) { return c.kind === 'services'; });
+    var secs = svcCats.map(function (cat) {
+      var items = list.filter(function (p) { return (p.cat || p.category) === cat.slug; });
+      if (!items.length) return '';
+      return '<section class="category-section">'
+        + '<div class="category-head"><h3 class="category-title">' + (cat.icon || '🎓') + ' ' + cat.nameAr + '</h3>'
+        + '<button type="button" class="view-all-btn" data-cviewall="' + cat.slug + '">عرض الكل ←</button></div>'
+        + '<div class="category-row-scroll courses-row">' + items.map(buildCourseCard).join('') + '</div>'
+        + '</section>';
+    }).filter(Boolean).join('');
+    var others = list.filter(function (p) { return !svcCats.some(function (c) { return c.slug === (p.cat || p.category); }); });
+    if (others.length) secs += '<section class="category-section"><div class="category-head"><h3 class="category-title">🎓 خدمات أخرى</h3></div><div class="category-row-scroll courses-row">' + others.map(buildCourseCard).join('') + '</div></section>';
+    if (secs) { grid.classList.add('categories-mode'); grid.innerHTML = secs; return; }
+  }
+  grid.classList.remove('categories-mode');
+  grid.innerHTML = list.map(buildCourseCard).join('');
 }
 
 /* v38: بحث الدورات والخدمات */
@@ -951,49 +975,8 @@ initDialPickers();
 loadAll();
 
 
-/* v12: شارة الخصم + عرض السعر القديم مشطوباً (مزيّن تجميلي — يعتمد /api/products) */
-(function () {
-  var saleMap = {};
-  function eff(p) { return p.isOnSale && p.discountPercent > 0 ? +(p.price - p.price * p.discountPercent / 100).toFixed(2) : p.price; }
-  function decorate() {
-    document.querySelectorAll('[class*="card"], [class*="group"], [data-pid]').forEach(function (card) {
-      if (card.dataset.saleDone) return;
-      var name = '';
-      Object.keys(saleMap).forEach(function (n) { if (card.textContent.indexOf(n) !== -1 && (!name || n.length > name.length)) name = n; });
-      if (!name) return;
-      var p = saleMap[name];
-      card.dataset.saleDone = '1';
-      card.style.position = card.style.position || 'relative';
-      var b = document.createElement('span');
-      b.className = 'sale-badge';
-      b.textContent = 'خصم ' + p.discountPercent + '% 🔥';
-      card.appendChild(b);
-      /* استبدال أول عنصر يحمل سعراً دولارياً صرفاً بصيغة العرض */
-      var els = card.querySelectorAll('*'), k;
-      for (k = 0; k < els.length; k++) {
-        var el = els[k], t = (el.textContent || '').trim();
-        var mch = t.match(/^\$\s*(\d+(?:\.\d+)?)\s*$/);
-        if (mch && el.children.length === 0) {
-          el.innerHTML = '<span class="price-old">$' + mch[1] + '</span> <span class="price-new">$' + eff(p) + '</span>';
-          break;
-        }
-      }
-    });
-  }
-  async function load() {
-    try {
-      var list = await API.req('/products');
-      (list || []).forEach(function (p) { if (p.isOnSale && p.discountPercent > 0) saleMap[p.name] = p; });
-      decorate();
-      var decoLock = false;
-      new MutationObserver(function () {
-        if (decoLock) return; decoLock = true;
-        setTimeout(function () { decoLock = false; decorate(); }, 300);
-      }).observe(document.body, { childList: true, subtree: true });
-    } catch (e) {}
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load); else load();
-})();
+/* v43: حُذف معالج شارة الخصم القديم (v12) — الشارة تُبنى داخل الكرت مباشرة */
+
 
 /* v12: القائمة الجانبية (Off-canvas Drawer) */
 (function () {
@@ -1812,12 +1795,14 @@ window.addEventListener('load', loadSiteSettings);
       bar.querySelectorAll('.filter-chip').forEach(function (c) { c.classList.remove('active'); });
       chip.classList.add('active');
       var slug = chip.dataset.cfilter;
-      var cards = sec.querySelectorAll('[class*="card"], [class*="course"]');
+      /* v43: فلترة مباشرة بالمقارنة مع data-cat المحقون في الكرت */
+      courseFilter = slug;
+      if (typeof serviceFilterSlug !== 'undefined') serviceFilterSlug = slug;
+      renderCourses();
+      var cards = document.querySelectorAll('#coursesGrid .course-card');
       cards.forEach(function (card) {
-        if (card.id === 'coursesFilters' || card.closest('#coursesFilters')) return;
-        var match = null;
-        COURSES.forEach(function (c) { if (card.textContent.indexOf(c.name) !== -1 && (!match || c.name.length > match.name.length)) match = c; });
-        card.style.display = (slug === 'all' || !match || match.cat === slug) ? '' : 'none';
+        var cardCat = card.dataset.cat || '';
+        card.style.display = (slug === 'all' || cardCat === slug) ? '' : 'none';
       });
     });
   }
@@ -1867,4 +1852,18 @@ document.addEventListener('change', function(e){
   if (pr > 0) priceEl.innerHTML = (orig > pr)
     ? '<span class="price-new">' + fmtPrice(pr) + '</span><span class="price-old">' + fmtPrice(orig) + '</span>'
     : fmtPrice(pr);
+});
+
+
+/* v43: زر «عرض الكل» لأقسام الدورات — تفعيل الفلتر والشبكة الكاملة */
+document.addEventListener('click', function (e) {
+  var vb = e.target.closest('[data-cviewall]');
+  if (!vb) return;
+  courseFilter = vb.dataset.cviewall;
+  if (typeof serviceFilterSlug !== 'undefined') serviceFilterSlug = courseFilter;
+  var bar = document.getElementById('coursesFilters');
+  if (bar) bar.querySelectorAll('.filter-chip').forEach(function (ch) { ch.classList.toggle('active', ch.dataset.cfilter === courseFilter); });
+  renderCourses();
+  var cs = document.getElementById('courses');
+  if (cs) window.scrollTo({ top: cs.offsetTop - 70, behavior: 'smooth' });
 });

@@ -722,3 +722,8 @@ input, select, textarea { font-family: inherit; }
 /* ═══ v42 — تثبيت شارة الخصم داخل حدود الكرت ═══ */
 .product-card{position:relative !important;overflow:hidden}
 .product-card .sale-badge{position:absolute !important;top:10px !important;left:10px !important;z-index:3 !important;background:#e74c3c;color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;box-shadow:0 2px 6px rgba(231,76,60,.35);pointer-events:none}
+
+/* ═══ v43 — تمرير أفقي لقسم الدورات والخدمات ═══ */
+.category-row-scroll .course-card{flex:0 0 78%;max-width:300px;scroll-snap-align:start}
+@media (min-width:768px){.category-row-scroll .course-card{flex:0 0 260px}}
+#coursesGrid.categories-mode{display:flex;flex-direction:column;gap:30px;grid-template-columns:none}
