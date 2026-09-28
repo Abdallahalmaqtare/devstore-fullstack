@@ -63,7 +63,16 @@ const productSchema = new Schema({
   requiresAccountId: { type: Boolean, default: false },
   /* v29: نظام الكمية المخصصة */
   pricingType: { type: String, enum: ['packages', 'custom_amount'], default: 'packages' },
-  isAvailable: { type: Boolean, default: true }, // حالة التوفر — false = غير متاح حالياً
+  isAvailable: { type: Boolean, default: true }, // حالة التوفر
+  /* v44 — قسم العملات الرقمية (USDT) */
+  cryptoBuy: { type: Boolean, default: false },
+  cryptoSell: { type: Boolean, default: false },
+  cryptoBuyPrice: { type: Number, default: 0 },
+  cryptoSellPrice: { type: Number, default: 0 },
+  cryptoBinanceId: { type: String, default: '' },
+  cryptoBinanceName: { type: String, default: '' },
+  cryptoTrc20: { type: String, default: '' },
+  /* false = غير متاح حالياً */
   unitPrice: { type: Number, default: 0 },
   minQtyPrice: { type: Number, default: 0 },  // سعر الحد الأدنى — يُشتق منه سعر الوحدة
   minQuantity: { type: Number, default: 1 },

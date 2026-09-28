@@ -195,6 +195,14 @@ var isUnavailable = (p.isAvailable === false || p.available === false);
     if (isUnavailable) {
       footer = '<div class="product-price">' + priceDisplay + '</div>' +
                '<button class="buy-btn disabled-btn" disabled>غير متاح حالياً 🔒</button>';
+    } else if (p.cat === 'crypto' && (p.cryptoBuy || p.cryptoSell)) {
+      footer = '<div class="product-price crypto-prices">'
+        + (p.cryptoBuy ? '<span class="crypto-p"><small>🟢 شراء:</small> ' + fmtPrice(p.cryptoBuyPrice || 0) + ' <small>/USDT</small></span>' : '')
+        + (p.cryptoSell ? '<span class="crypto-p"><small>🔴 بيع:</small> ' + fmtPrice(p.cryptoSellPrice || 0) + ' <small>/USDT</small></span>' : '')
+        + '</div><div class="crypto-actions">'
+        + (p.cryptoBuy ? '<button class="buy-btn crypto-buy" data-cbuy="' + p._id + '">🟢 شراء</button>' : '')
+        + (p.cryptoSell ? '<button class="buy-btn crypto-sell" data-csell="' + p._id + '">🔴 بيع</button>' : '')
+        + '</div>';
     } else if (isCustom) {
       footer = '<div class="product-price">' + priceDisplay + ' <small>يبدأ من</small></div>' +
                '<button class="buy-btn custom-amount-btn" data-buy="' + p._id + '">تحديد الكمية والشحن ⚡</button>';
@@ -370,6 +378,7 @@ function renderCourses() {
       '<div class="course-body">' +
       '<h3 class="course-name">' + c.name + '</h3>' +
       '<p class="course-desc">' + (c.desc || '') + '</p>' +
+      ((c.desc || '').length > 90 ? '<button type="button" class="read-more-btn" data-readmore="' + c._id + '">قراءة المزيد...</button>' : '') +
       '<div class="course-modes">' +
       ((c.modes || []).indexOf('online') !== -1 ? '<span class="mode-badge mode-online">🌐 عن بُعد</span>' : '') +
       ((c.modes || []).indexOf('onsite') !== -1 ? '<span class="mode-badge mode-onsite">📍 حضوري — الحديدة</span>' : '') +
@@ -462,8 +471,8 @@ function addVariantToCart(idx) {
 function pushItem(item) {
   var key = [item.id, item.variant, item.extra].filter(Boolean).join('|');
   var found = cart.find(function (i) { return i.key === key; });
-  if (found) found.qty++;
-  else { item.key = key; item.accountId = ''; item.qty = 1; cart.push(item); }
+  if (found) found.qty += (item.qty || 1);
+  else { item.key = key; item.accountId = item.accountId || ''; item.qty = item.qty || 1; cart.push(item); }
   saveCart(); renderCart();
   showToast('✅ تمت الإضافة: ' + item.name);
 }
@@ -561,7 +570,8 @@ document.getElementById('checkoutBtn').addEventListener('click', async function 
     return;
   }
   if (!API.user()) { closeCart(); openAuth('login'); return showToast('⚠️ سجّل الدخول أولاً'); }
-  if (!selectedPmId) { if (window.__openPaySheet) window.__openPaySheet(); return showToast('⚠️ اختر طريقة الدفع'); }
+  var sellOnlyOrder = cart.length > 0 && cart.every(function (i) { return i.variant === 'crypto_sell'; });
+  if (!selectedPmId && !sellOnlyOrder) { if (window.__openPaySheet) window.__openPaySheet(); return showToast('⚠️ اختر طريقة الدفع'); }
   var receipt = document.getElementById('receiptInput').files[0];
   if (!receipt) { if (window.__openPaySheet) window.__openPaySheet(); return showToast('⚠️ صورة سند الحوالة مطلوبة 📎'); }
 
@@ -1867,3 +1877,128 @@ document.addEventListener('click', function (e) {
   var cs = document.getElementById('courses');
   if (cs) window.scrollTo({ top: cs.offsetTop - 70, behavior: 'smooth' });
 });
+
+
+/* ═══ v44: نافذة «قراءة المزيد» للدورات والخدمات ═══ */
+document.addEventListener('click', function (e) {
+  var rm = e.target.closest('[data-readmore]');
+  if (!rm) return;
+  var c = COURSES.find(function (x) { return String(x._id) === rm.dataset.readmore; });
+  if (!c) return;
+  var ov = document.createElement('div'); ov.className = 'desc-modal-overlay';
+  ov.innerHTML = '<div class="desc-modal" dir="rtl"><button class="modal-close desc-close">✕</button><h3>' + c.name + '</h3><p>' + (c.desc || '') + '</p></div>';
+  document.body.appendChild(ov);
+  function cl() { ov.remove(); }
+  ov.addEventListener('click', function (ev) { if (ev.target === ov) cl(); });
+  ov.querySelector('.desc-close').onclick = cl;
+});
+
+/* ═══ v44: نظام بيع/شراء العملات الرقمية (USDT) ═══ */
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('[data-cbuy],[data-csell]');
+  if (!b) return;
+  var p = PRODUCTS.find(function (x) { return String(x._id) === (b.dataset.cbuy || b.dataset.csell); });
+  if (!p) return;
+  openCryptoModal(p, b.dataset.cbuy ? 'buy' : 'sell');
+});
+function openCryptoModal(p, mode) {
+  var old = document.getElementById('cryptoModal'); if (old) old.remove();
+  var isBuy = mode === 'buy';
+  var price = isBuy ? (p.cryptoBuyPrice || 0) : (p.cryptoSellPrice || 0);
+  var curs = [{ code: 'USD', name: 'دولار أمريكي', flag: '🇺🇸', rate: 1 }].concat((CURRENCIES || []).filter(function (c) { return c.active !== false; }));
+  var curOpts = curs.map(function (c) { return '<option value="' + c.code + '" data-rate="' + c.rate + '">' + (c.flag || '💱') + ' ' + c.name + ' (' + c.code + ')</option>'; }).join('');
+  var ov = document.createElement('div'); ov.id = 'cryptoModal'; ov.className = 'desc-modal-overlay crypto-overlay';
+  ov.innerHTML = '<div class="desc-modal crypto-modal" dir="rtl">'
+    + '<button class="modal-close" id="cxClose">✕</button>'
+    + '<h3>' + (isBuy ? '🟢 شراء' : '🔴 بيع') + ' USDT — ' + p.name + '</h3>'
+    + '<p class="cx-rate">السعر: <b>' + fmtPrice(price) + '</b> لكل 1 USDT</p>'
+    + (isBuy
+      ? '<label>عملة الدفع<select id="cxCur">' + curOpts + '</select></label>'
+      + '<label>المبلغ الذي ستدفعه<input type="number" id="cxAmount" min="0" step="any" placeholder="مثال: 10000" inputmode="decimal" /></label>'
+      + '<div class="cx-result" id="cxResult">أدخل المبلغ لحساب المقابل بالـ USDT…</div>'
+      + '<label>محفظة استلام الـ USDT<select id="cxWalletType"><option value="binance">Binance Pay</option><option value="trc20">محفظة أخرى (USDT - TRC20)</option></select></label>'
+      + '<input type="text" id="cxWallet" class="cqm-input" dir="ltr" placeholder="أدخل معرّف باينانس (Binance ID) الخاص بك" />'
+      : '<label>كمية الـ USDT التي تريد بيعها<input type="number" id="cxAmount" min="0" step="any" placeholder="مثال: 50" inputmode="decimal" /></label>'
+      + '<label>عملة استلام أموالك<select id="cxCur">' + curOpts + '</select></label>'
+      + '<div class="cx-result" id="cxResult">أدخل الكمية لحساب المبلغ المستحق…</div>'
+      + '<label>وسيلة إرسال الـ USDT إلينا<select id="cxWalletType"><option value="binance">Binance Pay</option><option value="trc20">عنوان محفظة (USDT - TRC20)</option></select></label>'
+      + '<div class="cx-store-wallet" id="cxStoreWallet"></div>'
+      + '<label>طريقة استلام أموالك النقدية<select id="cxPayout">' + (PAY_METHODS || []).map(function (mm) { return '<option value="' + mm.name + '">' + mm.name + '</option>'; }).join('') + '</select></label>'
+      + '<input type="text" id="cxPayoutAcct" class="cqm-input" placeholder="رقم حسابك / هاتفك لاستلام المبلغ" />')
+    + '<button class="btn btn-primary btn-block" id="cxAdd">🛒 متابعة إلى السلة</button>'
+    + '</div>';
+  document.body.appendChild(ov);
+  function close() { ov.remove(); }
+  ov.addEventListener('click', function (ev) { if (ev.target === ov) close(); });
+  document.getElementById('cxClose').onclick = close;
+
+  var curEl = document.getElementById('cxCur'), amtEl = document.getElementById('cxAmount'), resEl = document.getElementById('cxResult');
+  function rate() { return parseFloat(curEl.selectedOptions[0].dataset.rate) || 1; }
+  function recalc() {
+    var amt = parseFloat(amtEl.value) || 0;
+    if (amt <= 0 || price <= 0) { resEl.textContent = isBuy ? 'أدخل المبلغ لحساب المقابل بالـ USDT…' : 'أدخل الكمية لحساب المبلغ المستحق…'; return; }
+    if (isBuy) {
+      var usd = amt / rate(), usdt = usd / price;
+      resEl.innerHTML = 'تدفع: <b>' + amt + ' ' + curEl.value + '</b> ≈ ' + fmtPrice(+usd.toFixed(2)) + ' ≈ <b>' + usdt.toFixed(2) + ' USDT</b>';
+    } else {
+      var usd2 = amt * price, local = usd2 * rate();
+      resEl.innerHTML = 'المستحق لك: <b>' + Math.round(local).toLocaleString('en') + ' ' + curEl.value + '</b> ≈ ' + fmtPrice(+usd2.toFixed(2));
+    }
+  }
+  curEl.addEventListener('change', recalc); amtEl.addEventListener('input', recalc);
+
+  if (!isBuy) {
+    var wt = document.getElementById('cxWalletType'), sw = document.getElementById('cxStoreWallet');
+    function renderStoreWallet() {
+      if (wt.value === 'binance') {
+        sw.innerHTML = p.cryptoBinanceId
+          ? '📲 حوّل عبر Binance Pay إلى: <b dir="ltr">' + p.cryptoBinanceId + '</b>' + (p.cryptoBinanceName ? ' — ' + p.cryptoBinanceName : '') + ' <button type="button" class="cx-copy" data-copy="' + p.cryptoBinanceId + '">📋 نسخ</button>'
+          : '⚠️ محفظة المتجر تُضبط من لوحة التحكم';
+      } else {
+        sw.innerHTML = p.cryptoTrc20
+          ? '🔗 حوّل إلى عنوان USDT - TRC20:<br><b dir="ltr">' + p.cryptoTrc20 + '</b> <button type="button" class="cx-copy" data-copy="' + p.cryptoTrc20 + '">📋 نسخ</button>'
+          : '⚠️ عنوان المتجر يُضبط من لوحة التحكم';
+      }
+    }
+    wt.addEventListener('change', renderStoreWallet); renderStoreWallet();
+    sw.addEventListener('click', function (e) {
+      var cp = e.target.closest('[data-copy]'); if (!cp) return;
+      navigator.clipboard && navigator.clipboard.writeText(cp.dataset.copy);
+      showToast('✅ تم النسخ');
+    });
+  } else {
+    var wt2 = document.getElementById('cxWalletType'), wIn = document.getElementById('cxWallet');
+    wt2.addEventListener('change', function () {
+      wIn.placeholder = wt2.value === 'binance' ? 'أدخل معرّف باينانس (Binance ID) الخاص بك' : 'أدخل رابط محفظتك (USDT - TRC20)';
+    });
+  }
+
+  document.getElementById('cxAdd').onclick = function () {
+    var amt = parseFloat(amtEl.value) || 0;
+    if (amt <= 0 || price <= 0) return showToast('⚠️ أدخل قيمة صحيحة');
+    if (isBuy) {
+      var usd = amt / rate(), usdt = +(usd / price).toFixed(4);
+      if (usdt <= 0) return showToast('⚠️ المبلغ غير كافٍ');
+      var wType = document.getElementById('cxWalletType').value;
+      var w = (document.getElementById('cxWallet').value || '').trim();
+      if (!w) return showToast('⚠️ أدخل بيانات محفظة الاستلام');
+      pushItem({ id: p._id, variant: 'crypto_buy', qty: usdt, price: price,
+        name: p.name + ' — شراء ' + usdt + ' USDT', icon: p.icon, image: p.image || '',
+        extra: 'دفع: ' + amt + ' ' + curEl.value + ' ≈ $' + usd.toFixed(2) + ' | استلام عبر ' + (wType === 'binance' ? 'Binance Pay' : 'USDT-TRC20') + ': ' + w,
+        accountId: w, requiresAccountId: false });
+    } else {
+      var usd2 = amt * price, local = Math.round(usd2 * rate());
+      var pmSel = document.getElementById('cxPayout');
+      var pmName = pmSel ? pmSel.value : '';
+      var acct = (document.getElementById('cxPayoutAcct').value || '').trim();
+      if (!acct) return showToast('⚠️ أدخل حساب استلام أموالك');
+      pushItem({ id: p._id, variant: 'crypto_sell', qty: amt, price: 0,
+        name: p.name + ' — بيع ' + amt + ' USDT', icon: p.icon, image: p.image || '',
+        extra: 'مستحق العميل: ' + local + ' ' + curEl.value + ' عبر ' + pmName + ' — ' + acct + ' | أرسل عبر ' + document.getElementById('cxWalletType').value,
+        accountId: acct, requiresAccountId: false });
+    }
+    close();
+    if (typeof openCart === 'function') openCart();
+    showToast('✅ أُضيفت العملية — أكمل رفع السند من السلة');
+  };
+}

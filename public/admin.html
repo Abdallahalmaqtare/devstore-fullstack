@@ -108,6 +108,7 @@
                   <option value="games">🎮 ألعاب</option>
                   <option value="apps">📱 تطبيقات</option>
                   <option value="numbers">💬 أرقام وهمية</option>
+                  <option value="crypto">💱 عملات رقمية (USDT)</option>
                   <option value="tools">🛠️ أدوات المبرمجين والصيانة</option>
                   <option value="courses">🎓 خدمات وتدريب</option>
                 </select>
@@ -181,7 +182,25 @@
                 <div class="table-wrap"><table class="admin-table" id="countriesTable"><thead><tr><th>الدولة</th><th>الكود</th><th>السعر الأساسي ($)</th><th>التوفر</th><th>حذف</th></tr></thead><tbody></tbody></table></div>
               </div>
 
-              <div id="serviceFields" class="service-fields hidden">
+              <div id="cryptoFields" class="service-fields hidden" style="margin-top:14px">
+              <b>💱 إعدادات العملات الرقمية (USDT)</b>
+              <div class="form-row">
+                <label class="check-row"><input type="checkbox" id="cBuy" checked /> 🟢 متاح للشراء (العميل يشتري منا)</label>
+                <label class="check-row"><input type="checkbox" id="cSell" checked /> 🔴 متاح للبيع (العميل يبيع لنا)</label>
+              </div>
+              <div class="form-row">
+                <label>سعر شراء الـ USDT ($) — نشتري به من المورد<input type="number" id="cBuyPrice" step="0.01" min="0" placeholder="1.00" /></label>
+                <label>سعر بيع الـ USDT ($) — ندفع به للعميل<input type="number" id="cSellPrice" step="0.01" min="0" placeholder="0.97" /></label>
+              </div>
+              <div class="form-row">
+                <label>Binance Pay ID للمتجر<input type="text" id="cBinanceId" dir="ltr" placeholder="123456789" /></label>
+                <label>اسم حساب باينانس الرسمي<input type="text" id="cBinanceName" placeholder="DevStore Official" /></label>
+              </div>
+              <label>عنوان محفظة المتجر (USDT - TRC20)<input type="text" id="cTrc20" dir="ltr" placeholder="TXyz..." /></label>
+              <small class="field-hint">تُعرض هذه المحافظ للعميل عند عملية البيع ليحوّل إليها، وتُحسب العملات تلقائياً عبر أسعار الصرف المضبوطة في إدارة العملات.</small>
+            </div>
+
+            <div id="serviceFields" class="service-fields hidden">
               <label>نوع الخدمة / التصنيف<input type="text" id="pMeta" placeholder="مثال: دورة تدريبية • 8 أسابيع" /></label>
               <div class="form-row">
                 <label>📱 واتساب المنسق (دولي بدون +)<input type="tel" id="pContactWa" dir="ltr" placeholder="967771234567 — فارغ = الدعم العام" /></label>

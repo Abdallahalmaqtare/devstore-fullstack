@@ -197,6 +197,13 @@ document.getElementById('productForm').addEventListener('submit', async e => {
     contactWhatsapp: type === 'service' ? normalizePhone(document.getElementById('pContactWa').value) : '',
     contactTelegram: type === 'service' ? document.getElementById('pContactTg').value.replace(/^@/, '').trim() : '',
     supportedCountries: (type === 'product' && cat === 'numbers' && window.__getSupportedCountries) ? window.__getSupportedCountries() : [],
+    cryptoBuy: document.getElementById('cBuy').checked,
+    cryptoSell: document.getElementById('cSell').checked,
+    cryptoBuyPrice: parseFloat(document.getElementById('cBuyPrice').value || 0),
+    cryptoSellPrice: parseFloat(document.getElementById('cSellPrice').value || 0),
+    cryptoBinanceId: document.getElementById('cBinanceId').value.trim(),
+    cryptoBinanceName: document.getElementById('cBinanceName').value.trim(),
+    cryptoTrc20: document.getElementById('cTrc20').value.trim(),
   };
   if (type === 'product' && !variants.length && !body.price)
     return showToast('⚠️ أدخل سعراً للسلعة أو أضف باقات للمجموعة');
@@ -1112,6 +1119,32 @@ syncCountriesEditor();
       var p = JSON.parse(raw);
       if (window.__setSupportedCountries) window.__setSupportedCountries(Array.isArray(p.supportedCountries) ? p.supportedCountries : []);
       setTimeout(function(){ if (typeof syncCountriesEditor === 'function') syncCountriesEditor(); }, 20);
+    } catch (err) {}
+  });
+})();
+
+
+/* ═══ v44: إظهار حقول الكريبتو + تعبئتها عند التعديل ═══ */
+function syncCryptoFields() {
+  var el = document.getElementById('cryptoFields'); if (!el) return;
+  var isCrypto = document.getElementById('pType').value === 'product' && document.getElementById('pCat').value === 'crypto';
+  el.classList.toggle('hidden', !isCrypto);
+}
+document.getElementById('pCat').addEventListener('change', syncCryptoFields);
+document.getElementById('pType').addEventListener('change', syncCryptoFields);
+(function () {
+  var tbl = document.getElementById('productsTable'); if (!tbl) return;
+  tbl.addEventListener('click', function (e) {
+    var btn = e.target.closest('button'); if (!btn) return;
+    var raw = btn.dataset.pedit || btn.dataset.edit || btn.dataset.product || ''; if (!raw) return;
+    try {
+      var p = JSON.parse(raw);
+      var setV = function (id, v) { var el = document.getElementById(id); if (el) el.value = (v == null ? '' : v); };
+      var setC = function (id, v) { var el = document.getElementById(id); if (el) el.checked = (v === undefined ? true : (v === true || v === 'true')); };
+      setC('cBuy', p.cryptoBuy); setC('cSell', p.cryptoSell);
+      setV('cBuyPrice', p.cryptoBuyPrice || ''); setV('cSellPrice', p.cryptoSellPrice || '');
+      setV('cBinanceId', p.cryptoBinanceId || ''); setV('cBinanceName', p.cryptoBinanceName || ''); setV('cTrc20', p.cryptoTrc20 || '');
+      setTimeout(syncCryptoFields, 30);
     } catch (err) {}
   });
 })();

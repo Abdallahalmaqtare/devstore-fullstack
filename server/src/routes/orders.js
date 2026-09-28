@@ -52,8 +52,9 @@ router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
     if (!items.length) return res.status(400).json({ message: 'السلة فارغة' });
     if (!req.file) return res.status(400).json({ message: 'صورة سند الحوالة مطلوبة' });
 
-    const pm = await PaymentMethod.findOne({ _id: pmId, active: true });
-    if (!pm) return res.status(400).json({ message: 'طريقة الدفع غير صالحة' });
+    const sellOnly = items.length > 0 && items.every(i => String(i.variant || '') === 'crypto_sell');
+    const pm = pmId ? await PaymentMethod.findOne({ _id: pmId, active: true }) : null;
+    if (!sellOnly && !pm) return res.status(400).json({ message: 'طريقة الدفع غير صالحة' });
 
     const ids = items.map(i => i.id);
     const products = await Product.find({ _id: { $in: ids }, active: true, type: 'product' }).lean();
@@ -64,6 +65,22 @@ router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
       const p = pmap[i.id];
       if (!p) throw Object.assign(new Error('عنصر غير قابل للشراء المباشر'), { status: 400 });
 
+      /* v44 — عمليات الكريبتو: شراء/بيع USDT (سعر من قاعدة البيانات) */
+      if (String(i.variant || '').indexOf('crypto_') === 0) {
+        const isBuy = i.variant === 'crypto_buy';
+        const usdt = Math.max(0, parseFloat(i.qty) || 0);
+        if (usdt <= 0) throw Object.assign(new Error('كمية USDT غير صالحة'), { status: 400 });
+        const det = String(i.extra || '').trim();
+        if (!det) throw Object.assign(new Error(`بيانات العملية مطلوبة لـ «${p.name}»`), { status: 400 });
+        if (isBuy) {
+          const up = +p.cryptoBuyPrice || 0;
+          if (!p.cryptoBuy || up <= 0) throw Object.assign(new Error(`الشراء غير متاح لـ «${p.name}»`), { status: 400 });
+          total += +(up * usdt).toFixed(2);
+          return { product: p._id, name: `${p.name} — شراء ${usdt} USDT`, variant: 'crypto_buy', price: up, qty: usdt, extra: det, accountId: String(i.accountId || '').trim() };
+        }
+        if (!p.cryptoSell) throw Object.assign(new Error(`البيع غير متاح لـ «${p.name}»`), { status: 400 });
+        return { product: p._id, name: `${p.name} — بيع ${usdt} USDT`, variant: 'crypto_sell', price: 0, qty: usdt, extra: det, accountId: String(i.accountId || '').trim() };
+      }
       /* v29: منتج بكمية مخصصة — الكمية والسعر يُحسبان خادمياً حصراً */
       if (p.pricingType === 'custom_amount') {
         const q = Math.max(0, parseInt(i.qty) || 0);
@@ -118,7 +135,7 @@ router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
       customerPhone: req.user.phone,
       items: orderItems,
       total: +total.toFixed(2),
-      paymentMethod: { name: pm.name, account: pm.account },
+      paymentMethod: pm ? { name: pm.name, account: pm.account } : { name: 'بيع كريبتو — تحويل USDT', account: '' },
       receiptUrl,
     });
 

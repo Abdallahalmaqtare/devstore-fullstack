@@ -24,6 +24,13 @@ function sanitizeProduct(body) {
   if (typeof b.modes === 'string') { try { b.modes = JSON.parse(b.modes); } catch { b.modes = []; } }
   b.requiresAccountId = b.requiresAccountId === true || b.requiresAccountId === 'true';
   b.isAvailable = !(b.isAvailable === false || b.isAvailable === 'false' || b.available === false || b.available === 'false');
+  b.cryptoBuy = b.cryptoBuy === true || b.cryptoBuy === 'true';
+  b.cryptoSell = b.cryptoSell === true || b.cryptoSell === 'true';
+  b.cryptoBuyPrice = Math.max(0, parseFloat(b.cryptoBuyPrice) || 0);
+  b.cryptoSellPrice = Math.max(0, parseFloat(b.cryptoSellPrice) || 0);
+  b.cryptoBinanceId = String(b.cryptoBinanceId || '').trim();
+  b.cryptoBinanceName = String(b.cryptoBinanceName || '').trim();
+  b.cryptoTrc20 = String(b.cryptoTrc20 || '').trim();
   b.countrySelect = b.countrySelect === true || b.countrySelect === 'true';
   b.pricingType = b.pricingType === 'custom_amount' ? 'custom_amount' : 'packages';
   b.authType = ['id_only','email_password','email_only'].indexOf(b.authType) !== -1 ? b.authType : 'id_only';
