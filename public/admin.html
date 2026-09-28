@@ -400,7 +400,7 @@
 
         <div class="panel">
           <h3>🔐 أمان حساب المدير — تعديل البيانات الحساسة</h3>
-          <p class="auth-note" style="margin-bottom:14px">أي تعديل في الاسم أو الهاتف أو كلمة المرور يتطلب رمز تحقق يُرسل فوراً إلى بوت تليجرام الخاص بالإدارة، ويُسجَّل تنبيه أمني بعد الحفظ.</p>
+          <p class="auth-note" style="margin-bottom:14px">عند الضغط على «تأكيد وحفظ التعديلات» يُرسل رمز تحقق (6 أرقام — صالح 5 دقائق) فوراً إلى بوت تليجرام الإدارة، وتظهر نافذة لإدخاله قبل اعتماد أي تعديل، مع إشعار أمني بعد الحفظ.</p>
           <form class="admin-form" id="adminSecurityForm">
             <div class="form-row">
               <label>اسم المسؤول<input type="text" id="adName" placeholder="اسمك الحالي" autocomplete="off" /></label>
@@ -409,8 +409,7 @@
             <label>كلمة المرور الجديدة (اتركها فارغة إن لم ترد تغييرها)<input type="password" id="adPass" placeholder="••••••••" autocomplete="new-password" /></label>
             <small class="field-hint">كلمة المرور تُحفظ مشفرة — لا تُعرض بعد الحفظ أبداً.</small>
             <div class="form-actions" style="margin-top:12px">
-              <button type="button" class="btn btn-outline" id="adRequestOtp">📨 إرسال رمز التحقق لتليجرام</button>
-              <button type="submit" class="btn btn-primary" id="adSaveProfile">💾 حفظ التعديلات</button>
+              <button type="submit" class="btn btn-primary" id="adSaveProfile" style="width:100%">تأكيد وحفظ التعديلات 💾</button>
             </div>
           </form>
         </div>
