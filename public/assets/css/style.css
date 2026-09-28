@@ -749,3 +749,13 @@ input, select, textarea { font-family: inherit; }
 .crypto-sell{background:linear-gradient(135deg,#dc2626,#ef4444) !important}
 .crypto-prices{gap:4px}
 .crypto-p{display:block}
+
+/* ═══ v51 — ملخص الكريبتو + إغلاق القائمة على الجوال ═══ */
+.cx-summary{margin:12px 0 14px;padding:12px 14px;border-radius:12px;background:color-mix(in srgb,var(--primary) 7%,transparent);border:1px dashed var(--primary);display:flex;flex-direction:column;gap:6px}
+.cx-line{font-size:.92rem;color:var(--text)}
+.cx-line b{color:var(--primary);font-size:1rem}
+.cx-cur-inline{font-weight:400;font-size:.78rem;color:var(--muted);margin-inline-start:4px}
+@media (max-width:768px){
+  .nav-links:not(.open){transform:translateY(-110%);pointer-events:none}
+  #sideDrawer:not(.open){transform:translateX(105%);pointer-events:none}
+}
