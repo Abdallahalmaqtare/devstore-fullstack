@@ -165,7 +165,7 @@ async function renderProducts() {
         </td>
       </tr>`;
     }).join('')
-      : '<tr><td colspan="6" class="empty-row">لا توجد عناصر — أضف من الأعلى</td></tr>';
+      : '<tr><td colspan="5" class="empty-row">لا توجد عناصر — أضف من الأعلى</td></tr>';
   } catch (e) { showToast('❌ ' + e.message); }
 }
 
@@ -1044,7 +1044,6 @@ function renderCountriesTable(){
     return '<tr><td>'+ (c.flag||'🌍') +' '+ c.countryName +'</td>'
       + '<td dir="ltr">'+ (c.countryCode||'—') +'</td>'
       + '<td><b>$'+ (+c.price).toFixed(2) +'</b></td>'
-      + '<td>'+ (c.originalPrice ? '$'+(+c.originalPrice).toFixed(2) : '—') +'</td>'
       + '<td><button type="button" class="status-badge '+(c.isAvailable!==false?'status-done':'status-cancel')+'" data-ctog="'+i+'">'+(c.isAvailable!==false?'متوفر':'موقوف')+'</button></td>'
       + '<td class="row-actions"><button type="button" class="row-btn row-edit" data-cedit="'+i+'">✏️</button> <button type="button" class="row-btn row-del" data-cdel="'+i+'">🗑️</button></td></tr>';
   }).join('') : '<tr><td colspan="6" class="empty-row">لم تُضف دول بعد.</td></tr>';
@@ -1066,15 +1065,13 @@ document.getElementById('pType').addEventListener('change', syncCountriesEditor)
 document.getElementById('addCountryBtn').addEventListener('click', function(){
   var name = (document.getElementById('countrySearch').value || '').trim();
   var price = parseFloat(document.getElementById('countryPrice').value);
-  var orig = parseFloat(document.getElementById('countryOrigPrice').value) || 0;
   if (!name) return showToast('⚠️ اختر أو اكتب اسم الدولة');
   if (isNaN(price) || price < 0) return showToast('⚠️ أدخل سعراً صحيحاً');
   if (_countriesBuf.some(function(c){ return c.countryName === name; })) return showToast('⚠️ الدولة مضافة مسبقاً');
   var meta = WORLD_COUNTRIES.find(function(c){ return c[0].toLowerCase() === name.toLowerCase() || c[1].toLowerCase() === name.toLowerCase(); });
-  _countriesBuf.push({ countryName: meta?meta[0]:name, countryCode: meta?meta[2]:'', flag: meta?meta[3]:'🌍', price: price, originalPrice: orig, isAvailable: true });
+  _countriesBuf.push({ countryName: meta?meta[0]:name, countryCode: meta?meta[2]:'', flag: meta?meta[3]:'🌍', price: price, originalPrice: 0, isAvailable: true });
   document.getElementById('countrySearch').value = '';
   document.getElementById('countryPrice').value = '';
-  document.getElementById('countryOrigPrice').value = '';
   renderCountriesTable(); refreshCountryDatalist();
 });
 document.getElementById('countriesTable').addEventListener('click', function(e){
@@ -1083,11 +1080,10 @@ document.getElementById('countriesTable').addEventListener('click', function(e){
     var c0 = _countriesBuf[+edt.dataset.cedit];
     document.getElementById('countrySearch').value = c0.countryName;
     document.getElementById('countryPrice').value = c0.price;
-    document.getElementById('countryOrigPrice').value = c0.originalPrice || '';
     _countriesBuf.splice(+edt.dataset.cedit, 1);
     renderCountriesTable(); refreshCountryDatalist();
     document.getElementById('countryPrice').focus();
-    showToast('✏️ عدّل السعر ثم اضغط «➕ إضافة» للحفظ');
+    showToast('✏️ عدّل السعر الأساسي ثم اضغط «➕ إضافة» للحفظ — الخصم يُحسب آلياً من نسبة المنتج');
   }
   if (del) { _countriesBuf.splice(+del.dataset.cdel, 1); renderCountriesTable(); refreshCountryDatalist(); }
   if (tog) { var c = _countriesBuf[+tog.dataset.ctog]; c.isAvailable = !(c.isAvailable !== false); renderCountriesTable(); }

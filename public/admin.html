@@ -169,16 +169,16 @@
             <div id="countriesEditorWrap" class="variants-editor" style="display:none;margin-top:14px">
                 <div class="variants-editor-head">
                   <b>🌍 إدارة دول الأرقام والأسعار</b>
-                  <small>خاص بمنتجات «الأرقام الوهمية» — أضف كل دولة تدعمها بسعرها المستقل بالدولار.</small>
+                  <small>خاص بمنتجات «الأرقام الوهمية» — أدخل السعر الأساسي لكل دولة؛ وعند تفعيل «تخفيض/عرض خاص 🔥» للمنتج تُحسب أسعار البيع بعد الخصم آلياً لجميع الدول.</small>
                 </div>
-                <div class="form-row" style="grid-template-columns:1fr 140px 90px auto">
+                <div class="form-row" style="grid-template-columns:1fr 150px auto">
                   <label>ابحث واختر دولة<input type="search" id="countrySearch" list="countryList" placeholder="اكتب اسم الدولة... مثال: اليمن، USA" autocomplete="off" /></label>
-                  <label>💵 السعر ($)<input type="number" id="countryPrice" step="0.01" min="0" placeholder="1.50" /></label>
-                  <label>السعر قبل الخصم ($) — اختياري<input type="number" id="countryOrigPrice" step="0.01" min="0" placeholder="2.00" /></label>
+                  <label>💵 السعر الأساسي للدولة ($)<input type="number" id="countryPrice" step="0.01" min="0" placeholder="1.50" /></label>
+                  
                   <button type="button" class="btn btn-primary" id="addCountryBtn" style="align-self:end">➕ إضافة</button>
                 </div>
                 <datalist id="countryList"></datalist>
-                <div class="table-wrap"><table class="admin-table" id="countriesTable"><thead><tr><th>الدولة</th><th>الكود</th><th>السعر ($)</th><th>قبل الخصم</th><th>التوفر</th><th>حذف</th></tr></thead><tbody></tbody></table></div>
+                <div class="table-wrap"><table class="admin-table" id="countriesTable"><thead><tr><th>الدولة</th><th>الكود</th><th>السعر الأساسي ($)</th><th>التوفر</th><th>حذف</th></tr></thead><tbody></tbody></table></div>
               </div>
 
               <div id="serviceFields" class="service-fields hidden">

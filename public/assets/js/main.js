@@ -171,9 +171,16 @@ var isUnavailable = (p.isAvailable === false || p.available === false);
     /* 2) تنسيق عرض السعر مع السعر المشطوب عند التخفيض */
     /* v40: للأرقام الوهمية، السعر يبدأ من أرخص دولة متاحة */
     var hasCountries = Array.isArray(p.supportedCountries) && p.supportedCountries.length > 0;
+    /* v42: الخصم العام للمنتج يُطبق آلياً على أسعار كل الدول */
+    var cDisc = (p.isOnSale && p.discountPercent > 0) ? Math.min(100, Math.max(0, p.discountPercent)) : 0;
     if (hasCountries) {
       var avail = p.supportedCountries.filter(function(c){ return c.isAvailable !== false; });
-      if (avail.length) currentPrice = Math.min.apply(null, avail.map(function(c){ return +c.price; }));
+      if (avail.length) {
+        var finals = avail.map(function(c){ return cDisc ? +(c.price - c.price * cDisc / 100).toFixed(2) : +c.price; });
+        var minIdx = finals.indexOf(Math.min.apply(null, finals));
+        currentPrice = finals[minIdx];
+        if (cDisc) { oldPrice = +avail[minIdx].price; discPct = cDisc; }
+      }
     }
     /* v41: عند الخصم — الجديد بالأعلى والقديم مشطوباً بالأسفل */
     var hasDiscount = (oldPrice > currentPrice && currentPrice > 0);
@@ -201,7 +208,7 @@ var isUnavailable = (p.isAvailable === false || p.available === false);
     var countrySel = '';
     if (hasCountries) {
       var opts = p.supportedCountries.filter(function(c){ return c.isAvailable !== false; })
-        .map(function(c){ return '<option value="' + c.countryName + '" data-price="' + (+c.price) + '">' + (c.flag||'🌍') + ' ' + c.countryName + (c.countryCode?' ('+c.countryCode+')':'') + '</option>'; }).join('');
+        .map(function(c){ var fp = cDisc ? +(c.price - c.price * cDisc / 100).toFixed(2) : +c.price; return '<option value="' + c.countryName + '" data-price="' + fp + '" data-orig="' + (+c.price) + '">' + (c.flag||'🌍') + ' ' + c.countryName + (c.countryCode?' ('+c.countryCode+')':'') + '</option>'; }).join('');
       countrySel = '<div class="product-extra"><select class="country-picker" id="country-' + p._id + '" data-product="' + p._id + '"><option value="">اختر الدولة 🌍</option>' + opts + '</select></div>';
     } else if (p.countrySelect) {
       countrySel = '<div class="product-extra"><select id="country-' + p._id + '"><option value="">اختر الدولة 🌍</option>' +
@@ -264,11 +271,12 @@ function renderProducts() {
 
 /* بناء فلاتر المتجر من الأقسام الديناميكية */
 function renderFilters(shopSlugs) {
+  if (!shopSlugs) shopSlugs = CATEGORIES.filter(function (c) { return c.kind !== 'services'; }).map(function (c) { return c.slug; });
   var wrap = document.getElementById('storeFilters');
-  var cats = CATEGORIES.filter(function (c) { return shopSlugs.indexOf(c.slug) !== -1; });
-  wrap.innerHTML = '<button class="filter-chip active" data-filter="all">الكل</button>' +
-    cats.map(function (c) {
-      return '<button class="filter-chip" data-filter="' + c.slug + '">' + (c.icon || '') + ' ' + c.nameAr + '</button>';
+  wrap.innerHTML = '<button class="filter-chip' + (currentFilter === 'all' ? ' active' : '') + '" data-filter="all">الكل</button>' +
+    shopSlugs.map(function (slug) {
+      var c = CATEGORIES.find(function (x) { return x.slug === slug; }) || { slug: slug, nameAr: slug, icon: '' };
+      return '<button class="filter-chip' + (currentFilter === slug ? ' active' : '') + '" data-filter="' + c.slug + '">' + (c.icon || '') + ' ' + c.nameAr + '</button>';
     }).join('');
 }
 
@@ -1855,5 +1863,8 @@ document.addEventListener('change', function(e){
   if (!priceEl) return;
   var opt = sel.options[sel.selectedIndex];
   var pr = opt && opt.dataset.price ? parseFloat(opt.dataset.price) : 0;
-  if (pr > 0) priceEl.innerHTML = fmtPrice(pr) + ' <small>' + (opt.textContent.trim().split(' ')[0]) + '</small>';
+  var orig = opt && opt.dataset.orig ? parseFloat(opt.dataset.orig) : 0;
+  if (pr > 0) priceEl.innerHTML = (orig > pr)
+    ? '<span class="price-new">' + fmtPrice(pr) + '</span><span class="price-old">' + fmtPrice(orig) + '</span>'
+    : fmtPrice(pr);
 });

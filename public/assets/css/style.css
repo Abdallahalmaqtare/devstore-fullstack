@@ -718,3 +718,7 @@ input, select, textarea { font-family: inherit; }
 .category-row-scroll::-webkit-scrollbar{display:none}
 .category-row-scroll .product-card{flex:0 0 75%;max-width:280px;scroll-snap-align:start}
 @media (min-width:768px){.category-row-scroll .product-card{flex:0 0 240px}}
+
+/* ═══ v42 — تثبيت شارة الخصم داخل حدود الكرت ═══ */
+.product-card{position:relative !important;overflow:hidden}
+.product-card .sale-badge{position:absolute !important;top:10px !important;left:10px !important;z-index:3 !important;background:#e74c3c;color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;box-shadow:0 2px 6px rgba(231,76,60,.35);pointer-events:none}

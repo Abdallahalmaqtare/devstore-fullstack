@@ -90,6 +90,7 @@ router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
         if (!c || c.isAvailable === false) throw Object.assign(new Error(`الدولة «${chosen}» غير متوفرة لـ «${p.name}»`), { status: 400 });
         name = `${p.name} — ${c.flag || ''} ${c.countryName}`;
         price = +c.price;
+        if (p.isOnSale && p.discountPercent > 0) price = +(price - price * Math.min(100, Math.max(0, p.discountPercent)) / 100).toFixed(2);
         variant = c.countryName;
       } else if (p.variants?.length) {
         const v = p.variants.find(x => x.name === i.variant);
