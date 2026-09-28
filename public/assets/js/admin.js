@@ -1377,3 +1377,14 @@ document.getElementById('pType').addEventListener('change', syncCryptoFields);
     };
   }
 })();
+
+
+/* ═══ v48: بحث فوري (Live Filtering) في جميع جداول اللوحة ═══ */
+document.addEventListener('input', function (e) {
+  var inp = e.target.closest('.adm-search'); if (!inp) return;
+  var q = inp.value.trim().toLowerCase();
+  var tbl = document.getElementById(inp.dataset.table); if (!tbl) return;
+  tbl.querySelectorAll('tbody tr').forEach(function (tr) {
+    tr.style.display = (!q || tr.textContent.toLowerCase().indexOf(q) !== -1) ? '' : 'none';
+  });
+});

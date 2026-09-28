@@ -129,3 +129,12 @@
 .status-done{background:rgba(46,204,113,.15);color:#2ecc71}
 .status-cancel{background:rgba(231,76,60,.15);color:#e74c3c}
 .status-pending{background:rgba(241,196,15,.15);color:#f1c40f}
+
+/* ═══ v48 — تثبيت فوتر القائمة الجانبية + البحث + فواصل الإعدادات ═══ */
+.sidebar{display:flex !important;flex-direction:column !important;height:100vh;overflow:hidden}
+.side-nav{flex:1 1 auto;overflow-y:auto;min-height:0;padding-bottom:8px}
+.sidebar-footer{margin-top:auto !important;padding:15px !important;border-top:1px solid rgba(255,255,255,.08) !important;flex:0 0 auto}
+.admin-search{margin:0 0 12px}
+.adm-search{width:100%;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);background:var(--surface-2);color:var(--text);font-size:.92rem}
+.adm-search:focus{outline:none;border-color:var(--primary)}
+.settings-section{font-size:1rem;font-weight:800;margin:0 0 10px;color:var(--text)}

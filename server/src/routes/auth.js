@@ -127,7 +127,7 @@ router.post('/reset-password', async (req, res) => {
 /* POST /api/auth/login */
 router.post('/login', async (req, res) => {
   try {
-    const phone = cleanPhone(req.body?.phone);
+    const phone = String((req.body && req.body.phone) || '').replace(/\D/g, '').replace(/^0+/, '');
     const remember = req.body?.remember !== false;
     const user = await User.findOne({ phone });
     if (!user || !(await bcrypt.compare(String(req.body?.password || ''), user.password)))
@@ -140,7 +140,7 @@ router.post('/login', async (req, res) => {
 /* POST /api/auth/admin-login */
 router.post('/admin-login', async (req, res) => {
   try {
-    const phone = cleanPhone(req.body?.phone);
+    const phone = String((req.body && req.body.phone) || '').replace(/\D/g, '').replace(/^0+/, '');
     const user = await User.findOne({ phone, role: 'admin' });
     if (!user || !(await bcrypt.compare(String(req.body?.password || ''), user.password)))
       return res.status(401).json({ message: 'بيانات دخول المدير غير صحيحة' });

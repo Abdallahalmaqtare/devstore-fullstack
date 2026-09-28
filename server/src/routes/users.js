@@ -83,34 +83,45 @@ router.put('/admin-profile', authRequired, async (req, res) => {
   try {
     if (req.user.role !== 'admin') return res.status(403).json({ message: 'للمسؤولين فقط' });
     const bcrypt = require('bcryptjs');
+    const { User } = require('../models');
+    /* v48: وثيقة حية مباشرة من قاعدة البيانات — لا اعتماد على req.user المحتمل قِدمه */
+    const admin = await User.findById(req.user._id);
+    if (!admin) return res.status(404).json({ message: 'الحساب غير موجود' });
     const name = String(req.body.name || '').trim();
-    const phone = String(req.body.phone || '').replace(/\D/g, '');
+    /* توحيد تطبيع الهاتف مع مسار تسجيل الدخول: أرقام فقط بدون أصفار بادئة */
+    const phone = String(req.body.phone || '').replace(/\D/g, '').replace(/^0+/, '');
     const password = String(req.body.password || '');
     const changes = [];
-    if (name && name !== req.user.name) changes.push({ key: 'name', label: '✏️ تم تغيير الاسم إلى: ' + name });
-    if (phone && phone !== req.user.phone) changes.push({ key: 'phone', label: '📱 تم تعديل رقم الهاتف إلى: ' + phone });
+    if (name && name !== admin.name) changes.push({ key: 'name', label: '✏️ تم تغيير الاسم إلى: ' + name });
+    if (phone && phone !== admin.phone) changes.push({ key: 'phone', label: '📱 تم تعديل رقم الهاتف إلى: ' + phone });
     if (password) changes.push({ key: 'password', label: '🔑 تم تغيير كلمة المرور' });
     if (!changes.length) return res.status(400).json({ message: 'لا توجد تغييرات لحفظها' });
-    if (!consumeAdminOtp(String(req.user._id), req.body.otp))
+    if (!consumeAdminOtp(String(admin._id), req.body.otp))
       return res.status(400).json({ message: 'رمز التحقق غير صحيح أو منتهي — اطلب رمزاً جديداً' });
     if (changes.some(c => c.key === 'phone')) {
-      const { User } = require('../models');
-      const dup = await User.findOne({ phone, _id: { $ne: req.user._id } });
+      const dup = await User.findOne({ phone, _id: { $ne: admin._id } });
       if (dup) return res.status(400).json({ message: 'رقم الهاتف مستخدم لحساب آخر' });
-      req.user.phone = phone;
+      admin.phone = phone;
     }
-    if (changes.some(c => c.key === 'name')) req.user.name = name;
-    if (changes.some(c => c.key === 'password')) req.user.password = await bcrypt.hash(password, 10);
-    req.user.sessionResetAt = new Date(); /* إبطال الجلسات الأخرى بعد تعديل حساس */
-    await req.user.save();
+    if (changes.some(c => c.key === 'name')) admin.name = name;
+    if (changes.some(c => c.key === 'password')) admin.password = await bcrypt.hash(password, 10);
+    admin.sessionResetAt = new Date();
+    await admin.save();
+    /* v48: تحقق ذاتي إلزامي بعد الحفظ — فشله يعني فشل العملية */
+    const check = await User.findById(admin._id).lean();
+    const vName = !name || check.name === name;
+    const vPhone = !phone || check.phone === phone;
+    const vPass = !password || (await bcrypt.compare(password, check.password));
+    if (!vName || !vPhone || !vPass)
+      return res.status(500).json({ message: '⚠️ فشل تأكيد الحفظ في قاعدة البيانات — لم تُعتمد التعديلات' });
     const now = new Date().toLocaleString('ar-EG', { timeZone: 'Asia/Aden' });
     const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').toString().split(',')[0].trim();
     await sendTelegram('🚨 <b>إشعار أمني — تم تعديل بيانات حساب المدير بنجاح:</b>\n- التعديلات المعتمدة:\n'
       + changes.map(c => '  • ' + c.label).join('\n')
-      + '\n- اسم المدير: ' + req.user.name
+      + '\n- اسم المدير: ' + check.name
       + '\n- التوقيت: ' + now
       + '\n- عنوان IP: <code>' + ip + '</code>');
-    res.json({ ok: true, user: { name: req.user.name, phone: req.user.phone, role: req.user.role } });
+    res.json({ ok: true, user: { name: check.name, phone: check.phone, role: check.role } });
   } catch (e) { res.status(500).json({ message: e.message }); }
 });
 
