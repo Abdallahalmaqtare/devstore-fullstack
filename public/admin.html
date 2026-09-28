@@ -189,15 +189,15 @@
                 <label class="check-row"><input type="checkbox" id="cSell" checked /> 🔴 متاح للبيع (العميل يبيع لنا)</label>
               </div>
               <div class="form-row">
-                <label>سعر شراء الـ USDT ($) — نشتري به من المورد<input type="number" id="cBuyPrice" step="0.01" min="0" placeholder="1.00" /></label>
-                <label>سعر بيع الـ USDT ($) — ندفع به للعميل<input type="number" id="cSellPrice" step="0.01" min="0" placeholder="0.97" /></label>
+                <label>سعر بيع الـ USDT للعميل (YER) — العميل يشتري منا<input type="number" id="cBuyPrice" step="1" min="0" placeholder="540" /></label>
+                <label>سعر شراء الـ USDT من العميل (YER) — العميل يبيع لنا<input type="number" id="cSellPrice" step="1" min="0" placeholder="535" /></label>
               </div>
               <div class="form-row">
                 <label>Binance Pay ID للمتجر<input type="text" id="cBinanceId" dir="ltr" placeholder="123456789" /></label>
                 <label>اسم حساب باينانس الرسمي<input type="text" id="cBinanceName" placeholder="DevStore Official" /></label>
               </div>
               <label>عنوان محفظة المتجر (USDT - TRC20)<input type="text" id="cTrc20" dir="ltr" placeholder="TXyz..." /></label>
-              <small class="field-hint">تُعرض هذه المحافظ للعميل عند عملية البيع ليحوّل إليها، وتُحسب العملات تلقائياً عبر أسعار الصرف المضبوطة في إدارة العملات.</small>
+              <small class="field-hint">الأسعار تُدخل بالريال اليمني لكل 1 USDT مباشرة. تُعرض المحافظ للعميل عند عملية البيع ليحوّل إليها.</small>
             </div>
 
             <div id="serviceFields" class="service-fields hidden">
