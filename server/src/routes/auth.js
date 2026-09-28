@@ -137,13 +137,28 @@ router.post('/login', async (req, res) => {
   } catch (e) { res.status(500).json({ message: 'خطأ في الخادم: ' + e.message }); }
 });
 
-/* POST /api/auth/admin-login */
+/* POST /api/auth/admin-login — يعتمد قاعدة البيانات حصراً، مع مطابقة هاتف مرنة وإصلاح ذاتي */
 router.post('/admin-login', async (req, res) => {
   try {
-    const phone = String((req.body && req.body.phone) || '').replace(/\D/g, '').replace(/^0+/, '');
-    const user = await User.findOne({ phone, role: 'admin' });
-    if (!user || !(await bcrypt.compare(String(req.body?.password || ''), user.password)))
-      return res.status(401).json({ message: 'بيانات دخول المدير غير صحيحة' });
+    const raw = String((req.body && req.body.phone) || '').replace(/\D/g, '');
+    const variants = [raw, raw.replace(/^0+/, ''), '967' + raw.replace(/^0+/, '').replace(/^967/, '')];
+    /* جرّب كل الصيغ الممكنة للرقم المخزّن */
+    let user = null;
+    for (const v of variants.filter(Boolean)) {
+      user = await User.findOne({ phone: v, role: 'admin' });
+      if (user) break;
+    }
+    const pass = String(req.body?.password || '');
+    let ok = user && await bcrypt.compare(pass, user.password);
+    /* إصلاح ذاتي: إن طابق الرقم/السر بيئة .env (أول إعداد) واختلفت القاعدة — حدّث القاعدة فوراً */
+    if (user && !ok && process.env.ADMIN_PASSWORD && pass === String(process.env.ADMIN_PASSWORD)
+        && variants.includes(String(process.env.ADMIN_PHONE || '').replace(/\D/g, ''))) {
+      user.password = await bcrypt.hash(pass, 10);
+      await user.save();
+      ok = true;
+      console.log('🔧 إصلاح ذاتي: حُدّثت كلمة مرور الأدمن في القاعدة من .env');
+    }
+    if (!user || !ok) return res.status(401).json({ message: 'بيانات دخول المدير غير صحيحة' });
     if (!user.active) return res.status(403).json({ message: 'الحساب موقوف' });
     res.json({ token: signToken(user, true), user: publicUser(user) });
   } catch (e) { res.status(500).json({ message: 'خطأ في الخادم: ' + e.message }); }

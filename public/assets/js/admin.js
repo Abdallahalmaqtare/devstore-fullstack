@@ -1210,13 +1210,19 @@ function refreshCountryDatalist(){
   dl.innerHTML = WORLD_COUNTRIES.filter(function(c){ return used.indexOf(c[0])===-1; })
     .map(function(c){ return '<option value="'+ c[0] +'" data-code="'+ c[2] +'" data-flag="'+ c[3] +'">'+ c[3] +' '+ c[0] +' ('+ c[2] +')</option>'; }).join('');
 }
+function selectedCatText(){
+  var sel = document.getElementById('pCat');
+  var opt = sel && sel.options[sel.selectedIndex];
+  return ((sel ? sel.value : '') + ' ' + (opt ? opt.textContent : '')).toLowerCase();
+}
 function syncCountriesEditor(){
   var wrap = document.getElementById('countriesEditorWrap'); if (!wrap) return;
-  var isNumbers = document.getElementById('pType').value === 'product' && document.getElementById('pCat').value === 'numbers';
+  var t = selectedCatText();
+  var isNumbers = document.getElementById('pType').value === 'product' && (t.indexOf('numbers') !== -1 || t.indexOf('أرقام') !== -1 || t.indexOf('تفعيلات') !== -1 || t.indexOf('وهمية') !== -1);
   wrap.style.display = isNumbers ? '' : 'none';
   if (isNumbers) { refreshCountryDatalist(); renderCountriesTable(); }
 }
-document.getElementById('pCat').addEventListener('change', syncCountriesEditor);
+document.getElementById('pCat').addEventListener('change', function(){ syncCountriesEditor(); syncCryptoFields(); });
 document.getElementById('pType').addEventListener('change', syncCountriesEditor);
 document.getElementById('addCountryBtn').addEventListener('click', function(){
   var name = (document.getElementById('countrySearch').value || '').trim();
@@ -1276,7 +1282,8 @@ syncCountriesEditor();
 /* ═══ v44: إظهار حقول الكريبتو + تعبئتها عند التعديل ═══ */
 function syncCryptoFields() {
   var el = document.getElementById('cryptoFields'); if (!el) return;
-  var isCrypto = document.getElementById('pType').value === 'product' && document.getElementById('pCat').value === 'crypto';
+  var t = selectedCatText();
+  var isCrypto = document.getElementById('pType').value === 'product' && (t.indexOf('crypto') !== -1 || t.indexOf('عملات رقمية') !== -1 || t.indexOf('usdt') !== -1 || t.indexOf('كريبتو') !== -1);
   el.classList.toggle('hidden', !isCrypto);
 }
 document.getElementById('pCat').addEventListener('change', syncCryptoFields);
@@ -1388,3 +1395,7 @@ document.addEventListener('input', function (e) {
     tr.style.display = (!q || tr.textContent.toLowerCase().indexOf(q) !== -1) ? '' : 'none';
   });
 });
+
+/* v49: إعادة مزامنة الحقول الشرطية بعد ملء قائمة الأقسام من قاعدة البيانات */
+setTimeout(function(){ try { syncCountriesEditor(); syncCryptoFields(); } catch(e){} }, 600);
+setTimeout(function(){ try { syncCountriesEditor(); syncCryptoFields(); } catch(e){} }, 1800);

@@ -98,15 +98,17 @@ router.put('/admin-profile', authRequired, async (req, res) => {
     if (!changes.length) return res.status(400).json({ message: 'لا توجد تغييرات لحفظها' });
     if (!consumeAdminOtp(String(admin._id), req.body.otp))
       return res.status(400).json({ message: 'رمز التحقق غير صحيح أو منتهي — اطلب رمزاً جديداً' });
+    const $set = { sessionResetAt: new Date() };
     if (changes.some(c => c.key === 'phone')) {
       const dup = await User.findOne({ phone, _id: { $ne: admin._id } });
       if (dup) return res.status(400).json({ message: 'رقم الهاتف مستخدم لحساب آخر' });
-      admin.phone = phone;
+      $set.phone = phone;
     }
-    if (changes.some(c => c.key === 'name')) admin.name = name;
-    if (changes.some(c => c.key === 'password')) admin.password = await bcrypt.hash(password, 10);
-    admin.sessionResetAt = new Date();
-    await admin.save();
+    if (changes.some(c => c.key === 'name')) $set.name = name;
+    if (changes.some(c => c.key === 'password')) $set.password = await bcrypt.hash(password.trim(), 10);
+    /* v49: كتابة ذرّية مباشرة — تتجاوز أي حالة وثيقة قديمة */
+    await User.findByIdAndUpdate(admin._id, { $set }, { runValidators: true });
+    console.log('✅ حُدّث حساب الأدمن في القاعدة:', Object.keys($set).join(', '));
     /* v48: تحقق ذاتي إلزامي بعد الحفظ — فشله يعني فشل العملية */
     const check = await User.findById(admin._id).lean();
     const vName = !name || check.name === name;
