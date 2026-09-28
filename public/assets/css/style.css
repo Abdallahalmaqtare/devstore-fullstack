@@ -702,3 +702,19 @@ input, select, textarea { font-family: inherit; }
 .cqm-new{color:#2ecc71;font-weight:800}
 .cqm-badge{line-height:1.4;text-align:center}
 .courses-search{margin:0 auto 18px;max-width:640px;width:100%}
+
+/* ═══ v41 — السعر العمودي + صفوف الأقسام الأفقية ═══ */
+.product-footer .product-price{display:flex;flex-direction:column;align-items:flex-start;gap:2px;line-height:1.35}
+.product-price .price-new{font-weight:800;color:var(--primary);font-size:1.08rem;display:block}
+.product-price .price-old{text-decoration:line-through;opacity:.6;font-size:.85em;font-weight:600;display:block}
+.product-price .price-old .local-price,.product-price .price-new .local-price{font-weight:500}
+#productsGrid.categories-mode{display:flex;flex-direction:column;gap:30px;grid-template-columns:none}
+.category-section{display:flex;flex-direction:column;gap:12px}
+.category-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.category-title{font-size:1.1rem;font-weight:800}
+.view-all-btn{background:transparent;border:1.5px solid var(--border);color:var(--primary);font-weight:700;font-size:.82rem;padding:6px 14px;border-radius:99px;transition:.25s;white-space:nowrap}
+.view-all-btn:hover{border-color:var(--primary);background:color-mix(in srgb,var(--primary) 10%,transparent)}
+.category-row-scroll{display:flex;gap:14px;overflow-x:auto;padding:10px 4px 16px 4px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.category-row-scroll::-webkit-scrollbar{display:none}
+.category-row-scroll .product-card{flex:0 0 75%;max-width:280px;scroll-snap-align:start}
+@media (min-width:768px){.category-row-scroll .product-card{flex:0 0 240px}}

@@ -1046,7 +1046,7 @@ function renderCountriesTable(){
       + '<td><b>$'+ (+c.price).toFixed(2) +'</b></td>'
       + '<td>'+ (c.originalPrice ? '$'+(+c.originalPrice).toFixed(2) : '—') +'</td>'
       + '<td><button type="button" class="status-badge '+(c.isAvailable!==false?'status-done':'status-cancel')+'" data-ctog="'+i+'">'+(c.isAvailable!==false?'متوفر':'موقوف')+'</button></td>'
-      + '<td><button type="button" class="row-btn row-del" data-cdel="'+i+'">🗑️</button></td></tr>';
+      + '<td class="row-actions"><button type="button" class="row-btn row-edit" data-cedit="'+i+'">✏️</button> <button type="button" class="row-btn row-del" data-cdel="'+i+'">🗑️</button></td></tr>';
   }).join('') : '<tr><td colspan="6" class="empty-row">لم تُضف دول بعد.</td></tr>';
 }
 function refreshCountryDatalist(){
@@ -1078,7 +1078,17 @@ document.getElementById('addCountryBtn').addEventListener('click', function(){
   renderCountriesTable(); refreshCountryDatalist();
 });
 document.getElementById('countriesTable').addEventListener('click', function(e){
-  var del = e.target.closest('[data-cdel]'), tog = e.target.closest('[data-ctog]');
+  var del = e.target.closest('[data-cdel]'), tog = e.target.closest('[data-ctog]'), edt = e.target.closest('[data-cedit]');
+  if (edt) {
+    var c0 = _countriesBuf[+edt.dataset.cedit];
+    document.getElementById('countrySearch').value = c0.countryName;
+    document.getElementById('countryPrice').value = c0.price;
+    document.getElementById('countryOrigPrice').value = c0.originalPrice || '';
+    _countriesBuf.splice(+edt.dataset.cedit, 1);
+    renderCountriesTable(); refreshCountryDatalist();
+    document.getElementById('countryPrice').focus();
+    showToast('✏️ عدّل السعر ثم اضغط «➕ إضافة» للحفظ');
+  }
   if (del) { _countriesBuf.splice(+del.dataset.cdel, 1); renderCountriesTable(); refreshCountryDatalist(); }
   if (tog) { var c = _countriesBuf[+tog.dataset.ctog]; c.isAvailable = !(c.isAvailable !== false); renderCountriesTable(); }
 });

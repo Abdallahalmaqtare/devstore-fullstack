@@ -135,18 +135,8 @@ document.getElementById('menuBtn').addEventListener('click', function () { navLi
 navLinks.querySelectorAll('a').forEach(function (a) { a.addEventListener('click', function () { navLinks.classList.remove('open'); }); });
 
 /* ---------------- المتجر: مجموعات وباقات + بحث ---------------- */
-function renderProducts() {
-  var list = PRODUCTS;
-  if (currentFilter !== 'all') list = list.filter(function (p) { return p.cat === currentFilter; });
-  if (searchQuery) {
-    var q = searchQuery.toLowerCase();
-    list = list.filter(function (p) {
-      var hay = (p.name + ' ' + (p.desc || '') + ' ' + (p.variants || []).map(function (v) { return v.name; }).join(' ')).toLowerCase();
-      return hay.indexOf(q) !== -1;
-    });
-  }
-  document.getElementById('productsGrid').innerHTML = list.length ? list.map(function (p) {
-    var isUnavailable = (p.isAvailable === false || p.available === false);
+function buildProductCard(p) {
+var isUnavailable = (p.isAvailable === false || p.available === false);
     var isCustom = p.pricingType === 'custom_amount';
     var isGroup = !isCustom && (p.variants || []).length > 0;
 
@@ -185,8 +175,12 @@ function renderProducts() {
       var avail = p.supportedCountries.filter(function(c){ return c.isAvailable !== false; });
       if (avail.length) currentPrice = Math.min.apply(null, avail.map(function(c){ return +c.price; }));
     }
-    /* v39: التخفيض يظهر داخل النوافذ فقط — البطاقات الرئيسية تعرض السعر الحالي فقط */
-    var priceDisplay = fmtPrice(currentPrice);
+    /* v41: عند الخصم — الجديد بالأعلى والقديم مشطوباً بالأسفل */
+    var hasDiscount = (oldPrice > currentPrice && currentPrice > 0);
+    if (hasDiscount && !discPct) discPct = Math.round((1 - currentPrice / oldPrice) * 100);
+    var priceDisplay = hasDiscount
+      ? '<span class="price-new">' + fmtPrice(currentPrice) + '</span><span class="price-old">' + fmtPrice(oldPrice) + '</span>'
+      : fmtPrice(currentPrice);
 
     /* 3) الأزرار وحالة المنتج */
     var footer;
@@ -220,7 +214,7 @@ function renderProducts() {
                '<button class="buy-btn" data-buy="' + p._id + '">أضف للسلة 🛒</button>';
     }
 
-    var discountBadge = '';
+    var discountBadge = hasDiscount ? '<span class=\'sale-badge\'>خصم ' + discPct + '% 🔥</span>' : '';
     var unavailClass = isUnavailable ? ' product-unavailable' : '';
 
     return '<article class="product-card' + (isGroup ? ' group-card' : '') + unavailClass + '"' + (isGroup ? ' data-group="' + p._id + '"' : '') + ' style="position:relative">' +
@@ -232,8 +226,40 @@ function renderProducts() {
       countrySel +
       '<div class="product-footer">' + footer + '</div>' +
       '</article>';
-  }).join('')
-  : '<p class="cart-empty">لا توجد نتائج مطابقة لبحثك 🔍</p>';
+}
+
+function renderProducts() {
+  var list = PRODUCTS;
+  if (currentFilter !== 'all') list = list.filter(function (p) { return p.cat === currentFilter; });
+  if (searchQuery) {
+    var q = searchQuery.toLowerCase();
+    list = list.filter(function (p) {
+      var hay = (p.name + ' ' + (p.desc || '') + ' ' + (p.variants || []).map(function (v) { return v.name; }).join(' ')).toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+  }
+  var grid = document.getElementById('productsGrid');
+  if (!list.length) { grid.classList.remove('categories-mode'); grid.innerHTML = '<p class="cart-empty">لا توجد نتائج مطابقة لبحثك 🔍</p>'; return; }
+  /* v41: وضع «الكل» بلا بحث — صف تمرير أفقي لكل قسم */
+  if (currentFilter === 'all' && !searchQuery && CATEGORIES.length) {
+    var shopCats = CATEGORIES.filter(function (c) { return c.kind !== 'services'; });
+    var secs = shopCats.map(function (c) {
+      var items = list.filter(function (p) { return p.cat === c.slug; });
+      if (!items.length) return '';
+      return '<section class="category-section">'
+        + '<div class="category-head"><h3 class="category-title">' + (c.icon || '🗂️') + ' ' + c.nameAr + '</h3>'
+        + '<button type="button" class="view-all-btn" data-viewall="' + c.slug + '">عرض الكل ←</button></div>'
+        + '<div class="category-row-scroll">' + items.map(buildProductCard).join('') + '</div>'
+        + '</section>';
+    }).filter(Boolean).join('');
+    var others = list.filter(function (p) { return !shopCats.some(function (c) { return c.slug === p.cat; }); });
+    if (others.length) secs += '<section class="category-section"><div class="category-head"><h3 class="category-title">📦 أخرى</h3></div><div class="category-row-scroll">' + others.map(buildProductCard).join('') + '</div></section>';
+    grid.classList.add('categories-mode');
+    grid.innerHTML = secs || '<p class="cart-empty">لا توجد منتجات متاحة حالياً</p>';
+    return;
+  }
+  grid.classList.remove('categories-mode');
+  grid.innerHTML = list.map(buildProductCard).join('');
 }
 
 /* بناء فلاتر المتجر من الأقسام الديناميكية */
@@ -263,6 +289,14 @@ function renderCurrencySelect() {
   };
 }
 
+document.getElementById('productsGrid').addEventListener('click', function (e) {
+  var vb = e.target.closest('[data-viewall]');
+  if (!vb) return;
+  currentFilter = vb.dataset.viewall;
+  renderFilters();
+  renderProducts();
+  window.scrollTo({ top: document.getElementById('store').offsetTop - 70, behavior: 'smooth' });
+});
 document.getElementById('storeFilters').addEventListener('click', function (e) {
   var chip = e.target.closest('.filter-chip');
   if (!chip) return;
