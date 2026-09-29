@@ -759,3 +759,7 @@ input, select, textarea { font-family: inherit; }
   .nav-links:not(.open){transform:translateY(-110%);pointer-events:none}
   #sideDrawer:not(.open){transform:translateX(105%);pointer-events:none}
 }
+
+/* ═══ v52 — ملخص السلة: قديم مشطوب + توفير ═══ */
+.cart-total b{line-height:1.3}
+.cart-item .price-new{color:#2ecc71;font-weight:800}

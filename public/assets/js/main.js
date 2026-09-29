@@ -430,7 +430,7 @@ function getItemInfo(id) { return PRODUCTS.find(function (p) { return p._id === 
 function addToCart(id) {
   var product = getItemInfo(id);
   if (!product) return;
-  var extra = '', priceOverride = null, nameOverride = null, selectedCountry = '';
+  var extra = '', priceOverride = null, origOverride = 0, nameOverride = null, selectedCountry = '';
   var hasCountries = Array.isArray(product.supportedCountries) && product.supportedCountries.length > 0;
   if (hasCountries) {
     var sel = document.getElementById('country-' + id);
@@ -439,18 +439,25 @@ function addToCart(id) {
     if (!c || c.isAvailable === false) { showToast('⚠️ الدولة غير متوفرة حالياً'); return; }
     selectedCountry = c.countryName;
     extra = (c.flag || '🌍') + ' ' + c.countryName + (c.countryCode ? ' (' + c.countryCode + ')' : '');
-    priceOverride = +c.price;
+    /* v52: سعر الدولة بعد الخصم العام للمنتج + حفظ الأصلي */
+    var _cd = (product.isOnSale && product.discountPercent > 0) ? Math.min(100, Math.max(0, product.discountPercent)) : 0;
+    priceOverride = _cd ? +(c.price - c.price * _cd / 100).toFixed(2) : +c.price;
+    if (_cd && priceOverride < +c.price) origOverride = +c.price;
     nameOverride = product.name + ' — ' + (c.flag || '') + ' ' + c.countryName;
   } else if (product.countrySelect) {
     var sel2 = document.getElementById('country-' + id);
     if (!sel2 || !sel2.value) { showToast('⚠️ اختر الدولة أولاً'); if (sel2) sel2.focus(); return; }
     extra = sel2.value;
   }
+  /* v52: السعر الفعلي بعد الخصم + الأصلي + توحيد حقل الصورة */
+  var _finalPrice = priceOverride != null ? priceOverride : effPrice(product);
+  var _orig = origOverride || ((product.isOnSale && product.discountPercent > 0 && priceOverride == null && effPrice(product) < product.price) ? +product.price : 0);
   pushItem({
     id: id, variant: '', extra: extra, selectedCountry: selectedCountry,
     name: nameOverride || product.name,
-    price: priceOverride != null ? priceOverride : product.price,
-    icon: product.icon, image: product.image || '',
+    price: _finalPrice,
+    originalPrice: _orig,
+    icon: product.icon, image: product.image || product.img || '',
     requiresAccountId: !!product.requiresAccountId,
   });
 }
@@ -462,7 +469,8 @@ function addVariantToCart(idx) {
   pushItem({
     id: g._id, variant: v.name, extra: '',
     name: g.name + ' — ' + v.name, price: effPrice(v),
-    icon: v.icon || g.icon, image: g.image || '',
+    originalPrice: (effPrice(v) < +v.price) ? +v.price : 0,
+    icon: v.icon || g.icon, image: g.image || g.img || '',
     requiresAccountId: !!g.requiresAccountId,
   });
   groupModal.classList.remove('open');
@@ -490,17 +498,31 @@ function renderCart() {
       : i.requiresAccountId
       ? '<input type="text" class="cart-acct" data-acct="' + i.key + '" value="' + (i.accountId || '') + '" dir="ltr" placeholder="🆔 معرّف الحساب / Player ID (إلزامي)" />'
       : '';
+    /* v52: صورة بديلة آمنة (لا undefined أبداً) + سعر مشطوب عند التخفيض */
+    var _img = (i.image && i.image !== 'undefined' && i.image !== 'null') ? i.image : '';
+    var _icon = _img ? '<img class="p-img" src="' + _img + '" alt="" onerror="this.outerHTML=\'🛍️\'" />' : (i.icon || '🛍️');
+    var _priceHtml = (i.originalPrice && +i.originalPrice > +i.price)
+      ? '<span class="price-new">' + fmtPrice(i.price) + '</span> <span class="price-old" style="text-decoration:line-through;opacity:.6;font-size:.82em">' + fmtPrice(i.originalPrice) + '</span>'
+      : fmtPrice(i.price);
     return '<div class="cart-item">' +
-      '<span class="cart-item-icon">' + (i.image ? '<img class="p-img" src="' + i.image + '" alt="" />' : i.icon) + '</span>' +
-      '<div class="cart-item-info"><b>' + i.name + '</b><span>' + (i.extra ? i.extra + ' • ' : '') + fmtPrice(i.price) + '</span>' + acct + '</div>' +
+      '<span class="cart-item-icon">' + _icon + '</span>' +
+      '<div class="cart-item-info"><b>' + i.name + '</b><span>' + (i.extra ? i.extra + ' • ' : '') + _priceHtml + '</span>' + acct + '</div>' +
       '<div class="cart-item-actions">' +
       '<button class="qty-btn" data-dec="' + i.key + '">−</button><b>' + i.qty + '</b>' +
       '<button class="qty-btn" data-inc="' + i.key + '">+</button>' +
       '<button class="remove-btn" data-remove="' + i.key + '">🗑️</button>' +
       '</div></div>';
   }).join('');
+  /* v52: الإجمالي قبل وبعد التخفيض + قيمة التوفير */
   var totalUsd = cart.reduce(function (s, i) { return s + i.price * i.qty; }, 0);
-  cartTotal.innerHTML = fmtPrice(totalUsd);
+  var origTotal = cart.reduce(function (s, i) { return s + ((i.originalPrice && +i.originalPrice > +i.price) ? +i.originalPrice : +i.price) * i.qty; }, 0);
+  if (origTotal > totalUsd) {
+    cartTotal.innerHTML = '<span class="cart-total-old" style="text-decoration:line-through;opacity:.6;font-size:.8em;display:block">' + fmtPrice(+origTotal.toFixed(2)) + '</span>'
+      + fmtPrice(+totalUsd.toFixed(2))
+      + '<span class="cart-save" style="display:block;font-size:.75em;color:#2ecc71;font-weight:800">وفّرت ' + fmtPrice(+(origTotal - totalUsd).toFixed(2)) + ' 🔥</span>';
+  } else {
+    cartTotal.innerHTML = fmtPrice(+totalUsd.toFixed(2));
+  }
 }
 renderCart();
 
@@ -518,6 +540,8 @@ document.body.addEventListener('click', function (e) {
   var buy = e.target.closest('[data-buy]');
   if (buy) return addToCart(buy.dataset.buy);
   var inq = e.target.closest('[data-inquire]');
+  /* v52: إلزام تسجيل الدخول قبل أي استفسار/حجز في الدورات والخدمات */
+  if (inq && !API.user()) { e.preventDefault(); showToast('يرجى تسجيل الدخول أو إنشاء حساب أولاً لمتابعة الاستفسار وتأكيد طلبك 🔒'); openAuth('login'); return; }
   if (inq) return openInquiry(inq.dataset.inquire);
 
   var inc = e.target.closest('[data-inc]');
