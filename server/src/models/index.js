@@ -115,10 +115,31 @@ const orderSchema = new Schema({
     accountId: String,
   }],
   total: { type: Number, required: true },
+  currency: { type: String, default: 'USD' },   /* v54: عملة العميل المختارة */
+  totalLocal: { type: Number, default: 0 },          /* v54: الإجمالي بالعملة المحلية */
+  _waCompletedNotified: { type: Boolean, default: false }, /* v54: منع تكرار إشعار واتساب */
   paymentMethod: { name: String, account: String },
   receiptUrl: { type: String, default: '' },
   status: { type: String, enum: ['قيد المراجعة', 'مكتمل', 'ملغي'], default: 'قيد المراجعة' },
 }, { timestamps: true });
+
+/* v54: إشعار العميل عبر واتساب فور تحويل الطلب إلى «مكتمل» — من أي مسار (لوحة الأدمن أو غيرها) */
+orderSchema.post('save', function (doc) {
+  try {
+    if (doc && doc.status === 'مكتمل' && !doc._waCompletedNotified) {
+      mongoose.model('Order').updateOne({ _id: doc._id }, { $set: { _waCompletedNotified: true } }).exec();
+      setImmediate(() => { try { require('../services/whatsappService').sendOrderCompleted(doc); } catch (e) {} });
+    }
+  } catch (e) { console.warn('WA hook(save) error:', e.message); }
+});
+orderSchema.post('findOneAndUpdate', function (doc) {
+  try {
+    if (doc && doc.status === 'مكتمل' && !doc._waCompletedNotified) {
+      mongoose.model('Order').updateOne({ _id: doc._id }, { $set: { _waCompletedNotified: true } }).exec();
+      setImmediate(() => { try { require('../services/whatsappService').sendOrderCompleted(doc); } catch (e) {} });
+    }
+  } catch (e) { console.warn('WA hook(update) error:', e.message); }
+});
 
 /* ===== الأقسام الرئيسية الديناميكية ===== */
 const categorySchema = new Schema({

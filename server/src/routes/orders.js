@@ -128,7 +128,18 @@ router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
     });
 
     const receiptUrl = await uploadImage(req.file.buffer);
+    /* v54: حساب المبلغ المحلي بالعملة المختارة */
+    const selCur = String(req.body.currency || 'USD').toUpperCase();
+    let localTotal = 0;
+    if (selCur !== 'USD') {
+      try {
+        const { Currency } = require('../models');
+        const cur = await Currency.findOne({ code: selCur, active: true }).lean();
+        if (cur && cur.rate > 0) localTotal = Math.round(total * cur.rate);
+      } catch (e) {}
+    }
     const order = await Order.create({
+      currency: selCur, totalLocal: localTotal,
       code: 'DS-' + Date.now().toString(36).toUpperCase(),
       user: req.user._id,
       customerName: req.user.name,
