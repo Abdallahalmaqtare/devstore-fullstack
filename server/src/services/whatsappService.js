@@ -86,34 +86,44 @@ async function init() {
           if (!body) continue;
           const senderDigits = jid.split('@')[0];
 
-          /* — v57: طلب رمز التحقق — المنطق المضمون (معالجة @lid + آخر 9 أرقام + سجل تتبع) — */
+          /* — v58: طلب رمز التحقق — لا رفض إلا بيقين تام (معالجة @lid جذرياً) — */
           if (body.indexOf('رمز التحقق') !== -1 || body.indexOf('كود التحقق') !== -1 || body.indexOf('رمز التفعيل') !== -1) {
-            /* 1) رقم المرسل الفعلي الحقيقي — معالجة حسابات واتساب الحديثة (@lid) */
-            let senderJid = msg.key.remoteJid || '';
-            if (senderJid.endsWith('@lid')) {
-              senderJid = msg.key.participant || msg.participant || '';
-            }
-            const senderDigits = getDigits(senderJid.split('@')[0]);
-            /* 2) الرقم المكتوب في نص الرسالة — Regex مرن يتحمل الأقواس والأسطر الجديدة */
+            /* 1) استخراج رقم المرسل الحقيقي: القياسي @s.whatsapp.net أولاً، ثم البدائل (senderPn/remoteJidAlt/participant) مع تجاهل أي @lid */
+            const jidRaw = String(msg.key.remoteJid || '');
+            let senderDigits = '';
+            let src = 'none';
+            const tryPick = (val, tag) => {
+              if (!val) return '';
+              const str = String(val);
+              if (str.endsWith('@lid')) return '';       /* معرف مجهول — لا نستخدمه */
+              const d = getDigits(str.split('@')[0]);
+              return d.length >= 8 ? (src = tag, d) : '';
+            };
+            if (jidRaw.endsWith('@s.whatsapp.net')) senderDigits = tryPick(jidRaw, 'remoteJid');
+            if (!senderDigits) senderDigits = tryPick(msg.key.senderPn, 'senderPn');
+            if (!senderDigits) senderDigits = tryPick(msg.key.remoteJidAlt, 'remoteJidAlt');
+            if (!senderDigits) senderDigits = tryPick(msg.key.participant || msg.participant, 'participant');
+            /* 2) الرقم المكتوب في نص الرسالة (Regex مرن) */
             const matches = body.match(/(967\d{9}|\d{9})/g);
-            /* إن لم يكتب رقماً في النص، نعتمد رقم مرسل الرسالة نفسه (يطابق ذاتياً) */
-            const requestedDigits = matches ? getDigits(matches[0]) : senderDigits;
-            /* 3) سجل تشخيصي: يُظهر الصيغة التي يستقبلها السيرفر بالضبط */
-            console.log('[OTP Check] Actual Sender: ' + senderDigits + ' | Requested: ' + requestedDigits);
-            /* 4) مقارنة آخر 9 أرقام حصراً — تتجاوز مفتاح الدولة 967 والأصفار البادئة */
-            const senderLast9 = senderDigits.slice(-9);
-            const requestedLast9 = requestedDigits.slice(-9);
-            const isMatch = senderLast9 && requestedLast9 && (senderLast9 === requestedLast9);
-            /* في حال عدم التطابق — وكان المرسل ليس معرف @lid مجهول — نرسل التحذير */
-            if (!isMatch && !senderJid.endsWith('@lid')) {
-              await sock.sendMessage(msg.key.remoteJid, { text:
-                '⚠️ عذراً عزيزي العميل!\n' +
-                'لا يمكن إرسال رمز التحقق؛ لأن رقم الواتساب الذي تراسلنا منه حالياً لا يتطابق مع رقم الحساب المطلوب في الموقع.\n\n' +
-                '💡 يرجى إرسال الطلب مباشرة من نفس رقم هاتفك المربوط بحسابك في متجر DevStore.' });
-              continue;
-            }
-            /* 5) التطابق تحقق ✅ — جلب الكود الفعّال للرقم وإرساله فوراً */
+            const requestedDigits = matches ? getDigits(matches[0]) : '';
+            /* 3) سجل تشخيصي مفصّل */
+            console.log('[OTP Check] jid=' + jidRaw + ' | src=' + src + ' | sender=' + (senderDigits || 'unknown-lid') + ' | requested=' + (requestedDigits || 'none'));
+            /* 4) الرقم الهدف للبحث عن الكود: المكتوب في الرسالة أولاً، وإلا رقم المرسل */
             const targetPhone = requestedDigits || senderDigits;
+            /* 5) التحذير يُرسل فقط بيقين تام: مرسل حقيقي معروف + رقم مطلوب مكتوب + عدم تطابق آخر 9 أرقام */
+            const senderKnown = !!senderDigits;
+            if (senderKnown && requestedDigits) {
+              const s9 = senderDigits.slice(-9), r9 = requestedDigits.slice(-9);
+              if (s9 && r9 && s9 !== r9) {
+                await sock.sendMessage(msg.key.remoteJid, { text:
+                  '⚠️ عذراً عزيزي العميل!\n' +
+                  'لا يمكن إرسال رمز التحقق؛ لأن رقم الواتساب الذي تراسلنا منه حالياً لا يتطابق مع رقم الحساب المطلوب في الموقع.\n\n' +
+                  '💡 يرجى إرسال الطلب مباشرة من نفس رقم هاتفك المربوط بحسابك في متجر DevStore.' });
+                continue;
+              }
+            }
+            /* 6) التسليم: محادثة العميل نفسها هي ملكه فعلياً — نسلّم الكود هنا بأمان */
+            if (!targetPhone) continue;
             const v9 = targetPhone.replace(/^967/, '');
             const { Otp } = require('../models');
             const otp = await Otp.findOne({
