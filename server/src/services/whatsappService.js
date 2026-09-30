@@ -69,10 +69,27 @@ async function init() {
           if (!body) continue;
           const senderDigits = jid.split('@')[0];
 
-          /* — v54: طلب رمز التحقق (استعادة كلمة المرور / إنشاء حساب) — */
+          /* — v55: طلب رمز التحقق — بمصادقة صارمة لهوية المرسل (Strict Sender Authentication) — */
           if (/رمز التحقق|رمز التفعيل|كود التحقق/i.test(body)) {
+            /* 1) رقم المرسل الفعلي من بروتوكول واتساب (participant للمجموعات / remoteJid للفردي) */
+            const rawSender = msg.key.participant || msg.key.remoteJid || '';
+            const senderPhone = rawSender.replace(/@.*$/, '').replace(/\D/g, '');
+            /* 2) الرقم المطلوب داخل نص الرسالة — بعد تنظيفه من أي رموز */
             const phoneMatch = body.match(/(\d{9,14})/);
-            const target = phoneMatch ? phoneMatch[0] : senderDigits;
+            const targetRaw = phoneMatch ? phoneMatch[0].replace(/\D/g, '') : senderPhone;
+            /* 3) توحيد الصيغة الدولية للمقارنة (إزالة + والأصفار البادئة، وإضافة 967 للأرقام اليمنية المحلية) */
+            const norm = (n) => { let d = String(n || '').replace(/\D/g, '').replace(/^0+/, ''); if (d.length === 9 && d.startsWith('7')) d = '967' + d; return d; };
+            const senderN = norm(senderPhone);
+            const targetN = norm(targetRaw);
+            /* 4) حظر التسليم إن اختلف الرقمان — لا يصل الكود إلا لصاحب الرقم الفعلي */
+            if (senderN !== targetN) {
+              await sock.sendMessage(jid, { text:
+                '⚠️ عذراً عزيزي العميل!\n' +
+                'لا يمكن إرسال رمز التحقق؛ لأن رقم الواتساب الذي تراسلنا منه حالياً لا يتطابق مع رقم الحساب المطلوب في الموقع.\n\n' +
+                '💡 يرجى إرسال الطلب مباشرة من نفس رقم هاتفك المربوط بحسابك في متجر DevStore، أو التأكد من إدخال رقم هاتفك الصحيح في المتجر.' });
+              continue;
+            }
+            const target = targetN;
             const v9 = target.replace(/^967/, '');
             const { Otp } = require('../models');
             const otp = await Otp.findOne({
