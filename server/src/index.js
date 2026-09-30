@@ -62,7 +62,9 @@ mongoose.connect(process.env.MONGODB_URI)
     await seedAdmin();
     app.listen(PORT, async () => {
       console.log(`🚀 DevStore يعمل على http://localhost:${PORT}`);
-      await telegram.setupWebhook(process.env.PUBLIC_URL); /* يسجل الـ webhook إن ضُبط PUBLIC_URL */
+      await telegram.setupWebhook(process.env.PUBLIC_URL);
+      /* v53: خدمة واتساب — خدمة فرعية آمنة الفشل، لا تحظر السيرفر */
+      setImmediate(() => { try { require('./services/whatsappService').init(); } catch (e) { console.warn('⚠️ واتساب معطّل:', e.message); } }); /* يسجل الـ webhook إن ضُبط PUBLIC_URL */
     });
   })
   .catch(err => { console.error('❌ فشل الاتصال بقاعدة البيانات:', err.message); process.exit(1); });

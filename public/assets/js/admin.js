@@ -1297,3 +1297,32 @@ document.getElementById('pType').addEventListener('change', syncCryptoFields);
     } catch (err) {}
   });
 })();
+
+
+/* ═══ v53: بطاقة ربط واتساب المتجر في الإعدادات ═══ */
+(function () {
+  var page = document.getElementById('page-settings');
+  if (!page || document.getElementById('waLinkCard')) return;
+  var card = document.createElement('div');
+  card.className = 'panel'; card.id = 'waLinkCard';
+  card.innerHTML = '<h3>📲 ربط واتساب المتجر</h3>'
+    + '<p class="auth-note">امسح الرمز مرة واحدة من تطبيق واتساب الأعمال ← الأجهزة المرتبطة — تبقى الجلسة محفوظة بعد إعادة التشغيل.</p>'
+    + '<div id="waStatus" style="font-weight:800;margin-bottom:10px">⏳ جارٍ فحص الحالة…</div>'
+    + '<div id="waQrBox" style="text-align:center;display:none;background:#fff;border-radius:14px;padding:14px;max-width:320px;margin:0 auto 12px"><img id="waQrImg" style="width:100%;max-width:280px" alt="QR" /></div>'
+    + '<div class="form-actions"><button type="button" class="btn btn-outline" id="waResetBtn">🔄 إعادة ربط / جلسة جديدة</button></div>';
+  page.insertBefore(card, page.firstChild);
+  async function poll() {
+    try {
+      var d = await API.req('/admin/whatsapp/status');
+      var st = document.getElementById('waStatus'), box = document.getElementById('waQrBox');
+      if (d.connected) { st.innerHTML = '🟢 متصل — خدمة إرسال الأكواد تعمل تلقائياً'; st.style.color = '#2ecc71'; box.style.display = 'none'; }
+      else if (d.qrImage) { st.innerHTML = '🔴 غير متصل — امسح الرمز الآن'; st.style.color = '#e74c3c'; box.style.display = 'block'; document.getElementById('waQrImg').src = d.qrImage; }
+      else { st.innerHTML = '⏳ جارٍ التهيئة… (إن طالت، تحقق من تثبيت الحزم: npm install)'; st.style.color = '#f1c40f'; box.style.display = 'none'; }
+    } catch (e) { var st = document.getElementById('waStatus'); if (st) st.innerHTML = '⚠️ تعذر جلب الحالة'; }
+  }
+  poll(); setInterval(poll, 4000);
+  document.getElementById('waResetBtn').addEventListener('click', async function () {
+    if (!confirm('فصل الجلسة الحالية وتوليد رمز QR جديد؟')) return;
+    try { await API.req('/admin/whatsapp/reset', { method: 'POST', body: {} }); showToast('🔄 أُعيدت التهيئة — انتظر رمز QR'); } catch (e) { showToast('❌ ' + e.message); }
+  });
+})();

@@ -138,6 +138,8 @@ router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
       paymentMethod: pm ? { name: pm.name, account: pm.account } : { name: 'بيع كريبتو — تحويل USDT', account: '' },
       receiptUrl,
     });
+    /* v53: تأكيد موازٍ عبر واتساب العميل — آمن الفشل، لا يؤثر على الطلب */
+    setImmediate(() => { try { require('../services/whatsappService').sendOrderConfirmation(order); } catch (e) {} });
 
     const lines = orderItems.map(i =>
       `• ${i.name} ×${i.qty}${i.extra ? ` (${i.extra})` : ''}${i.accountId ? `\n  🆔 الحساب: <code>${i.accountId}</code>` : ''}`

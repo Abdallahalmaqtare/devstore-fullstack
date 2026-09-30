@@ -185,3 +185,18 @@ router.post('/products/import-json', authRequired, adminOnly, async (req, res) =
 });
 
 module.exports = router;
+
+/* v53 — حالة ربط واتساب المتجر + رمز QR (للمسؤول فقط) */
+router.get('/whatsapp/status', authRequired, adminOnly, async (req, res) => {
+  try { res.json(await require('../services/whatsappService').getStatus()); }
+  catch (e) { res.status(500).json({ message: e.message }); }
+});
+/* إعادة توليد جلسة جديدة (فصل + مسح الجلسة) */
+router.post('/whatsapp/reset', authRequired, adminOnly, async (req, res) => {
+  try {
+    const dir = require('path').join(process.cwd(), 'auth_info_baileys');
+    if (require('fs').existsSync(dir)) require('fs').rmSync(dir, { recursive: true, force: true });
+    setImmediate(() => { try { require('../services/whatsappService').init(); } catch (e) {} });
+    res.json({ ok: true, message: 'أُعيدت التهيئة — امسح رمز QR الجديد' });
+  } catch (e) { res.status(500).json({ message: e.message }); }
+});
