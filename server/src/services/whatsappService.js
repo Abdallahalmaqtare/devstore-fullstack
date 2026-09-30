@@ -20,6 +20,8 @@ function formatPhoneToWhatsApp(phone) {
 }
 
 /* v56: تنظيف الأرقام + مقارنة مرنة وآمنة بمطابقة آخر 9 أرقام (تتجاوز مفتاح الدولة والصفر البادئ) */
+/* v57: استخراج الأرقام فقط — بالتسمية المطلوبة */
+function getDigits(str) { return (str || '').toString().replace(/\D/g, ''); }
 function cleanPhone(phone) {
   if (!phone) return '';
   return String(phone).replace(/\D/g, '');
@@ -84,43 +86,51 @@ async function init() {
           if (!body) continue;
           const senderDigits = jid.split('@')[0];
 
-          /* — v56: طلب رمز التحقق — مصادقة مرنة (معالجة @lid + مطابقة آخر 9 أرقام) — */
-          if (/رمز التحقق|رمز التفعيل|كود التحقق/i.test(body)) {
-            /* 1) رقم المرسل الفعلي — مع معالجة معرفات @lid الخفية في تحديثات واتساب الأخيرة */
+          /* — v57: طلب رمز التحقق — المنطق المضمون (معالجة @lid + آخر 9 أرقام + سجل تتبع) — */
+          if (body.indexOf('رمز التحقق') !== -1 || body.indexOf('كود التحقق') !== -1 || body.indexOf('رمز التفعيل') !== -1) {
+            /* 1) رقم المرسل الفعلي الحقيقي — معالجة حسابات واتساب الحديثة (@lid) */
             let senderJid = msg.key.remoteJid || '';
-            if (senderJid.endsWith('@lid') && msg.key.participant) senderJid = msg.key.participant;
-            const senderPhone = cleanPhone(senderJid.split('@')[0]);
-            /* 2) الرقم المطلوب من نص الرسالة (منظّف) */
-            const phoneMatch = body.match(/(\d{8,14})/);
-            const requestedPhone = phoneMatch ? cleanPhone(phoneMatch[0]) : '';
-            /* 3) سجل تشخيصي لتتبع أي رفض */
-            console.log('[OTP Verification] Sender: ' + senderPhone + ' | Requested: ' + requestedPhone);
-            /* 4) مطابقة مرنة وآمنة بآخر 9 أرقام — تتجاوز 967/الصفر البادئ لجميع دول العالم */
-            if (!requestedPhone || !isSamePhoneNumber(senderPhone, requestedPhone)) {
-              await sock.sendMessage(jid, { text:
+            if (senderJid.endsWith('@lid')) {
+              senderJid = msg.key.participant || msg.participant || '';
+            }
+            const senderDigits = getDigits(senderJid.split('@')[0]);
+            /* 2) الرقم المكتوب في نص الرسالة — Regex مرن يتحمل الأقواس والأسطر الجديدة */
+            const matches = body.match(/(967\d{9}|\d{9})/g);
+            /* إن لم يكتب رقماً في النص، نعتمد رقم مرسل الرسالة نفسه (يطابق ذاتياً) */
+            const requestedDigits = matches ? getDigits(matches[0]) : senderDigits;
+            /* 3) سجل تشخيصي: يُظهر الصيغة التي يستقبلها السيرفر بالضبط */
+            console.log('[OTP Check] Actual Sender: ' + senderDigits + ' | Requested: ' + requestedDigits);
+            /* 4) مقارنة آخر 9 أرقام حصراً — تتجاوز مفتاح الدولة 967 والأصفار البادئة */
+            const senderLast9 = senderDigits.slice(-9);
+            const requestedLast9 = requestedDigits.slice(-9);
+            const isMatch = senderLast9 && requestedLast9 && (senderLast9 === requestedLast9);
+            /* في حال عدم التطابق — وكان المرسل ليس معرف @lid مجهول — نرسل التحذير */
+            if (!isMatch && !senderJid.endsWith('@lid')) {
+              await sock.sendMessage(msg.key.remoteJid, { text:
                 '⚠️ عذراً عزيزي العميل!\n' +
                 'لا يمكن إرسال رمز التحقق؛ لأن رقم الواتساب الذي تراسلنا منه حالياً لا يتطابق مع رقم الحساب المطلوب في الموقع.\n\n' +
-                '💡 يرجى إرسال الطلب مباشرة من نفس رقم هاتفك المربوط بحسابك في متجر DevStore، أو التأكد من إدخال رقم هاتفك الصحيح في المتجر.' });
+                '💡 يرجى إرسال الطلب مباشرة من نفس رقم هاتفك المربوط بحسابك في متجر DevStore.' });
               continue;
             }
-            /* التطابق تحقق ✅ — ابحث عن الكود بالرقم الموحّد */
-            const target = requestedPhone;
-            const v9 = target.replace(/^967/, '');
+            /* 5) التطابق تحقق ✅ — جلب الكود الفعّال للرقم وإرساله فوراً */
+            const targetPhone = requestedDigits || senderDigits;
+            const v9 = targetPhone.replace(/^967/, '');
             const { Otp } = require('../models');
             const otp = await Otp.findOne({
               delivered: { $ne: true },
-              $or: [{ phone: target }, { phone: v9 }, { phone: new RegExp(v9 + '$') }],
+              $or: [{ phone: targetPhone }, { phone: v9 }, { phone: new RegExp(v9 + '$') }],
             }).sort('-createdAt').lean();
             if (otp && otp.codePlain) {
               await Otp.updateOne({ _id: otp._id }, { $set: { delivered: true } });
-              await sock.sendMessage(jid, { text:
-                '🔑 رمز التحقق الخاص بك في DevStore هو:\n*' + otp.codePlain + '*\n\nصالح لمدة 10 دقائق. لا تشاركه مع أحد.' });
+              await sock.sendMessage(msg.key.remoteJid, { text:
+                '🔑 رمز التحقق الخاص بك في متجر DevStore هو:\n\n*' + otp.codePlain + '*\n\n⏱️ صالح لمدة 5 دقائق. لا تشاركه مع أي شخص.' });
             } else {
-              await sock.sendMessage(jid, { text:
+              await sock.sendMessage(msg.key.remoteJid, { text:
                 '⚠️ لا يوجد رمز تحقق فعّال لهذا الرقم حالياً.\nيرجى طلب رمز جديد من صفحة تسجيل الدخول في المتجر أولاً.' });
             }
             continue;
           }
+
 
           /* — استفسار عن حالة الطلب — */
           if (!/كود|رمز|تفعيل|طلب|حالة/i.test(body)) continue;
