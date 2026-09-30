@@ -19,6 +19,21 @@ function formatPhoneToWhatsApp(phone) {
   return d ? d + '@s.whatsapp.net' : null;
 }
 
+/* v56: تنظيف الأرقام + مقارنة مرنة وآمنة بمطابقة آخر 9 أرقام (تتجاوز مفتاح الدولة والصفر البادئ) */
+function cleanPhone(phone) {
+  if (!phone) return '';
+  return String(phone).replace(/\D/g, '');
+}
+function isSamePhoneNumber(phone1, phone2) {
+  const p1 = cleanPhone(phone1);
+  const p2 = cleanPhone(phone2);
+  if (!p1 || !p2) return false;
+  if (p1 === p2) return true;
+  const last9_1 = p1.slice(-9);
+  const last9_2 = p2.slice(-9);
+  return last9_1 === last9_2 && last9_1.length >= 8;
+}
+
 /* سطر الإجمالي المزدوج: $9.78 (ما يعادل: 5,280 YER) */
 function totalLine(order) {
   const usd = (+order.total || 0).toFixed(2);
@@ -69,27 +84,27 @@ async function init() {
           if (!body) continue;
           const senderDigits = jid.split('@')[0];
 
-          /* — v55: طلب رمز التحقق — بمصادقة صارمة لهوية المرسل (Strict Sender Authentication) — */
+          /* — v56: طلب رمز التحقق — مصادقة مرنة (معالجة @lid + مطابقة آخر 9 أرقام) — */
           if (/رمز التحقق|رمز التفعيل|كود التحقق/i.test(body)) {
-            /* 1) رقم المرسل الفعلي من بروتوكول واتساب (participant للمجموعات / remoteJid للفردي) */
-            const rawSender = msg.key.participant || msg.key.remoteJid || '';
-            const senderPhone = rawSender.replace(/@.*$/, '').replace(/\D/g, '');
-            /* 2) الرقم المطلوب داخل نص الرسالة — بعد تنظيفه من أي رموز */
-            const phoneMatch = body.match(/(\d{9,14})/);
-            const targetRaw = phoneMatch ? phoneMatch[0].replace(/\D/g, '') : senderPhone;
-            /* 3) توحيد الصيغة الدولية للمقارنة (إزالة + والأصفار البادئة، وإضافة 967 للأرقام اليمنية المحلية) */
-            const norm = (n) => { let d = String(n || '').replace(/\D/g, '').replace(/^0+/, ''); if (d.length === 9 && d.startsWith('7')) d = '967' + d; return d; };
-            const senderN = norm(senderPhone);
-            const targetN = norm(targetRaw);
-            /* 4) حظر التسليم إن اختلف الرقمان — لا يصل الكود إلا لصاحب الرقم الفعلي */
-            if (senderN !== targetN) {
+            /* 1) رقم المرسل الفعلي — مع معالجة معرفات @lid الخفية في تحديثات واتساب الأخيرة */
+            let senderJid = msg.key.remoteJid || '';
+            if (senderJid.endsWith('@lid') && msg.key.participant) senderJid = msg.key.participant;
+            const senderPhone = cleanPhone(senderJid.split('@')[0]);
+            /* 2) الرقم المطلوب من نص الرسالة (منظّف) */
+            const phoneMatch = body.match(/(\d{8,14})/);
+            const requestedPhone = phoneMatch ? cleanPhone(phoneMatch[0]) : '';
+            /* 3) سجل تشخيصي لتتبع أي رفض */
+            console.log('[OTP Verification] Sender: ' + senderPhone + ' | Requested: ' + requestedPhone);
+            /* 4) مطابقة مرنة وآمنة بآخر 9 أرقام — تتجاوز 967/الصفر البادئ لجميع دول العالم */
+            if (!requestedPhone || !isSamePhoneNumber(senderPhone, requestedPhone)) {
               await sock.sendMessage(jid, { text:
                 '⚠️ عذراً عزيزي العميل!\n' +
                 'لا يمكن إرسال رمز التحقق؛ لأن رقم الواتساب الذي تراسلنا منه حالياً لا يتطابق مع رقم الحساب المطلوب في الموقع.\n\n' +
                 '💡 يرجى إرسال الطلب مباشرة من نفس رقم هاتفك المربوط بحسابك في متجر DevStore، أو التأكد من إدخال رقم هاتفك الصحيح في المتجر.' });
               continue;
             }
-            const target = targetN;
+            /* التطابق تحقق ✅ — ابحث عن الكود بالرقم الموحّد */
+            const target = requestedPhone;
             const v9 = target.replace(/^967/, '');
             const { Otp } = require('../models');
             const otp = await Otp.findOne({
