@@ -15,7 +15,7 @@ function extractName(data) {
   const ok = data.ret === 0 || data.err_no === 0 || data.error_code === '0' || data.success === true || data.ret === '0';
   if (!ok) return null;
   const d = data.data || data;
-  const name = d.nickname || d.playerName || d.role_name || d.username || d.name;
+  const name = d.nick_name || d.nickname || d.playerName || d.role_name || d.username || d.name;
   return name ? String(name) : null;
 }
 
@@ -30,13 +30,15 @@ async function tryJson(url, opts) {
 /* ببجي — Midasbuy (مساران + POST بالـ appid الرسمي) */
 async function checkPUBG(playerId) {
   const tries = [
+    /* v62: المسار الداخلي المعتمد في Midasbuy — app_id الرسمي لـ PUBG Mobile العالمية */
+    ['POST', 'https://www.midasbuy.com/interface/getSdkUserInfo', { app_id: '1450015065', user_id: String(playerId).trim() }, { Referer: 'https://www.midasbuy.com/midasbuy/ot/shop/pubgm' }],
     ['GET', 'https://www.midasbuy.com/midasbuy/us/web/ajax/getPlayerInfo?playerId=' + encodeURIComponent(playerId)],
     ['GET', 'https://www.midasbuy.com/midasbuy/ot/web/ajax/getPlayerInfo?playerId=' + encodeURIComponent(playerId)],
     ['POST', 'https://www.midasbuy.com/midasbuy/us/web/ajax/getPlayerInfo', { playerId, appid: '1450015065' }],
   ];
   for (const t of tries) {
     try {
-      const data = await tryJson(t[1], { method: t[0], body: t[2] ? JSON.stringify(t[2]) : undefined });
+      const data = await tryJson(t[1], { method: t[0], body: t[2] ? JSON.stringify(t[2]) : undefined, headers: t[3] || {} });
       const name = extractName(data);
       if (name) return { playerName: name };
     } catch (e) { console.warn('[playerChecker] PUBG try failed:', e.message); }

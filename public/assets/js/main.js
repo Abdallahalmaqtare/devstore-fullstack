@@ -2133,9 +2133,9 @@ function openPlayerVerifyModal(p, onSuccess) {
       setStatus('❌ ' + (e.message || 'معرف اللاعب غير صحيح، يرجى التأكد وإعادة المحاولة') + skipBtn, 'pv-err');
       var sk = ov.querySelector('#pvSkip');
       if (sk) sk.onclick = function () {
-        verifiedName = ''; addBtn.disabled = false;
+        verifiedName = 'غير محدد (تم التخطي)'; addBtn.disabled = false;
         setStatus('⚠️ تخطيت الفحص — يرجى التأكد من كتابة الآيدي بدقة تامة لتفادي وصول الشحن لحساب آخر', 'pv-loading');
-        showToast('⚠️ تم التخطي — المسؤولية عن صحة الآيدي عليك');
+        showToast('⚡ تم تفعيل الإضافة — اضغط «إضافة إلى السلة»');
       };
     }
   }
@@ -2144,8 +2144,9 @@ function openPlayerVerifyModal(p, onSuccess) {
   ov.querySelector('#pvSkipAlways').onclick = function () {
     var pid2 = (idEl.value || '').replace(/\D/g, '');
     if (pid2.length < 7 || pid2.length > 12) { setStatus('⚠️ أدخل الآيدي أولاً (7–12 رقماً) ثم اضغط التخطي', 'pv-err'); return; }
-    verifiedName = ''; addBtn.disabled = false;
+    verifiedName = 'غير محدد (تم التخطي)'; addBtn.disabled = false;
     setStatus('⚠️ تخطيت الفحص — يرجى التأكد من كتابة الآيدي الخاص بك بشكل صحيح لتفادي شحن الحساب الخطأ', 'pv-loading');
+    showToast('⚡ تم تفعيل الإضافة — اضغط «إضافة إلى السلة»');
   };
   var deb;
   idEl.addEventListener('input', function () {
@@ -2156,8 +2157,10 @@ function openPlayerVerifyModal(p, onSuccess) {
   });
   idEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') { clearTimeout(deb); check(); } });
   addBtn.onclick = function () {
-    if (!verifiedName) return;
     var pid = idEl.value.trim();
+    /* v62: البوابة الوحيدة هي وجود آيدي صالح — التخطي يحمل اسم «غير محدد (تم التخطي)» */
+    if (!pid || pid.length < 5) { showToast('⚠️ يرجى كتابة معرّف اللاعب (Player ID) أولاً'); return; }
+    if (!verifiedName) verifiedName = 'غير محدد (تم التخطي)';
     closeVerifyModal();
     if (typeof groupModal !== 'undefined' && groupModal && groupModal.classList) groupModal.classList.remove('open');
     onSuccess(pid, verifiedName);
