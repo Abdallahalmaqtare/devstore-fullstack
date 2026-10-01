@@ -6,6 +6,7 @@ const HEADERS = {
   'Origin': 'https://www.midasbuy.com',
   'Accept': 'application/json, text/plain, */*',
   'Accept-Language': 'ar-YE,ar;q=0.9,en-US;q=0.8,en;q=0.7',
+  'X-Requested-With': 'XMLHttpRequest', /* v63: إلزامية — تُجبر Midasbuy على إرجاع JSON بدل صفحة HTML */
   'Content-Type': 'application/json',
 };
 const TIMEOUT_MS = 5000; /* مهلة قصوى لكل محاولة — لا تعليق للمستخدم */
@@ -24,16 +25,21 @@ async function tryJson(url, opts) {
   const raw = await res.text();
   console.log('[playerChecker] ' + (opts.method || 'GET') + ' ' + url + ' → HTTP ' + res.status + ' | ' + raw.slice(0, 200));
   if (res.status === 403 || /captcha|forbidden/i.test(raw)) return null;
+  /* v63: رد HTML بـ 200 = ترويسة AJAX مفقودة/حظر — لا نعامله كبيانات */
+  const ct = String(res.headers.get('content-type') || '');
+  const t = raw.trim();
+  if (t.startsWith('<') || (ct.indexOf('json') === -1 && t.charAt(0) !== '{' && t.charAt(0) !== '[')) return null;
   try { return JSON.parse(raw); } catch (e) { return null; }
 }
 
 /* ببجي — Midasbuy (مساران + POST بالـ appid الرسمي) */
 async function checkPUBG(playerId) {
   const tries = [
-    /* v62: المسار الداخلي المعتمد في Midasbuy — app_id الرسمي لـ PUBG Mobile العالمية */
+    /* v63: المسار المؤكد من سجلات Render (200) أولاً — مع Referer صفحة متجر PUBGM */
+    ['GET', 'https://www.midasbuy.com/midasbuy/ot/web/ajax/getPlayerInfo?playerId=' + encodeURIComponent(playerId), null, { Referer: 'https://www.midasbuy.com/midasbuy/ot/shop/pubgm' }],
+    ['GET', 'https://www.midasbuy.com/midasbuy/us/web/ajax/getPlayerInfo?playerId=' + encodeURIComponent(playerId), null, { Referer: 'https://www.midasbuy.com/midasbuy/us/shop/pubgm' }],
+    /* المسار الداخلي المعتمد — app_id الرسمي لـ PUBG Mobile العالمية */
     ['POST', 'https://www.midasbuy.com/interface/getSdkUserInfo', { app_id: '1450015065', user_id: String(playerId).trim() }, { Referer: 'https://www.midasbuy.com/midasbuy/ot/shop/pubgm' }],
-    ['GET', 'https://www.midasbuy.com/midasbuy/us/web/ajax/getPlayerInfo?playerId=' + encodeURIComponent(playerId)],
-    ['GET', 'https://www.midasbuy.com/midasbuy/ot/web/ajax/getPlayerInfo?playerId=' + encodeURIComponent(playerId)],
     ['POST', 'https://www.midasbuy.com/midasbuy/us/web/ajax/getPlayerInfo', { playerId, appid: '1450015065' }],
   ];
   for (const t of tries) {
