@@ -1,4 +1,4 @@
-/* ═══ v64 — خدمة فحص معرّف اللاعب (بوابة وسيطة + Midasbuy getAppUserInfo احتياطي) المعزولة (خفيفة: fetch مباشر فقط — بلا Puppeteer) ═══
+/* ═══ v66 — خدمة فحص معرّف اللاعب (Tiger API الرسمي — tigerbot.cc) المعزولة (خفيفة: fetch مباشر فقط — بلا Puppeteer) ═══
    مستقلة تماماً عن المشروع الأساسي: مهلة قصوى 5 ثوانٍ لكل محاولة، وفشلها لا يوقف البيع. */
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -39,28 +39,31 @@ async function tryJson(url, opts) {
   try { return JSON.parse(raw); } catch (e) { return null; }
 }
 
-/* ببجي — v64: بوابة فحص وسيطة (Free Game Lookup) أولاً، ثم نسخة Midasbuy احتياطية.
-   مسارات Midasbuy القديمة (ajax/getPlayerInfo) تعيد index.html الخاص بالـ SPA — أُزيلت. */
+/* ببجي — v66: API تايجر الرسمي (tigerbot.cc) — Service ID: 264 */
 async function checkPUBG(playerId) {
   const cleanId = String(playerId).trim();
-  /* 1) بوابة استعلام وسيطة مخصصة لببجي — ترجع الاسم فوراً بصيغة JSON */
   try {
-    const d = await tryJson('https://api.lolhuman.xyz/api/pubg/' + encodeURIComponent(cleanId) + '?apikey=free', { method: 'GET', headers: { Accept: 'application/json', Referer: '', Origin: '', 'X-Requested-With': '', 'Content-Type': '' } });
-    if (d && isValidName(d.result)) return { playerName: String(d.result) };
-  } catch (e) { console.warn('[playerChecker] PUBG gateway failed:', e.message); }
-  /* 2) النسخة الاحتياطية: بوابة Midasbuy البديلة getAppUserInfo بالـ appid الرسمي */
-  try {
-    const d2 = await tryJson('https://www.midasbuy.com/interface/getAppUserInfo', {
+    const res = await fetch('https://tigerbot.cc/api', {
       method: 'POST',
-      body: JSON.stringify({ appid: '1450015065', openid: cleanId }),
-      headers: { Referer: 'https://www.midasbuy.com/' },
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        key: process.env.TIGER_API_KEY || 'd0e7324ce664dbfc18f4c9ce72ae32a4',
+        action: 'check',
+        service: 264,
+        link: cleanId
+      }),
+      signal: AbortSignal.timeout(TIMEOUT_MS)
     });
-    if (d2) {
-      const name = d2.user_name || d2.nickname || (d2.data && (d2.data.user_name || d2.data.nickname || d2.data.nick_name));
-      if (isValidName(name)) return { playerName: String(name) };
-    }
-  } catch (e) { console.warn('[playerChecker] PUBG backup failed:', e.message); }
-  return null;
+    const raw = await res.text();
+    console.log('[Tiger API Check Response] HTTP ' + res.status + ' | ' + raw.slice(0, 400));
+    let d; try { d = JSON.parse(raw); } catch (e) { return null; }
+    const name = d.name || d.player_name || d.username || d.nickname || (typeof d.result === 'string' ? d.result : null);
+    if (isValidName(name)) return { playerName: String(name) };
+    return null;
+  } catch (e) {
+    console.error('[Tiger API Error]:', e.message);
+    return null;
+  }
 }
 
 /* فري فاير — Shop2Game / Garena */
