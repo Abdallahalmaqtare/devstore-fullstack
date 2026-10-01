@@ -2103,6 +2103,7 @@ function openPlayerVerifyModal(p, onSuccess) {
     + '<label class="cqm-label" style="display:block;margin:12px 0 6px;font-weight:800">أدخل معرّف اللاعب (Player ID) 🎮</label>'
     + '<div class="pv-row"><input type="text" id="pvId" class="cqm-input" dir="ltr" inputmode="numeric" placeholder="مثال: 5123456789" autocomplete="off" />'
     + '<button class="btn btn-outline" id="pvCheck" type="button" style="white-space:nowrap">🔍 فحص</button></div>'
+    + '<button type="button" id="pvSkipAlways" class="pv-skip-btn" style="margin-top:8px;width:100%">تخطي الفحص وإضافة للسلة مباشرة ⚡</button>'
     + '<div class="pv-status" id="pvStatus"></div>'
     + '<button class="btn btn-primary btn-block" id="pvAdd" disabled style="margin-top:10px">إضافة إلى السلة 🛒</button>'
     + '</div>';
@@ -2139,6 +2140,13 @@ function openPlayerVerifyModal(p, onSuccess) {
     }
   }
   ov.querySelector('#pvCheck').onclick = check;
+  /* v61: تخطي فوري دائم الظهور — البيع لا يتوقف أبداً */
+  ov.querySelector('#pvSkipAlways').onclick = function () {
+    var pid2 = (idEl.value || '').replace(/\D/g, '');
+    if (pid2.length < 7 || pid2.length > 12) { setStatus('⚠️ أدخل الآيدي أولاً (7–12 رقماً) ثم اضغط التخطي', 'pv-err'); return; }
+    verifiedName = ''; addBtn.disabled = false;
+    setStatus('⚠️ تخطيت الفحص — يرجى التأكد من كتابة الآيدي الخاص بك بشكل صحيح لتفادي شحن الحساب الخطأ', 'pv-loading');
+  };
   var deb;
   idEl.addEventListener('input', function () {
     clearTimeout(deb); verifiedName = ''; addBtn.disabled = true;
