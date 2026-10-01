@@ -24,6 +24,7 @@ app.use('/api/telegram', telegram.router);
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/currencies', require('./routes/currencies'));
 app.use('/api/inquiries', require('./routes/inquiries'));
+app.use('/api/games', require('./routes/games')); /* v59: فحص معرّف اللاعب */
 
 app.get('/api/health', (req, res) => res.json({ ok: true, time: new Date() }));
 

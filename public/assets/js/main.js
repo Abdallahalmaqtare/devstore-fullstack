@@ -497,7 +497,7 @@ function renderCart() {
       ? (i.accountId ? '<div class="cart-auth-summary">🔐 ' + i.accountId + '</div>' : '')
       : i.requiresAccountId
       ? '<input type="text" class="cart-acct" data-acct="' + i.key + '" value="' + (i.accountId || '') + '" dir="ltr" placeholder="🆔 معرّف الحساب / Player ID (إلزامي)" />'
-      : '';
+      : (i.accountId ? '<div class="cart-auth-summary">🆔 Player ID: ' + i.accountId + (i.playerName ? '<br>👤 اسم الحساب: <b>' + i.playerName + '</b>' : '') + '</div>' : '');
     /* v52: صورة بديلة آمنة (لا undefined أبداً) + سعر مشطوب عند التخفيض */
     var _img = (i.image && i.image !== 'undefined' && i.image !== 'null') ? i.image : '';
     var _icon = _img ? '<img class="p-img" src="' + _img + '" alt="" onerror="this.outerHTML=\'🛍️\'" />' : (i.icon || '🛍️');
@@ -604,7 +604,7 @@ document.getElementById('checkoutBtn').addEventListener('click', async function 
   try {
     var form = new FormData();
     form.append('items', JSON.stringify(cart.map(function (i) {
-      return { id: i.id, variant: i.variant || '', qty: i.qty, selectedCountry: i.selectedCountry || '', extra: i.extra, accountId: i.accountId };
+      return { id: i.id, variant: i.variant || '', qty: i.qty, selectedCountry: i.selectedCountry || '', extra: i.extra, accountId: i.accountId, playerName: i.playerName || '' };
     })));
     form.append('paymentMethodId', selectedPmId);
     form.append('receipt', receipt);
@@ -2080,3 +2080,108 @@ document.addEventListener('click', function (e) {
     document.body.style.overflow = '';
   }
 });
+
+
+/* ═══ v59: فحص معرّف اللاعب قبل الإضافة للسلة (ببجي / فري فاير) ═══ */
+function detectGame(p) {
+  var t = ((p.name || '') + ' ' + (p.desc || '')).toLowerCase();
+  if (/pubg|ببجي|شدات|شدة|uc/i.test(t)) return 'pubg';
+  if (/free\s*fire|فري\s*فاير|فاير|جيمنا|garena|جواهر|جوهرة/i.test(t)) return 'freefire';
+  return '';
+}
+var _pvModal = null;
+function closeVerifyModal() { if (_pvModal) { _pvModal.remove(); _pvModal = null; } }
+function openPlayerVerifyModal(p, onSuccess) {
+  closeVerifyModal();
+  var game = detectGame(p);
+  var ov = document.createElement('div');
+  ov.id = 'pvOverlay'; ov.className = 'desc-modal-overlay';
+  ov.innerHTML = '<div class="desc-modal pv-modal" dir="rtl" style="max-width:420px">'
+    + '<button class="modal-close" id="pvClose" style="position:absolute;top:12px;left:12px">✕</button>'
+    + '<h3 style="margin-bottom:6px">🎮 ' + p.name + '</h3>'
+    + '<p class="auth-note">سيتم التحقق من الحساب أولاً لضمان وصول الشحن بأمان</p>'
+    + '<label class="cqm-label" style="display:block;margin:12px 0 6px;font-weight:800">أدخل معرّف اللاعب (Player ID) 🎮</label>'
+    + '<div class="pv-row"><input type="text" id="pvId" class="cqm-input" dir="ltr" inputmode="numeric" placeholder="مثال: 5123456789" autocomplete="off" />'
+    + '<button class="btn btn-outline" id="pvCheck" type="button" style="white-space:nowrap">🔍 فحص</button></div>'
+    + '<div class="pv-status" id="pvStatus"></div>'
+    + '<button class="btn btn-primary btn-block" id="pvAdd" disabled style="margin-top:10px">إضافة إلى السلة 🛒</button>'
+    + '</div>';
+  document.body.appendChild(ov);
+  _pvModal = ov;
+  var statusEl = ov.querySelector('#pvStatus');
+  var addBtn = ov.querySelector('#pvAdd');
+  var idEl = ov.querySelector('#pvId');
+  var verifiedName = '';
+  function setStatus(html, cls) { statusEl.innerHTML = html; statusEl.className = 'pv-status ' + (cls || ''); }
+  async function check() {
+    var pid = (idEl.value || '').replace(/\D/g, '');
+    verifiedName = ''; addBtn.disabled = true;
+    if (!pid || pid.length < 5) { setStatus('⚠️ أدخل معرّفاً صحيحاً (أرقام فقط)', 'pv-err'); return; }
+    setStatus('⏳ جارٍ التحقق من الحساب عبر المنصة الرسمية...', 'pv-loading');
+    try {
+      var res = await API.req('/games/verify-player', { method: 'POST', body: { game: game, playerId: pid } });
+      verifiedName = res.playerName;
+      setStatus('✅ اسم اللاعب: <b>' + res.playerName + '</b>', 'pv-ok');
+      addBtn.disabled = false;
+    } catch (e) { setStatus('❌ ' + (e.message || 'معرف اللاعب غير صحيح، يرجى التأكد وإعادة المحاولة'), 'pv-err'); }
+  }
+  ov.querySelector('#pvCheck').onclick = check;
+  var deb;
+  idEl.addEventListener('input', function () {
+    clearTimeout(deb); verifiedName = ''; addBtn.disabled = true;
+    this.value = this.value.replace(/\D/g, '');
+    if (this.value.length >= 6) { setStatus('⏳ جارٍ التحقق...', 'pv-loading'); deb = setTimeout(check, 650); }
+    else setStatus('', '');
+  });
+  idEl.addEventListener('keydown', function (e) { if (e.key === 'Enter') { clearTimeout(deb); check(); } });
+  addBtn.onclick = function () {
+    if (!verifiedName) return;
+    var pid = idEl.value.trim();
+    closeVerifyModal();
+    if (typeof groupModal !== 'undefined' && groupModal && groupModal.classList) groupModal.classList.remove('open');
+    onSuccess(pid, verifiedName);
+  };
+  ov.querySelector('#pvClose').onclick = closeVerifyModal;
+  ov.addEventListener('click', function (e) { if (e.target === ov) closeVerifyModal(); });
+  setTimeout(function () { idEl.focus(); }, 80);
+}
+
+/* اعتراض أزرار الشراء/الباقات للألعاب التي تتطلب معرّفاً — تحقق مسبق قبل السلة */
+document.addEventListener('click', function (e) {
+  var vbtn = e.target.closest('[data-variant]');
+  if (vbtn) {
+    var g = PRODUCTS.find(function (p) { return String(p._id) === String(openGroupId); });
+    if (g && g.requiresAccountId && detectGame(g)) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      var idx = parseInt(vbtn.dataset.variant, 10);
+      openPlayerVerifyModal(g, function (pid, pname) {
+        var v = g.variants[idx]; if (!v) return;
+        pushItem({
+          id: g._id, variant: v.name, extra: '',
+          name: g.name + ' — ' + v.name, price: effPrice(v),
+          originalPrice: (effPrice(v) < +v.price) ? +v.price : 0,
+          icon: v.icon || g.icon, image: g.image || g.img || '',
+          requiresAccountId: false, accountId: pid, playerName: pname,
+        });
+      });
+    }
+    return;
+  }
+  var buy = e.target.closest('[data-buy]');
+  if (buy) {
+    var p2 = PRODUCTS.find(function (x) { return String(x._id) === String(buy.dataset.buy); });
+    if (!p2 && typeof getItemInfo === 'function') { try { p2 = getItemInfo(buy.dataset.buy); } catch (err) {} }
+    if (p2 && p2.requiresAccountId && p2.pricingType !== 'custom_amount' && detectGame(p2)) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      openPlayerVerifyModal(p2, function (pid, pname) {
+        pushItem({
+          id: p2._id, variant: '', extra: '',
+          name: p2.name, price: effPrice(p2),
+          originalPrice: (p2.isOnSale && p2.discountPercent > 0 && effPrice(p2) < +p2.price) ? +p2.price : 0,
+          icon: p2.icon, image: p2.image || p2.img || '',
+          requiresAccountId: false, accountId: pid, playerName: pname,
+        });
+      });
+    }
+  }
+}, true);

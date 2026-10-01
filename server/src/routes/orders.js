@@ -123,7 +123,7 @@ router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
       total += price * (i.qty || 1);
       return {
         product: p._id, name, variant, price, qty: i.qty || 1,
-        extra: i.extra || '', accountId: String(i.accountId || '').trim(),
+        extra: i.extra || '', accountId: String(i.accountId || '').trim(), playerName: String(i.playerName || '').trim(),
       };
     });
 
@@ -153,10 +153,11 @@ router.post('/', authRequired, upload.single('receipt'), async (req, res) => {
     setImmediate(() => { try { require('../services/whatsappService').sendOrderConfirmation(order); } catch (e) {} });
 
     const lines = orderItems.map(i =>
-      `• ${i.name} ×${i.qty}${i.extra ? ` (${i.extra})` : ''}${i.accountId ? `\n  🆔 الحساب: <code>${i.accountId}</code>` : ''}`
+      `• ${i.name} ×${i.qty}${i.extra ? ` (${i.extra})` : ''}${i.accountId ? `\n  🆔 معرّف اللاعب: <code>${i.accountId}</code>` : ''}${i.playerName ? `\n  👤 اسم اللاعب داخل اللعبة: ${i.playerName}` : ''}`
     ).join('\n');
+    const isGameOrder = orderItems.some(i => i.playerName);
     await sendTelegram(
-      `🛒 <b>طلب جديد!</b>\n\n🔢 رقم الطلب: <b>${order.code}</b>\n👤 العميل: ${order.customerName}\n📱 الهاتف: ${order.customerPhone}\n\n📦 الخدمات:\n${lines}\n\n💰 الإجمالي: <b>$${order.total}</b>\n💳 الدفع: ${pm.name} (${pm.account})\n🧾 السند: ${receiptUrl}`
+      `${isGameOrder ? '🎮 طلب شحن لعبة جديد!' : '🛒 <b>طلب جديد!</b>'}\n\n🔢 رقم الطلب: <b>${order.code}</b>\n👤 العميل: ${order.customerName}\n📱 الهاتف: ${order.customerPhone}\n\n📦 الخدمات:\n${lines}\n\n💰 الإجمالي: <b>$${order.total}</b>\n💳 الدفع: ${pm.name} (${pm.account})\n🧾 السند: ${receiptUrl}`
     );
     res.status(201).json({ ok: true, code: order.code });
   } catch (e) { res.status(e.status || 500).json({ message: e.message }); }

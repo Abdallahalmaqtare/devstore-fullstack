@@ -113,6 +113,7 @@ const orderSchema = new Schema({
     price: Number, qty: Number,
     extra: String,
     accountId: String,
+    playerName: String,  /* v59: اسم اللاعب المُتحقق منه */
   }],
   total: { type: Number, required: true },
   currency: { type: String, default: 'USD' },   /* v54: عملة العميل المختارة */
