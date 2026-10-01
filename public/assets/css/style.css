@@ -771,3 +771,7 @@ input, select, textarea { font-family: inherit; }
 .pv-status.pv-loading{display:block;background:color-mix(in srgb,var(--primary) 10%,transparent);color:var(--primary)}
 .pv-status.pv-ok{display:block;background:rgba(46,204,113,.14);color:#2ecc71;border:1.5px solid rgba(46,204,113,.4)}
 .pv-status.pv-err{display:block;background:rgba(231,76,60,.12);color:#e74c3c;border:1.5px solid rgba(231,76,60,.35)}
+
+/* ═══ v60 — زر تخطي الفحص الآمن ═══ */
+.pv-skip-btn{margin-top:8px;background:transparent;border:1.5px dashed #f1c40f;color:#f1c40f;font-weight:700;font-size:.82rem;padding:7px 14px;border-radius:10px;cursor:pointer}
+.pv-skip-btn:hover{background:rgba(241,196,15,.12)}

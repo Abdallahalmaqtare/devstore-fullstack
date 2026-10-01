@@ -2123,7 +2123,20 @@ function openPlayerVerifyModal(p, onSuccess) {
       verifiedName = res.playerName;
       setStatus('✅ اسم اللاعب: <b>' + res.playerName + '</b>', 'pv-ok');
       addBtn.disabled = false;
-    } catch (e) { setStatus('❌ ' + (e.message || 'معرف اللاعب غير صحيح، يرجى التأكد وإعادة المحاولة'), 'pv-err'); }
+    } catch (e) {
+      /* v60: تجاوز آمن عند تعطّل منصة الفحص — للآيدي ذي الطول المنطقي (7-12 رقماً) */
+      var pidNow = (idEl.value || '').replace(/\D/g, '');
+      var skipBtn = (pidNow.length >= 7 && pidNow.length <= 12)
+        ? '<br><button type="button" id="pvSkip" class="pv-skip-btn">تخطي الفحص والمتابعة على مسؤوليتي ⚠️</button>'
+        : '';
+      setStatus('❌ ' + (e.message || 'معرف اللاعب غير صحيح، يرجى التأكد وإعادة المحاولة') + skipBtn, 'pv-err');
+      var sk = ov.querySelector('#pvSkip');
+      if (sk) sk.onclick = function () {
+        verifiedName = ''; addBtn.disabled = false;
+        setStatus('⚠️ تخطيت الفحص — يرجى التأكد من كتابة الآيدي بدقة تامة لتفادي وصول الشحن لحساب آخر', 'pv-loading');
+        showToast('⚠️ تم التخطي — المسؤولية عن صحة الآيدي عليك');
+      };
+    }
   }
   ov.querySelector('#pvCheck').onclick = check;
   var deb;
