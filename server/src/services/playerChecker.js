@@ -10,6 +10,13 @@ const HEADERS = {
   'Content-Type': 'application/json',
 };
 const TIMEOUT_MS = 5000; /* مهلة قصوى لكل محاولة — لا تعليق للمستخدم */
+/* v65: كلمات محظورة — لا يجوز تمريرها كاسم لاعب معتمد */
+const INVALID_NAMES = ['error', 'not found', 'null', 'undefined', 'failed', 'false', 'none', ''];
+function isValidName(n) {
+  if (n === null || n === undefined) return false;
+  const v = String(n).toLowerCase().trim();
+  return v.length > 0 && INVALID_NAMES.indexOf(v) === -1;
+} /* مهلة قصوى لكل محاولة — لا تعليق للمستخدم */
 
 function extractName(data) {
   if (!data || typeof data !== 'object') return null;
@@ -17,7 +24,7 @@ function extractName(data) {
   if (!ok) return null;
   const d = data.data || data;
   const name = d.nick_name || d.nickname || d.playerName || d.role_name || d.username || d.name;
-  return name ? String(name) : null;
+  return isValidName(name) ? String(name) : null;
 }
 
 async function tryJson(url, opts) {
@@ -39,7 +46,7 @@ async function checkPUBG(playerId) {
   /* 1) بوابة استعلام وسيطة مخصصة لببجي — ترجع الاسم فوراً بصيغة JSON */
   try {
     const d = await tryJson('https://api.lolhuman.xyz/api/pubg/' + encodeURIComponent(cleanId) + '?apikey=free', { method: 'GET', headers: { Accept: 'application/json', Referer: '', Origin: '', 'X-Requested-With': '', 'Content-Type': '' } });
-    if (d && d.result) return { playerName: String(d.result) };
+    if (d && isValidName(d.result)) return { playerName: String(d.result) };
   } catch (e) { console.warn('[playerChecker] PUBG gateway failed:', e.message); }
   /* 2) النسخة الاحتياطية: بوابة Midasbuy البديلة getAppUserInfo بالـ appid الرسمي */
   try {
@@ -50,7 +57,7 @@ async function checkPUBG(playerId) {
     });
     if (d2) {
       const name = d2.user_name || d2.nickname || (d2.data && (d2.data.user_name || d2.data.nickname || d2.data.nick_name));
-      if (name) return { playerName: String(name) };
+      if (isValidName(name)) return { playerName: String(name) };
     }
   } catch (e) { console.warn('[playerChecker] PUBG backup failed:', e.message); }
   return null;

@@ -2121,8 +2121,16 @@ function openPlayerVerifyModal(p, onSuccess) {
     setStatus('⏳ جارٍ التحقق من الحساب عبر المنصة الرسمية...', 'pv-loading');
     try {
       var res = await API.req('/games/verify-player', { method: 'POST', body: { game: game, playerId: pid } });
-      verifiedName = res.playerName;
-      setStatus('✅ اسم اللاعب: <b>' + res.playerName + '</b>', 'pv-ok');
+      var BAD = ['error','not found','null','undefined','failed','false','none',''];
+      var nm = (res && res.playerName != null) ? String(res.playerName).trim() : '';
+      if (res && res.success === true && nm && BAD.indexOf(nm.toLowerCase()) === -1) {
+        verifiedName = nm;
+        setStatus('✅ اسم اللاعب: <b>' + nm + '</b>', 'pv-ok');
+        addBtn.disabled = false;
+      } else {
+        verifiedName = ''; addBtn.disabled = true;
+        setStatus('⚠️ تعذر التحقق من معرّف اللاعب — تأكد من الرقم أو اضغط «تخطي الفحص والمتابعة»', 'pv-err');
+      }
       addBtn.disabled = false;
     } catch (e) {
       /* v60: تجاوز آمن عند تعطّل منصة الفحص — للآيدي ذي الطول المنطقي (7-12 رقماً) */
