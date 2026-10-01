@@ -1,4 +1,4 @@
-/* ═══ v61 — خدمة فحص معرّف اللاعب المعزولة (خفيفة: fetch مباشر فقط — بلا Puppeteer) ═══
+/* ═══ v64 — خدمة فحص معرّف اللاعب (بوابة وسيطة + Midasbuy getAppUserInfo احتياطي) المعزولة (خفيفة: fetch مباشر فقط — بلا Puppeteer) ═══
    مستقلة تماماً عن المشروع الأساسي: مهلة قصوى 5 ثوانٍ لكل محاولة، وفشلها لا يوقف البيع. */
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -32,23 +32,27 @@ async function tryJson(url, opts) {
   try { return JSON.parse(raw); } catch (e) { return null; }
 }
 
-/* ببجي — Midasbuy (مساران + POST بالـ appid الرسمي) */
+/* ببجي — v64: بوابة فحص وسيطة (Free Game Lookup) أولاً، ثم نسخة Midasbuy احتياطية.
+   مسارات Midasbuy القديمة (ajax/getPlayerInfo) تعيد index.html الخاص بالـ SPA — أُزيلت. */
 async function checkPUBG(playerId) {
-  const tries = [
-    /* v63: المسار المؤكد من سجلات Render (200) أولاً — مع Referer صفحة متجر PUBGM */
-    ['GET', 'https://www.midasbuy.com/midasbuy/ot/web/ajax/getPlayerInfo?playerId=' + encodeURIComponent(playerId), null, { Referer: 'https://www.midasbuy.com/midasbuy/ot/shop/pubgm' }],
-    ['GET', 'https://www.midasbuy.com/midasbuy/us/web/ajax/getPlayerInfo?playerId=' + encodeURIComponent(playerId), null, { Referer: 'https://www.midasbuy.com/midasbuy/us/shop/pubgm' }],
-    /* المسار الداخلي المعتمد — app_id الرسمي لـ PUBG Mobile العالمية */
-    ['POST', 'https://www.midasbuy.com/interface/getSdkUserInfo', { app_id: '1450015065', user_id: String(playerId).trim() }, { Referer: 'https://www.midasbuy.com/midasbuy/ot/shop/pubgm' }],
-    ['POST', 'https://www.midasbuy.com/midasbuy/us/web/ajax/getPlayerInfo', { playerId, appid: '1450015065' }],
-  ];
-  for (const t of tries) {
-    try {
-      const data = await tryJson(t[1], { method: t[0], body: t[2] ? JSON.stringify(t[2]) : undefined, headers: t[3] || {} });
-      const name = extractName(data);
-      if (name) return { playerName: name };
-    } catch (e) { console.warn('[playerChecker] PUBG try failed:', e.message); }
-  }
+  const cleanId = String(playerId).trim();
+  /* 1) بوابة استعلام وسيطة مخصصة لببجي — ترجع الاسم فوراً بصيغة JSON */
+  try {
+    const d = await tryJson('https://api.lolhuman.xyz/api/pubg/' + encodeURIComponent(cleanId) + '?apikey=free', { method: 'GET', headers: { Accept: 'application/json', Referer: '', Origin: '', 'X-Requested-With': '', 'Content-Type': '' } });
+    if (d && d.result) return { playerName: String(d.result) };
+  } catch (e) { console.warn('[playerChecker] PUBG gateway failed:', e.message); }
+  /* 2) النسخة الاحتياطية: بوابة Midasbuy البديلة getAppUserInfo بالـ appid الرسمي */
+  try {
+    const d2 = await tryJson('https://www.midasbuy.com/interface/getAppUserInfo', {
+      method: 'POST',
+      body: JSON.stringify({ appid: '1450015065', openid: cleanId }),
+      headers: { Referer: 'https://www.midasbuy.com/' },
+    });
+    if (d2) {
+      const name = d2.user_name || d2.nickname || (d2.data && (d2.data.user_name || d2.data.nickname || d2.data.nick_name));
+      if (name) return { playerName: String(name) };
+    }
+  } catch (e) { console.warn('[playerChecker] PUBG backup failed:', e.message); }
   return null;
 }
 
