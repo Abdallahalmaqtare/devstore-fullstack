@@ -38,13 +38,15 @@ async function tryJson(url, opts) {
   try { return JSON.parse(raw); } catch (e) { return null; }
 }
 
-/* v71: PUBG RapidAPI official snippet — path /pubgm-global/{id} (no extra segment), 30s timeout, full response logging. */
-async function checkPubgId(playerId) {
+/* v72: فحص موحّد للعبتين عبر RapidAPI id-game-checker — pubg:/pubgm-global/{id} | freefire:/ff-global/{id} */
+const GAME_ENDPOINTS = { pubg: '/pubgm-global/', freefire: '/ff-global/' };
+async function checkPlayerId(playerId, gameType = 'pubg') {
   const cleanId = String(playerId).trim();
+  const game = GAME_ENDPOINTS[gameType] ? gameType : 'pubg';
   const startedAt = Date.now();
-  console.log('[Checking Player ID]:', cleanId);
+  console.log('[Checking Player ID]:', cleanId, '| game:', game);
   try {
-    const response = await fetch('https://id-game-checker.p.rapidapi.com/pubgm-global/' + encodeURIComponent(cleanId), {
+    const response = await fetch('https://id-game-checker.p.rapidapi.com' + GAME_ENDPOINTS[game] + encodeURIComponent(cleanId), {
       method: 'GET',
       headers: {
         'x-rapidapi-key': process.env.RAPIDAPI_KEY || '955a2dc3b6msh94f8949770db1fdp1f5fcejsne77f8998fd84',
@@ -54,56 +56,30 @@ async function checkPubgId(playerId) {
       signal: AbortSignal.timeout(30000)
     });
     const raw = await response.text();
-    console.log('[RapidAPI HTTP Status]:', response.status, '| durationMs:', Date.now() - startedAt);
-    console.log('[RapidAPI Raw Response]:', raw);
+    console.log('[RapidAPI ' + game + ' HTTP Status]:', response.status, '| durationMs:', Date.now() - startedAt);
+    console.log('[RapidAPI ' + game + ' Raw Response]:', raw);
     if (!response.ok) {
-      console.error('[Checker Error Details]:', { status: response.status, body: raw });
+      console.error('[RapidAPI ' + game + ' Error]:', { status: response.status, body: raw });
       return { success: false, message: 'تعذر التحقق من معرف اللاعب حالياً', statusCode: 502 };
     }
     let res;
-    try { res = JSON.parse(raw); }
-    catch (error) {
-      console.error('[Checker Error Details]:', 'Response is not valid JSON');
-      return { success: false, message: 'تعذر التحقق من معرف اللاعب حالياً', statusCode: 502 };
-    }
+    try { res = JSON.parse(raw); } catch (e) { return { success: false, message: 'تعذر التحقق من معرف اللاعب حالياً', statusCode: 502 }; }
     if (res && !res.error && res.data && isValidName(res.data.username)) {
       return { success: true, playerName: res.data.username.trim(), isBanned: res.data.is_ban || false };
     }
     return { success: false, message: 'معرف اللاعب غير موجود أو غير صحيح', statusCode: 404 };
   } catch (error) {
     const timedOut = error.name === 'TimeoutError' || error.name === 'AbortError' || error.code === 'ECONNABORTED';
-    console.error('[Checker Error Details]:', { name: error.name, code: error.code, message: error.message, durationMs: Date.now() - startedAt });
-    return {
-      success: false,
-      message: timedOut ? 'استغرق الفحص وقتاً طويلاً، يمكنك استخدام زر التخطي' : 'تعذر التحقق من معرف اللاعب حالياً',
-      statusCode: timedOut ? 504 : 502
-    };
+    console.error('[RapidAPI ' + game + ' Error]:', { name: error.name, code: error.code, message: error.message, durationMs: Date.now() - startedAt });
+    return { success: false, message: timedOut ? 'استغرق الفحص وقتاً طويلاً، يمكنك استخدام زر التخطي' : 'تعذر التحقق من معرف اللاعب حالياً', statusCode: timedOut ? 504 : 502 };
   }
 }
-
-/* فري فاير — Shop2Game / Garena */
-async function checkFreeFire(playerId) {
-  const tries = [
-    { app_id: 100067, login_id: playerId },
-    { app_id: 100067, login_id: playerId, app_server: 0 },
-  ];
-  for (const body of tries) {
-    try {
-      const data = await tryJson('https://shop2game.com/api/auth/player_id_login', {
-        method: 'POST', body: JSON.stringify(body),
-        headers: { Referer: 'https://shop2game.com/', Origin: 'https://shop2game.com' },
-      });
-      if (data && data.nickname) return { playerName: String(data.nickname) };
-    } catch (e) { console.warn('[playerChecker] FF try failed:', e.message); }
-  }
-  return null;
-}
+async function checkPubgId(playerId) { return checkPlayerId(playerId, 'pubg'); }
 
 /* الدالة العامة الخفيفة: checkPlayerName(game, playerId) */
 async function checkPlayerName(game, playerId) {
-  if (game === 'pubg') return checkPubgId(playerId);
-  if (game === 'freefire') return checkFreeFire(playerId);
+  if (game === 'pubg' || game === 'freefire') return checkPlayerId(playerId, game);
   return null;
 }
 
-module.exports = { checkPlayerName, checkPubgId };
+module.exports = { checkPlayerName, checkPubgId, checkPlayerId };
