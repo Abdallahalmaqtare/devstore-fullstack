@@ -1,4 +1,4 @@
-/* ═══ v68 — فحص الاسم: al-fhad v2 ثم SmileOne الرسمية | Tiger API محفوظ للتنفيذ: TIGER_API_KEY=d0e7324ce664dbfc18f4c9ce72ae32a4 / service=264 / action=add المعزولة (خفيفة: fetch مباشر فقط — بلا Puppeteer) ═══
+/* ═══ v69 — فحص الاسم: RapidAPI id-game-checker الرسمي (data.username) | Tiger محفوظ للتنفيذ | Tiger API محفوظ للتنفيذ: TIGER_API_KEY=d0e7324ce664dbfc18f4c9ce72ae32a4 / service=264 / action=add المعزولة (خفيفة: fetch مباشر فقط — بلا Puppeteer) ═══
    مستقلة تماماً عن المشروع الأساسي: مهلة قصوى 5 ثوانٍ لكل محاولة، وفشلها لا يوقف البيع. */
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -39,27 +39,30 @@ async function tryJson(url, opts) {
   try { return JSON.parse(raw); } catch (e) { return null; }
 }
 
-/* ببجي — v68: بوابة al-fhad v2 أولاً ثم SmileOne الرسمية احتياطاً (pid=26 لـ PUBG Mobile) */
+/* ببجي — v69: RapidAPI الرسمي المؤكد (id-game-checker) — الاسم في data.username | مهلة 10 ثوانٍ */
 async function checkPUBG(playerId) {
   const cleanId = String(playerId).trim();
-  /* 1) بوابة فحص أسماء ببجي العالمية v2 — GET مع باراميترات */
   try {
-    const d = await tryJson('https://api.v2.al-fhad.com/api/v1/check-player?game=pubg&player_id=' + encodeURIComponent(cleanId), { method: 'GET', headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/json' } });
-    if (d) {
-      const name = d.name || d.username || d.player_name || (d.data && (d.data.name || d.data.username));
-      if (isValidName(name)) return { playerName: String(name) };
-    }
-  } catch (e) { console.log('[Primary Checker Failed, Trying Backup...] ' + e.message); }
-  /* 2) SmileOne الرسمية — POST role (user_id + pid:26) */
-  try {
-    const d2 = await tryJson('https://order-sg.smile.one/smile-coin/api/role', {
-      method: 'POST',
-      body: JSON.stringify({ user_id: cleanId, zone_id: '', pid: 26 }),
-      headers: { 'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0' },
+    const res = await fetch('https://id-game-checker.p.rapidapi.com/game-id-checker/pubgm-global/' + encodeURIComponent(cleanId), {
+      method: 'GET',
+      headers: {
+        'x-rapidapi-key': process.env.RAPIDAPI_KEY || '955a2dc3b6msh94f8949770db1fdp1f5fcejsne77f8998fd84',
+        'x-rapidapi-host': 'id-game-checker.p.rapidapi.com',
+        'Accept': 'application/json'
+      },
+      signal: AbortSignal.timeout(10000)
     });
-    if (d2 && d2.data && isValidName(d2.data.username)) return { playerName: String(d2.data.username) };
-  } catch (err2) { console.error('[Backup Checker Failed]:', err2.message); }
-  return null;
+    const raw = await res.text();
+    console.log('[RapidAPI PUBG Check] HTTP ' + res.status + ' | ' + raw.slice(0, 400));
+    let d; try { d = JSON.parse(raw); } catch (e) { return null; }
+    if (d && !d.error && d.data && isValidName(d.data.username)) {
+      return { playerName: String(d.data.username), isBanned: d.data.is_ban || false };
+    }
+    return null;
+  } catch (error) {
+    console.error('[RapidAPI PUBG Check Error]:', error.message);
+    return null;
+  }
 }
 
 /* فري فاير — Shop2Game / Garena */
