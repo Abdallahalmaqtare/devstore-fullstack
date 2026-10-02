@@ -2122,7 +2122,7 @@ function openPlayerVerifyModal(p, onSuccess) {
     var pid = (idEl.value || '').replace(/\D/g, '');
     verifiedName = ''; addBtn.disabled = true;
     if (!pid || pid.length < 5) { setStatus('⚠️ أدخل معرّفاً صحيحاً (أرقام فقط)', 'pv-err'); return; }
-    setStatus('⏳ جارٍ التحقق من الحساب، قد يستغرق الفحص حتى 25 ثانية...', 'pv-loading');
+    setStatus('⏳ جارٍ التحقق من الحساب، قد يستغرق الفحص حتى 30 ثانية — لا تحدّث الصفحة...', 'pv-loading');
     try {
       var res = await API.req('/games/verify-player', { method: 'POST', body: { game: game, playerId: pid } });
       if (sequence !== checkSequence || !ov.isConnected || pid !== idEl.value.replace(/\D/g, '')) return;

@@ -38,20 +38,20 @@ async function tryJson(url, opts) {
   try { return JSON.parse(raw); } catch (e) { return null; }
 }
 
-/* v70: PUBG lookup with full response diagnostics and a 25-second timeout. */
+/* v71: PUBG RapidAPI official snippet — path /pubgm-global/{id} (no extra segment), 30s timeout, full response logging. */
 async function checkPubgId(playerId) {
   const cleanId = String(playerId).trim();
   const startedAt = Date.now();
   console.log('[Checking Player ID]:', cleanId);
   try {
-    const response = await fetch('https://id-game-checker.p.rapidapi.com/game-id-checker/pubgm-global/' + encodeURIComponent(cleanId), {
+    const response = await fetch('https://id-game-checker.p.rapidapi.com/pubgm-global/' + encodeURIComponent(cleanId), {
       method: 'GET',
       headers: {
         'x-rapidapi-key': process.env.RAPIDAPI_KEY || '955a2dc3b6msh94f8949770db1fdp1f5fcejsne77f8998fd84',
         'x-rapidapi-host': 'id-game-checker.p.rapidapi.com',
         'Accept': 'application/json'
       },
-      signal: AbortSignal.timeout(25000)
+      signal: AbortSignal.timeout(30000)
     });
     const raw = await response.text();
     console.log('[RapidAPI HTTP Status]:', response.status, '| durationMs:', Date.now() - startedAt);
