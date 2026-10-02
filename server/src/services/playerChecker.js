@@ -1,5 +1,4 @@
-/* ═══ v69 — فحص الاسم: RapidAPI id-game-checker الرسمي (data.username) | Tiger محفوظ للتنفيذ | Tiger API محفوظ للتنفيذ: TIGER_API_KEY=d0e7324ce664dbfc18f4c9ce72ae32a4 / service=264 / action=add المعزولة (خفيفة: fetch مباشر فقط — بلا Puppeteer) ═══
-   مستقلة تماماً عن المشروع الأساسي: مهلة قصوى 5 ثوانٍ لكل محاولة، وفشلها لا يوقف البيع. */
+/* v70: PUBG RapidAPI timeout = 25 seconds. Free Fire settings unchanged. */
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
   'Referer': 'https://www.midasbuy.com/',
@@ -13,7 +12,7 @@ const TIMEOUT_MS = 5000; /* مهلة قصوى لكل محاولة — لا تع�
 /* v65: كلمات محظورة — لا يجوز تمريرها كاسم لاعب معتمد */
 const INVALID_NAMES = ['error', 'not found', 'null', 'undefined', 'failed', 'false', 'none', ''];
 function isValidName(n) {
-  if (n === null || n === undefined) return false;
+  if (typeof n !== 'string') return false;
   const v = String(n).toLowerCase().trim();
   return v.length > 0 && INVALID_NAMES.indexOf(v) === -1;
 } /* مهلة قصوى لكل محاولة — لا تعليق للمستخدم */
@@ -39,29 +38,46 @@ async function tryJson(url, opts) {
   try { return JSON.parse(raw); } catch (e) { return null; }
 }
 
-/* ببجي — v69: RapidAPI الرسمي المؤكد (id-game-checker) — الاسم في data.username | مهلة 10 ثوانٍ */
-async function checkPUBG(playerId) {
+/* v70: PUBG lookup with full response diagnostics and a 25-second timeout. */
+async function checkPubgId(playerId) {
   const cleanId = String(playerId).trim();
+  const startedAt = Date.now();
+  console.log('[Checking Player ID]:', cleanId);
   try {
-    const res = await fetch('https://id-game-checker.p.rapidapi.com/game-id-checker/pubgm-global/' + encodeURIComponent(cleanId), {
+    const response = await fetch('https://id-game-checker.p.rapidapi.com/game-id-checker/pubgm-global/' + encodeURIComponent(cleanId), {
       method: 'GET',
       headers: {
         'x-rapidapi-key': process.env.RAPIDAPI_KEY || '955a2dc3b6msh94f8949770db1fdp1f5fcejsne77f8998fd84',
         'x-rapidapi-host': 'id-game-checker.p.rapidapi.com',
         'Accept': 'application/json'
       },
-      signal: AbortSignal.timeout(10000)
+      signal: AbortSignal.timeout(25000)
     });
-    const raw = await res.text();
-    console.log('[RapidAPI PUBG Check] HTTP ' + res.status + ' | ' + raw.slice(0, 400));
-    let d; try { d = JSON.parse(raw); } catch (e) { return null; }
-    if (d && !d.error && d.data && isValidName(d.data.username)) {
-      return { playerName: String(d.data.username), isBanned: d.data.is_ban || false };
+    const raw = await response.text();
+    console.log('[RapidAPI HTTP Status]:', response.status, '| durationMs:', Date.now() - startedAt);
+    console.log('[RapidAPI Raw Response]:', raw);
+    if (!response.ok) {
+      console.error('[Checker Error Details]:', { status: response.status, body: raw });
+      return { success: false, message: 'تعذر التحقق من معرف اللاعب حالياً', statusCode: 502 };
     }
-    return null;
+    let res;
+    try { res = JSON.parse(raw); }
+    catch (error) {
+      console.error('[Checker Error Details]:', 'Response is not valid JSON');
+      return { success: false, message: 'تعذر التحقق من معرف اللاعب حالياً', statusCode: 502 };
+    }
+    if (res && !res.error && res.data && isValidName(res.data.username)) {
+      return { success: true, playerName: res.data.username.trim(), isBanned: res.data.is_ban || false };
+    }
+    return { success: false, message: 'معرف اللاعب غير موجود أو غير صحيح', statusCode: 404 };
   } catch (error) {
-    console.error('[RapidAPI PUBG Check Error]:', error.message);
-    return null;
+    const timedOut = error.name === 'TimeoutError' || error.name === 'AbortError' || error.code === 'ECONNABORTED';
+    console.error('[Checker Error Details]:', { name: error.name, code: error.code, message: error.message, durationMs: Date.now() - startedAt });
+    return {
+      success: false,
+      message: timedOut ? 'استغرق الفحص وقتاً طويلاً، يمكنك استخدام زر التخطي' : 'تعذر التحقق من معرف اللاعب حالياً',
+      statusCode: timedOut ? 504 : 502
+    };
   }
 }
 
@@ -85,9 +101,9 @@ async function checkFreeFire(playerId) {
 
 /* الدالة العامة الخفيفة: checkPlayerName(game, playerId) */
 async function checkPlayerName(game, playerId) {
-  if (game === 'pubg') return checkPUBG(playerId);
+  if (game === 'pubg') return checkPubgId(playerId);
   if (game === 'freefire') return checkFreeFire(playerId);
   return null;
 }
 
-module.exports = { checkPlayerName };
+module.exports = { checkPlayerName, checkPubgId };

@@ -2113,34 +2113,40 @@ function openPlayerVerifyModal(p, onSuccess) {
   var addBtn = ov.querySelector('#pvAdd');
   var idEl = ov.querySelector('#pvId');
   var verifiedName = '';
+  var checkSequence = 0;
+  function escapePlayerText(text) { var el = document.createElement('span'); el.textContent = String(text); return el.innerHTML; }
   function setStatus(html, cls) { statusEl.innerHTML = html; statusEl.className = 'pv-status ' + (cls || ''); }
   async function check() {
+    clearTimeout(deb);
+    var sequence = ++checkSequence;
     var pid = (idEl.value || '').replace(/\D/g, '');
     verifiedName = ''; addBtn.disabled = true;
     if (!pid || pid.length < 5) { setStatus('⚠️ أدخل معرّفاً صحيحاً (أرقام فقط)', 'pv-err'); return; }
-    setStatus('⏳ جارٍ التحقق من الحساب عبر المنصة الرسمية...', 'pv-loading');
+    setStatus('⏳ جارٍ التحقق من الحساب، قد يستغرق الفحص حتى 25 ثانية...', 'pv-loading');
     try {
       var res = await API.req('/games/verify-player', { method: 'POST', body: { game: game, playerId: pid } });
+      if (sequence !== checkSequence || !ov.isConnected || pid !== idEl.value.replace(/\D/g, '')) return;
       var BAD = ['error','not found','null','undefined','failed','false','none',''];
       var nm = (res && res.playerName != null) ? String(res.playerName).trim() : '';
       if (res && res.success === true && nm && BAD.indexOf(nm.toLowerCase()) === -1) {
         verifiedName = nm;
-        setStatus('✅ اسم اللاعب: <b>' + nm + '</b>', 'pv-ok');
+        setStatus('✅ اسم اللاعب: <b>' + escapePlayerText(nm) + '</b>', 'pv-ok');
         addBtn.disabled = false;
       } else {
         verifiedName = ''; addBtn.disabled = true;
         setStatus('⚠️ تعذر التحقق من معرّف اللاعب — تأكد من الرقم أو اضغط «تخطي الفحص والمتابعة»', 'pv-err');
       }
-      addBtn.disabled = false;
     } catch (e) {
+      if (sequence !== checkSequence || !ov.isConnected) return;
       /* v60: تجاوز آمن عند تعطّل منصة الفحص — للآيدي ذي الطول المنطقي (7-12 رقماً) */
       var pidNow = (idEl.value || '').replace(/\D/g, '');
       var skipBtn = (pidNow.length >= 7 && pidNow.length <= 12)
         ? '<br><button type="button" id="pvSkip" class="pv-skip-btn">تخطي الفحص والمتابعة على مسؤوليتي ⚠️</button>'
         : '';
-      setStatus('❌ ' + (e.message || 'معرف اللاعب غير صحيح، يرجى التأكد وإعادة المحاولة') + skipBtn, 'pv-err');
+      setStatus('❌ ' + escapePlayerText(e.message || 'معرف اللاعب غير صحيح، يرجى التأكد وإعادة المحاولة') + skipBtn, 'pv-err');
       var sk = ov.querySelector('#pvSkip');
       if (sk) sk.onclick = function () {
+        ++checkSequence; clearTimeout(deb);
         verifiedName = 'غير محدد (تم التخطي)'; addBtn.disabled = false;
         setStatus('⚠️ تخطيت الفحص — يرجى التأكد من كتابة الآيدي بدقة تامة لتفادي وصول الشحن لحساب آخر', 'pv-loading');
         showToast('⚡ تم تفعيل الإضافة — اضغط «إضافة إلى السلة»');
@@ -2150,6 +2156,7 @@ function openPlayerVerifyModal(p, onSuccess) {
   ov.querySelector('#pvCheck').onclick = check;
   /* v61: تخطي فوري دائم الظهور — البيع لا يتوقف أبداً */
   ov.querySelector('#pvSkipAlways').onclick = function () {
+    ++checkSequence; clearTimeout(deb);
     var pid2 = (idEl.value || '').replace(/\D/g, '');
     if (pid2.length < 7 || pid2.length > 12) { setStatus('⚠️ أدخل الآيدي أولاً (7–12 رقماً) ثم اضغط التخطي', 'pv-err'); return; }
     verifiedName = 'غير محدد (تم التخطي)'; addBtn.disabled = false;
@@ -2158,7 +2165,7 @@ function openPlayerVerifyModal(p, onSuccess) {
   };
   var deb;
   idEl.addEventListener('input', function () {
-    clearTimeout(deb); verifiedName = ''; addBtn.disabled = true;
+    ++checkSequence; clearTimeout(deb); verifiedName = ''; addBtn.disabled = true;
     this.value = this.value.replace(/\D/g, '');
     if (this.value.length >= 6) { setStatus('⏳ جارٍ التحقق...', 'pv-loading'); deb = setTimeout(check, 650); }
     else setStatus('', '');

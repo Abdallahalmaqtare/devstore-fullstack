@@ -11,6 +11,8 @@ router.post('/verify-player', async (req, res) => {
     if (!['pubg', 'freefire'].includes(game))
       return res.status(400).json({ success: false, message: 'نوع اللعبة غير مدعوم — المدعوم: pubg / freefire' });
     const result = await checkPlayerName(game, playerId);
+    if (result && result.success === false)
+      return res.status(result.statusCode || 502).json({ success: false, message: result.message });
     if (!result)
       return res.status(404).json({ success: false, message: 'معرف اللاعب غير صحيح أو غير موجود، يرجى التأكد وإعادة المحاولة' });
     res.json({ success: true, playerName: result.playerName, playerId });
