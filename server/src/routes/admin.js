@@ -13,6 +13,19 @@ function superOnly(req, res, next) {
 }
 
 /* DELETE /api/admin/users/:id — حذف مستخدم نهائياً + طلباته المعلقة */
+/* v73 — مزامنة جميع العملاء الحاليين إلى جهات اتصال Google (مرة واحدة) */
+router.post('/sync-contacts', authRequired, adminOnly, async (req, res) => {
+  try {
+    const { syncAllExistingUsers } = require('../services/googleContactsService');
+    const { User } = require('../models');
+    const result = await syncAllExistingUsers(User);
+    if (!result.success) return res.status(500).json(result);
+    res.json({ success: true, message: 'تمت مزامنة ' + result.count + ' جهة اتصال إلى هاتفك بنجاح' + (result.failed ? ' (فشل: ' + result.failed + ')' : '') });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 router.delete('/users/:id', authRequired, adminOnly, async (req, res) => {
   try {
     const u = await User.findById(req.params.id);

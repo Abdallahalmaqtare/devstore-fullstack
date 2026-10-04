@@ -101,6 +101,8 @@ router.post('/verify-otp', async (req, res) => {
   if (purpose === 'register') {
     if (await User.findOne({ phone })) return res.status(409).json({ message: 'الحساب موجود مسبقاً' });
     const user = await User.create({ name: otp.payload.name, phone, password: otp.payload.password });
+    /* v73: حفظ جهة الاتصال في Google بالخلفية — لا يؤثر على استجابة التسجيل */
+    require('../services/googleContactsService').addContact(user.name, user.phone).catch(function (err) { console.error('[Auto Sync Fail]:', err.message); });
     await Otp.deleteOne({ _id: otp._id });
     return res.status(201).json({ token: signToken(user), user: publicUser(user) });
   }
